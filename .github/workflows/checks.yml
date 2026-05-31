@@ -1,0 +1,33 @@
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # プロトタイプHTMLの健全性チェック（存在・非空・<title>・プレースホルダ残り）
+      - name: Validate prototype HTML
+        run: |
+          set -e
+          fail=0
+          for f in index.html wireframes/core-flow.html wireframes/landing.html wireframes/admin.html; do
+            echo "→ $f"
+            test -s "$f" || { echo "  ✗ missing or empty"; fail=1; continue; }
+            grep -q "<title>" "$f" || { echo "  ✗ no <title>"; fail=1; }
+            if grep -nE "lorem|ipsum|TODO|FIXME|\\[insert" "$f"; then echo "  ✗ placeholder text found"; fail=1; fi
+          done
+          if [ "$fail" = "1" ]; then echo "checks failed"; exit 1; fi
+          echo "all good"
+
+      - name: Validate SQL migrations present
+        run: |
+          set -e
+          ls supabase/migrations/0001_core.sql supabase/migrations/0006_functions.sql
+          echo "migrations present"
