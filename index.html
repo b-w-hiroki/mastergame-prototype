@@ -178,11 +178,24 @@
   .md-body blockquote{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:0 0 14px;color:var(--sub)}
   .md-body a{color:var(--accent)}.md-body hr{border:none;border-top:1px solid var(--line);margin:18px 0}
 
-  /* deck gallery */
-  .gallery{display:flex;flex-direction:column;gap:18px}
-  .gallery figure{margin:0}
-  .gallery .sn{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:6px;font-family:var(--disp)}
-  .gallery img{width:100%;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 26px -14px rgba(20,22,40,.3);display:block}
+  /* deck carousel */
+  .deckview{position:relative;display:flex;align-items:center;justify-content:center;background:#0e1015;border-radius:12px;padding:12px}
+  .deckview img{width:100%;border-radius:6px;display:block}
+  .navbtn{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:none;
+    background:rgba(255,255,255,.92);box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer;font-size:24px;color:var(--ink);
+    display:grid;place-items:center;z-index:2;line-height:1;transition:.15s}
+  .navbtn:hover{background:#fff;transform:translateY(-50%) scale(1.06)}
+  .navbtn.prev{left:16px}.navbtn.next{right:16px}
+  .navbtn:disabled{opacity:.3;cursor:default;transform:translateY(-50%)}
+  .deckctl{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:14px}
+  .deckctl button{font-family:var(--disp);font-weight:700;font-size:13px;border:1px solid var(--line2);background:#fff;border-radius:10px;padding:8px 16px;cursor:pointer;transition:.15s}
+  .deckctl button:hover{border-color:var(--accent);color:var(--accent)}
+  .deckctl button:disabled{opacity:.4;cursor:default;border-color:var(--line);color:var(--muted)}
+  .deckctl .counter{font-family:var(--disp);font-weight:800;font-size:14px;min-width:64px;text-align:center}
+  .deckdots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+  .deckdots i{width:8px;height:8px;border-radius:50%;background:var(--line2);cursor:pointer;transition:.15s}
+  .deckdots i.on{background:var(--accent);width:20px;border-radius:4px}
+  .deckhint{text-align:center;font-size:11px;color:var(--muted);margin-top:10px}
 
   /* mvp detail */
   .mvpdetail .goal{background:var(--accent-soft);border-radius:12px;padding:14px 16px;font-weight:800;color:#3b34c4;margin-bottom:6px}
@@ -379,8 +392,13 @@
   const modal=document.getElementById('modal'), mTitle=document.getElementById('modal-title'),
         mBody=document.getElementById('modal-body'), mDl=document.getElementById('modal-dl');
   function showModal(){ modal.classList.add('show'); document.body.style.overflow='hidden'; mBody.scrollTop=0; }
-  function closeModal(){ modal.classList.remove('show'); document.body.style.overflow=''; mDl.style.display='none'; }
-  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+  function closeModal(){ modal.classList.remove('show'); document.body.style.overflow=''; mDl.style.display='none'; deckMode=false; }
+  document.addEventListener('keydown', e=>{
+    if(!modal.classList.contains('show')) return;
+    if(e.key==='Escape') closeModal();
+    else if(deckMode && e.key==='ArrowLeft'){ e.preventDefault(); deckNav(-1); }
+    else if(deckMode && e.key==='ArrowRight'){ e.preventDefault(); deckNav(1); }
+  });
 
   // ---- Markdown viewer ----
   const MD_DOCS=[
@@ -397,7 +415,7 @@
      </button>`).join('');
 
   async function openDoc(file,title){
-    mTitle.textContent=title; mDl.href=file; mDl.style.display='';
+    mTitle.textContent=title; mDl.href=file; mDl.textContent='元ファイル ↗'; mDl.style.display=''; deckMode=false;
     mBody.innerHTML='<div class="loading">読み込み中…</div>'; showModal();
     try{
       const res=await fetch(file); if(!res.ok) throw new Error(res.status);
@@ -410,15 +428,45 @@
     }
   }
 
-  // ---- Deck gallery ----
+  // ---- Deck carousel（左右スライド） ----
+  const DECK_N=18; let deckIdx=1, deckMode=false;
   function openDeck(){
-    mTitle.textContent='仕様提案・MVP分割（18枚）';
+    deckMode=true; deckIdx=1;
+    mTitle.textContent='仕様提案・MVP分割';
     mDl.href='docs/MasterGame_仕様提案_MVP分割.pptx'; mDl.textContent='PPTXを開く ↗'; mDl.style.display='';
-    let html='<div class="gallery">';
-    for(let i=1;i<=18;i++){ const n=String(i).padStart(2,'0');
-      html+=`<figure><div class="sn">Slide ${i} / 18</div><img loading="lazy" src="assets/deck/slide-${n}.png" alt="スライド${i}"></figure>`; }
-    html+='</div>'; mBody.innerHTML=html; showModal();
+    mBody.innerHTML=`
+      <div class="deckview">
+        <button class="navbtn prev" onclick="deckNav(-1)" aria-label="前のスライド">‹</button>
+        <img id="deckImg" alt="スライド">
+        <button class="navbtn next" onclick="deckNav(1)" aria-label="次のスライド">›</button>
+      </div>
+      <div class="deckctl">
+        <button id="deckPrev" onclick="deckNav(-1)">‹ 前へ</button>
+        <span class="counter" id="deckCounter"></span>
+        <button id="deckNext" onclick="deckNav(1)">次へ ›</button>
+      </div>
+      <div class="deckdots" id="deckDots"></div>
+      <div class="deckhint">← → キーでも移動できます</div>`;
+    document.getElementById('deckDots').innerHTML =
+      Array.from({length:DECK_N},(_,i)=>`<i data-i="${i+1}" onclick="deckGo(${i+1})"></i>`).join('');
+    deckRender(); showModal();
   }
+  function deckRender(){
+    const n=String(deckIdx).padStart(2,'0');
+    document.getElementById('deckImg').src='assets/deck/slide-'+n+'.png';
+    document.getElementById('deckCounter').textContent=deckIdx+' / '+DECK_N;
+    const atFirst=deckIdx<=1, atLast=deckIdx>=DECK_N;
+    document.querySelector('.navbtn.prev').disabled=atFirst;
+    document.querySelector('.navbtn.next').disabled=atLast;
+    document.getElementById('deckPrev').disabled=atFirst;
+    document.getElementById('deckNext').disabled=atLast;
+    document.querySelectorAll('#deckDots i').forEach(d=>d.classList.toggle('on',+d.dataset.i===deckIdx));
+  }
+  function deckGo(i){
+    if(i<1||i>DECK_N) return; deckIdx=i; deckRender();
+    [i-1,i+1].forEach(k=>{ if(k>=1&&k<=DECK_N){ const im=new Image(); im.src='assets/deck/slide-'+String(k).padStart(2,'0')+'.png'; }});
+  }
+  function deckNav(d){ deckGo(deckIdx+d); }
 
   // ---- MVP detail ----
   const MVP={
