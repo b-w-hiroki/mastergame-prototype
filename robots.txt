@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://b-w-hiroki.github.io/mastergame-prototype/sitemap.xml

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#191d3a"/><stop offset="1" stop-color="#0b0d18"/>
+    </linearGradient>
+    <linearGradient id="mg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5563e0"/><stop offset="1" stop-color="#7c5cff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.85" cy="0.1" r="0.6">
+      <stop offset="0" stop-color="#7c5cff" stop-opacity="0.55"/><stop offset="1" stop-color="#7c5cff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <circle cx="980" cy="470" r="240" fill="#4f46e5" opacity="0.16"/>
+  <!-- logo -->
+  <rect x="96" y="92" width="96" height="96" rx="24" fill="url(#mg)"/>
+  <text x="144" y="156" font-family="'Yu Gothic UI','Hiragino Kaku Gothic ProN','Noto Sans JP','Meiryo','Segoe UI',sans-serif" font-size="42" font-weight="800" fill="#fff" text-anchor="middle">MG</text>
+  <text x="214" y="166" font-family="'Yu Gothic UI','Hiragino Kaku Gothic ProN','Noto Sans JP','Meiryo','Segoe UI',sans-serif" font-size="46" font-weight="800" fill="#ffffff">MasterGame</text>
+  <!-- tagline -->
+  <text x="96" y="330" font-family="'Yu Gothic UI','Hiragino Kaku Gothic ProN','Noto Sans JP','Meiryo','Segoe UI',sans-serif" font-size="76" font-weight="800" fill="#ffffff">遊ぶほど、<tspan fill="#a99bff">得をする。</tspan></text>
+  <text x="100" y="392" font-family="'Yu Gothic UI','Hiragino Kaku Gothic ProN','Noto Sans JP','Meiryo','Segoe UI',sans-serif" font-size="30" fill="#aeb3c8">ポイ活 × ゲームコミュニティ ・ ミッションで貯めて、アイテムと交換</text>
+  <!-- chips -->
+  <g font-family="'Yu Gothic UI','Hiragino Kaku Gothic ProN','Noto Sans JP','Meiryo','Segoe UI',sans-serif" font-size="24" font-weight="700">
+    <rect x="96" y="452" width="186" height="56" rx="28" fill="#ffffff" opacity="0.08"/>
+    <text x="189" y="489" fill="#dfe2f7" text-anchor="middle">🎯 ミッション</text>
+    <rect x="298" y="452" width="210" height="56" rx="28" fill="#ffffff" opacity="0.08"/>
+    <text x="403" y="489" fill="#dfe2f7" text-anchor="middle">🎁 ポイント交換</text>
+    <rect x="524" y="452" width="210" height="56" rx="28" fill="#ffffff" opacity="0.08"/>
+    <text x="629" y="489" fill="#dfe2f7" text-anchor="middle">💬 コミュニティ</text>
+  </g>
+  <text x="96" y="578" font-family="'Yu Gothic UI','Hiragino Kaku Gothic ProN','Noto Sans JP','Meiryo','Segoe UI',sans-serif" font-size="22" fill="#6b7290">b-w-hiroki.github.io/mastergame-prototype</text>
+</svg>
