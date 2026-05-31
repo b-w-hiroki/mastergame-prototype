@@ -136,9 +136,70 @@
   footer .fb{display:flex;align-items:center;gap:10px;color:#fff;font-family:var(--disp);font-weight:800}
   footer .logo{width:30px;height:30px;font-size:12px}
 
+  /* clickable roadmap */
+  .ph{cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s}
+  .ph:hover{transform:translateY(-3px);box-shadow:0 16px 30px -18px rgba(20,22,40,.3);border-color:var(--accent)}
+  .ph .more{font-size:10.5px;color:var(--accent);font-weight:800;margin-top:8px}
+
+  /* doc list */
+  .doclist{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+  .docrow{display:flex;align-items:center;gap:11px;border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:#fff;cursor:pointer;text-align:left;font-family:inherit;width:100%;transition:.15s}
+  .docrow:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .docrow .di{width:34px;height:34px;border-radius:9px;background:var(--bg2);color:var(--accent);display:grid;place-items:center;flex:0 0 auto}
+  .docrow .dt{font-size:13px;font-weight:800}
+  .docrow .ds{font-size:11px;color:var(--muted);font-family:"Consolas",monospace}
+
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(8,10,18,.62);backdrop-filter:blur(3px);z-index:500;display:none;padding:0 16px;overflow-y:auto}
+  .modal.show{display:block}
+  .modal-card{background:#fff;border-radius:18px;max-width:940px;width:100%;margin:40px auto;box-shadow:0 40px 90px rgba(0,0,0,.4);animation:pop .2s ease;overflow:hidden}
+  @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .modal-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:2}
+  .modal-head h3{font-size:16px;font-weight:800;flex:1;font-family:var(--disp)}
+  .modal-head .dl{font-size:12px;font-weight:700;color:var(--accent)}
+  .modal-head .x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:15px;display:grid;place-items:center}
+  .modal-head .x:hover{background:var(--bg2)}
+  .modal-body{padding:24px;max-height:calc(100vh - 160px);overflow-y:auto}
+  .loading{text-align:center;color:var(--muted);padding:40px;font-size:13px}
+
+  /* markdown */
+  .md-body{font-size:14px;color:var(--ink2);line-height:1.85;font-family:var(--body)}
+  .md-body h1{font-size:23px;margin:0 0 14px;font-family:var(--disp)}
+  .md-body h2{font-size:18px;margin:26px 0 12px;padding-top:14px;border-top:1px solid var(--line);font-family:var(--disp)}
+  .md-body h3{font-size:15px;margin:18px 0 8px;font-family:var(--disp)}
+  .md-body h4{font-size:13.5px;margin:14px 0 6px;font-weight:800}
+  .md-body p{margin:0 0 12px}
+  .md-body ul,.md-body ol{margin:0 0 12px 22px}.md-body li{margin-bottom:4px}
+  .md-body code{background:var(--bg2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-family:"Consolas",monospace;font-size:12.5px}
+  .md-body pre{background:#0e1015;color:#e6e9ef;border-radius:12px;padding:16px;overflow-x:auto;margin:0 0 14px}
+  .md-body pre code{background:none;border:none;color:inherit;padding:0}
+  .md-body table{border-collapse:collapse;width:100%;margin:0 0 16px;font-size:12.5px;display:block;overflow-x:auto}
+  .md-body th,.md-body td{border:1px solid var(--line);padding:7px 10px;text-align:left}.md-body th{background:var(--bg2);font-weight:800}
+  .md-body blockquote{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:0 0 14px;color:var(--sub)}
+  .md-body a{color:var(--accent)}.md-body hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+
+  /* deck gallery */
+  .gallery{display:flex;flex-direction:column;gap:18px}
+  .gallery figure{margin:0}
+  .gallery .sn{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:6px;font-family:var(--disp)}
+  .gallery img{width:100%;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 26px -14px rgba(20,22,40,.3);display:block}
+
+  /* mvp detail */
+  .mvpdetail .goal{background:var(--accent-soft);border-radius:12px;padding:14px 16px;font-weight:800;color:#3b34c4;margin-bottom:6px}
+  .mvpdetail .when{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:16px}
+  .mvpdetail h4{font-size:12px;color:var(--sub);font-weight:800;margin:18px 0 9px;letter-spacing:.02em}
+  .mvpdetail ul{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mvpdetail li{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;background:var(--bg2);border-radius:9px;padding:9px 11px}
+  .mvpdetail li .ic{width:15px;height:15px;color:var(--ok);flex:0 0 auto;margin-top:3px}
+  .mvpdetail .accept{border:1px dashed var(--line2);border-radius:10px;padding:12px 14px;font-size:13px;margin-top:8px}
+  .mvpdetail .accept b{color:var(--ok)}
+  .mvpdetail .cta{display:inline-flex;align-items:center;gap:8px;margin-top:18px;background:var(--ink);color:#fff;border-radius:11px;padding:11px 16px;font-family:var(--disp);font-weight:700;font-size:13px}
+
   @media(max-width:920px){
     .grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}
     .res{grid-template-columns:1fr}
+    .doclist{grid-template-columns:1fr}
+    .mvpdetail ul{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -259,17 +320,20 @@
         <div><h4>ポイント経済シミュレーター ▸</h4><p>eCPM・還元率からミッション単価と日次P&Lを逆算（インタラクティブ）。</p>
           <div class="files">wireframes/economy.html</div></div>
       </a>
-      <a class="resitem" href="docs/MasterGame_仕様提案_MVP分割.pptx">
+      <button class="resitem" onclick="openDeck()" style="cursor:pointer;font-family:inherit;text-align:left">
         <span class="ri"><svg class="ic" style="width:22px;height:22px"><use href="#i-deck"/></svg></span>
-        <div><h4>仕様提案・MVP分割（提案デッキ）</h4><p>サービス概要〜技術スタック〜追加機能提案までの18枚。</p>
-          <div class="files">docs/MasterGame_仕様提案_MVP分割.pptx</div></div>
-      </a>
-      <div class="resitem">
+        <div><h4>仕様提案・MVP分割（提案デッキ）▸</h4><p>18枚をこのページ内で閲覧（画像）。概要〜技術スタック〜追加機能提案。</p>
+          <div class="files">ページ内で表示</div></div>
+      </button>
+      <button class="resitem" onclick="openDoc('docs/ECONOMY.md','ポイント経済設計（レートカード）')" style="cursor:pointer;font-family:inherit;text-align:left">
         <span class="ri"><svg class="ic" style="width:22px;height:22px"><use href="#i-doc"/></svg></span>
-        <div><h4>機能仕様書（4本）</h4><p>オファーウォール / postback検証 / スマートナッジ / コミュニティ。</p>
-          <div class="files">docs/specs/*.md</div></div>
-      </div>
+        <div><h4>ポイント経済設計（レートカード）▸</h4><p>収益ベンチ・2層単価・真の粗利。ページ内で表示。</p>
+          <div class="files">docs/ECONOMY.md</div></div>
+      </button>
     </div>
+
+    <div class="sub" style="margin-top:24px">仕様書・開発ガイド（クリックでページ内表示）</div>
+    <div class="doclist" id="doclist"></div>
   </div>
 </section>
 
@@ -277,12 +341,12 @@
 <section class="sec" style="padding-top:0">
   <div class="wrap">
     <h2>MVP ロードマップ</h2>
-    <div class="sub">本プロトタイプは Phase1（MVP）のコア体験を対象にしています。</div>
+    <div class="sub">各カードをクリックすると、ゴール・含む機能・受け入れ基準を表示します。本プロトタイプは MVP1 のコア体験が対象。</div>
     <div class="road">
-      <div class="ph"><div class="pt">MVP0 <b>基盤</b></div><div class="pd">認証・アカウント・基盤</div><div class="pw">〜2025/6</div></div>
-      <div class="ph"><div class="pt">MVP1 <b>コア</b></div><div class="pd">ミッション→ポイント→交換</div><div class="pw">2025/6–7</div></div>
-      <div class="ph"><div class="pt">MVP2 <b>コミュニティ</b></div><div class="pd">ギルド・通報・賭け質問</div><div class="pw">2025/7–8</div></div>
-      <div class="ph"><div class="pt">MVP3 <b>運用</b></div><div class="pd">分析・管理・KPI</div><div class="pw">2025/8–</div></div>
+      <div class="ph" onclick="openMVP('mvp0')"><div class="pt">MVP0 <b>基盤</b></div><div class="pd">認証・アカウント・基盤</div><div class="pw">〜2025/6</div><div class="more">詳細 ▸</div></div>
+      <div class="ph" onclick="openMVP('mvp1')"><div class="pt">MVP1 <b>コア</b></div><div class="pd">ミッション→ポイント→交換</div><div class="pw">2025/6–7</div><div class="more">詳細 ▸</div></div>
+      <div class="ph" onclick="openMVP('mvp2')"><div class="pt">MVP2 <b>コミュニティ</b></div><div class="pd">ギルド・通報・賭け質問</div><div class="pw">2025/7–8</div><div class="more">詳細 ▸</div></div>
+      <div class="ph" onclick="openMVP('mvp3')"><div class="pt">MVP3 <b>運用</b></div><div class="pd">分析・管理・KPI</div><div class="pw">2025/8–</div><div class="more">詳細 ▸</div></div>
     </div>
     <div class="note">
       <b>これはプロトタイプ（ワイヤーフレーム）です。</b> 画面と導線の検証を目的としており、データはダミー・処理はフロントエンドのモックです。
@@ -297,6 +361,99 @@
     <span>© 2026 株式会社クリティカルヒット</span>
   </div>
 </footer>
+
+<!-- modal -->
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="modal-title">—</h3>
+      <a class="dl" id="modal-dl" href="#" style="display:none" target="_blank" rel="noopener">元ファイル ↗</a>
+      <button class="x" onclick="closeModal()" aria-label="閉じる">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+  const modal=document.getElementById('modal'), mTitle=document.getElementById('modal-title'),
+        mBody=document.getElementById('modal-body'), mDl=document.getElementById('modal-dl');
+  function showModal(){ modal.classList.add('show'); document.body.style.overflow='hidden'; mBody.scrollTop=0; }
+  function closeModal(){ modal.classList.remove('show'); document.body.style.overflow=''; mDl.style.display='none'; }
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+  // ---- Markdown viewer ----
+  const MD_DOCS=[
+    {t:'仕様書：オファーウォール / 動画リワード', f:'docs/specs/offerwall.md'},
+    {t:'仕様書：達成のサーバー検証 (postback)', f:'docs/specs/mission-verification-postback.md'},
+    {t:'仕様書：スマートナッジ', f:'docs/specs/smart-nudge.md'},
+    {t:'仕様書：コミュニティ (ギルド / 通報)', f:'docs/specs/community-guild.md'},
+    {t:'開発ガイド（セットアップ・スキーマ）', f:'docs/DEVELOPMENT.md'},
+  ];
+  document.getElementById('doclist').innerHTML = MD_DOCS.map(d=>
+    `<button class="docrow" onclick="openDoc('${d.f}','${d.t.replace(/'/g,"")}')">
+       <span class="di"><svg class="ic" style="width:18px;height:18px"><use href="#i-doc"/></svg></span>
+       <span><span class="dt">${d.t}</span><br><span class="ds">${d.f}</span></span>
+     </button>`).join('');
+
+  async function openDoc(file,title){
+    mTitle.textContent=title; mDl.href=file; mDl.style.display='';
+    mBody.innerHTML='<div class="loading">読み込み中…</div>'; showModal();
+    try{
+      const res=await fetch(file); if(!res.ok) throw new Error(res.status);
+      const md=await res.text();
+      mBody.innerHTML = '<div class="md-body">'+ (window.marked ? marked.parse(md)
+        : md.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))) +'</div>';
+      if(!window.marked) mBody.querySelector('.md-body').style.whiteSpace='pre-wrap';
+    }catch(e){
+      mBody.innerHTML='<div class="loading">表示できませんでした。<a href="'+file+'" target="_blank">元ファイルを開く ↗</a></div>';
+    }
+  }
+
+  // ---- Deck gallery ----
+  function openDeck(){
+    mTitle.textContent='仕様提案・MVP分割（18枚）';
+    mDl.href='docs/MasterGame_仕様提案_MVP分割.pptx'; mDl.textContent='PPTXを開く ↗'; mDl.style.display='';
+    let html='<div class="gallery">';
+    for(let i=1;i<=18;i++){ const n=String(i).padStart(2,'0');
+      html+=`<figure><div class="sn">Slide ${i} / 18</div><img loading="lazy" src="assets/deck/slide-${n}.png" alt="スライド${i}"></figure>`; }
+    html+='</div>'; mBody.innerHTML=html; showModal();
+  }
+
+  // ---- MVP detail ----
+  const MVP={
+    mvp0:{title:'MVP0 — 基盤・認証', when:'時期：〜2025/6上',
+      goal:'登録 → ログインして毎日アクセスできる状態をつくる',
+      items:['スプラッシュ / タイトル','アカウント作成・ログイン','OAuth（Google / Apple / LINE）','パスワードリセット','マイページ','各種許諾 / アクセスロック','管理者ログイン'],
+      accept:'新規登録 → ログイン → 再ログインが通る', link:null},
+    mvp1:{title:'MVP1 ★ — コアサイクル', when:'時期：2025/6–7（本プロトタイプの対象）',
+      goal:'ミッション → ポイント → 交換 が一気通貫で動く',
+      items:['ホーム（フィード / 残高 / 導線）','ミッション（4種・進捗・受取演出）','ポイント（残高 / 履歴 / 推移）','交換（一覧 / 申請 / 履歴）','広告バナー','管理（マスタ / 付与）'],
+      accept:'ミッション達成 → ポイント加算 → 交換申請 → 履歴反映', link:'wireframes/core-flow.html'},
+    mvp2:{title:'MVP2 — コミュニティ', when:'時期：2025/7–8',
+      goal:'ギルド型コミュニティで BtoB提携理由とエンゲージを創出',
+      items:['フォーラム / トピック（作成 / 投稿 / 返信 / 編集削除）','リアクション','ポイント賭け質問 → 回答報酬','お知らせ記事','通知 / メールボックス'],
+      accept:'トピック作成 → 返信 → 賭け質問 → 報酬付与', link:'wireframes/core-flow.html'},
+    mvp3:{title:'MVP3 — 運用・分析', when:'時期：2025/8–',
+      goal:'安定運用と KPI 可視化（継続のための最小施策）',
+      items:['ユーザー行動分析','管理ダッシュボード強化（統計 / 監視 / 権限 / BAN / 凍結 / SU）','サポート / ヘルプ / FAQ','ログインボーナス（最小）','Push 運用'],
+      accept:'管理側で主要KPIが見える / BAN・凍結が機能する', link:'wireframes/admin.html'},
+  };
+  function openMVP(key){
+    const m=MVP[key]; if(!m) return;
+    mTitle.textContent=m.title; mDl.style.display='none';
+    mBody.innerHTML=`<div class="mvpdetail">
+      <div class="goal">🎯 ${m.goal}</div>
+      <div class="when">${m.when}</div>
+      <h4>含む機能</h4>
+      <ul>${m.items.map(t=>`<li><svg class="ic"><use href="#i-check"/></svg><span>${t}</span></li>`).join('')}</ul>
+      <h4>受け入れ基準</h4>
+      <div class="accept">✓ <b>${m.accept}</b></div>
+      ${m.link?`<a class="cta" href="${m.link}" target="_blank" rel="noopener">対応するプロトタイプを開く <svg class="ic" style="width:16px;height:16px"><use href="#i-ext"/></svg></a>`:''}
+    </div>`;
+    showModal();
+  }
+</script>
 
 </body>
 </html>
