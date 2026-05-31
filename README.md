@@ -98,9 +98,11 @@
 
 プロトタイプ検証を経て、想定スタックでの実装足場を用意しています。詳細は **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**。
 
-- `supabase/` … 仕様書のテーブル定義を反映した Postgres スキーマ（RLS・RPC・seed・運営集計ビュー）
-- `apps/mobile/` … Expo（認証・ホーム・ミッション付与RPCを最小実装）
-- `apps/admin/` … Next.js（ダッシュボード集計を実データ表示）
+- `supabase/` … Postgres スキーマ（RLS・RPC・seed・経済レート・集計ビュー）＋ **Edge Function `postback`**（HMAC署名検証・冪等付与）
+- `apps/mobile/` … Expo（サインアップ / ログイン / **OAuthディープリンク** / ホーム / **ポイント交換 RPC**）
+- `apps/admin/` … Next.js（ダッシュボード集計＋**ユーザー一覧**を実データ表示）
+
+**本番化の手順 → [docs/PRODUCTION.md](docs/PRODUCTION.md)**（Supabase 作成 → `db push` → functions deploy → OAuth 設定 → アプリ/管理デプロイ → 広告連携）。
 
 ## ローカルで動かす
 

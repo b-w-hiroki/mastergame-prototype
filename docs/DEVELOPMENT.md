@@ -41,6 +41,11 @@ supabase gen types typescript --local > apps/mobile/src/lib/database.types.ts
 | 0008_rate | app_config（**point_yen_rate=1000 → 1,000P=1円**）/ points_to_yen() / missions.xp_reward（XPをポイントと分離）/ admin_overview に円換算列を追加 |
 | 0009_economy | payout_ratio（還元率50%）/ revenue_benchmarks（収益ベンチ）/ recommended_action_pricing（推奨単価ビュー）。詳細は [ECONOMY.md](ECONOMY.md) |
 | 0010_distribution | exchange_items.cost_rate_bps（交換先の実原価率）/ redemption_mix（交換先ミックス）/ effective_cost_rate()・face_to_real_cost()（額面→実コスト＝真の粗利） |
+| 0011_postback_rpc | track_click（click_id発行）/ confirm_postback（冪等付与・attribution・状態遷移）。Edge Function `postback` から呼ばれる |
+
+**Edge Functions**：`supabase/functions/postback`（S2S postback受信・HMAC署名検証）。デプロイ手順は [PRODUCTION.md](PRODUCTION.md) / [functions/README](../supabase/functions/README.md)。
+
+**本番化**：手順は **[docs/PRODUCTION.md](PRODUCTION.md)**（Supabase作成→push→functions→OAuth→アプリ/管理デプロイ→広告連携）。
 
 すべて RLS 有効。ポイント残高・台帳の書き込みは SECURITY DEFINER の RPC 経由のみ。
 

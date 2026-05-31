@@ -27,4 +27,7 @@ th { color: var(--sub); font-weight: 800; font-size: 11px; }
 .pill { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
 .pill.ok { background: #e6f4ec; color: var(--ok); }
 .pill.danger { background: #fdecea; color: var(--danger); }
+.pill.warn { background: #fbf2dc; color: #c98a16; }
+.pill.blue { background: #e6eefb; color: #2563c9; }
+.pill.mute { background: #eef0f4; color: var(--sub); }
 .note { font-size: 12px; color: var(--muted); margin-top: 14px; }

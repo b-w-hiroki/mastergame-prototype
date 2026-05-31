@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { signInWithOAuth } from '@/lib/auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -16,8 +18,11 @@ export default function Login() {
   }
 
   async function signInOAuth(provider: 'google' | 'apple') {
-    // ネイティブはディープリンク(mastergame://)へリダイレクト。詳細はExpo AuthSession参照。
-    await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: 'mastergame://' } });
+    try {
+      await signInWithOAuth(provider);
+    } catch (e) {
+      Alert.alert('ログインに失敗しました', String((e as Error).message ?? e));
+    }
   }
 
   return (
@@ -38,6 +43,8 @@ export default function Login() {
       <Text style={s.or}>または</Text>
       <Pressable style={s.oauth} onPress={() => signInOAuth('google')}><Text style={s.oauthText}>Googleでログイン</Text></Pressable>
       <Pressable style={s.oauth} onPress={() => signInOAuth('apple')}><Text style={s.oauthText}>Appleでログイン</Text></Pressable>
+
+      <Link href="/signup" style={s.link}>新規アカウント作成</Link>
     </SafeAreaView>
   );
 }
@@ -54,4 +61,5 @@ const s = StyleSheet.create({
   or: { textAlign: 'center', color: '#9aa0ac', marginVertical: 18 },
   oauth: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d8dbe2', borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 10 },
   oauthText: { fontWeight: '700', color: '#1f2430' },
+  link: { textAlign: 'center', color: '#4f46e5', fontWeight: '700', marginTop: 18 },
 });

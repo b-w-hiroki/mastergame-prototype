@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import type { Mission, NudgeTarget } from '@/lib/types';
 
@@ -49,6 +50,10 @@ export default function Home() {
           </View>
         )}
 
+        <Pressable style={s.exchangeBtn} onPress={() => router.push('/exchange')}>
+          <Text style={s.exchangeText}>🎁 ポイントを交換する</Text>
+        </Pressable>
+
         <Text style={s.section}>デイリーミッション</Text>
         {missions.map((m) => (
           <View key={m.id} style={s.mission}>
@@ -79,6 +84,8 @@ const s = StyleSheet.create({
   nudge: { backgroundColor: '#f6efda', borderWidth: 1, borderColor: '#e7d6a6', borderRadius: 14, padding: 13, marginBottom: 14 },
   nudgeText: { color: '#7a5b16', fontWeight: '700', fontSize: 13 },
   gold: { color: '#b88a2e', fontWeight: '900' },
+  exchangeBtn: { backgroundColor: '#eef0ff', borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 4 },
+  exchangeText: { color: '#4f46e5', fontWeight: '800', fontSize: 14 },
   section: { fontSize: 12, fontWeight: '800', color: '#6b7280', marginVertical: 10 },
   mission: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#e4e7ec', borderRadius: 14, padding: 13, marginBottom: 10 },
   mTitle: { fontSize: 13, fontWeight: '700' },
