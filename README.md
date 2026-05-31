@@ -72,20 +72,32 @@
 ```
 .
 ├── index.html                # プロトタイプ確認ハブ（GitHub Pages の入口）
-├── wireframes/
+├── wireframes/               # 動作プロトタイプ（HTML）
 │   ├── core-flow.html        # 📱 アプリ
 │   ├── landing.html          # 🖥 集客LP
 │   └── admin.html            # ⚙️ 運営コンソール
+├── supabase/                 # DB スキーマ・RPC・seed（バックエンド実装）
+│   ├── config.toml
+│   ├── migrations/           # 0001_core … 0007_admin
+│   └── seed.sql
+├── apps/
+│   ├── mobile/               # React Native + Expo（ユーザーアプリ実装足場）
+│   └── admin/                # Next.js（運営コンソール実装足場）
 ├── docs/
+│   ├── DEVELOPMENT.md        # 開発ガイド（セットアップ・スキーマ概要）
 │   ├── MasterGame_仕様提案_MVP分割.pptx   # 提案デッキ（18枚）
 │   ├── build_deck.js                       # デッキ生成スクリプト（pptxgenjs）
-│   └── specs/                              # 機能仕様書（Markdown）
-│       ├── offerwall.md
-│       ├── mission-verification-postback.md
-│       ├── smart-nudge.md
-│       └── community-guild.md
+│   └── specs/                              # 機能仕様書（Markdown × 4）
 └── README.md
 ```
+
+## 実装（足場）
+
+プロトタイプ検証を経て、想定スタックでの実装足場を用意しています。詳細は **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**。
+
+- `supabase/` … 仕様書のテーブル定義を反映した Postgres スキーマ（RLS・RPC・seed・運営集計ビュー）
+- `apps/mobile/` … Expo（認証・ホーム・ミッション付与RPCを最小実装）
+- `apps/admin/` … Next.js（ダッシュボード集計を実データ表示）
 
 ## ローカルで動かす
 

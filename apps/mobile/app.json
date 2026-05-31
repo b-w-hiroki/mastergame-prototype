@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "MasterGame",
+    "slug": "mastergame",
+    "scheme": "mastergame",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": { "backgroundColor": "#0c0e16" },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "jp.criticalhit.mastergame" },
+    "android": { "package": "jp.criticalhit.mastergame" },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": true }
+  }
+}
