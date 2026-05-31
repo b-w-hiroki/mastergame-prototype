@@ -18,6 +18,7 @@
 | 📱 アプリ（コアフロー） | ユーザー | [/wireframes/core-flow.html](https://b-w-hiroki.github.io/mastergame-prototype/wireframes/core-flow.html) |
 | 🖥 集客ランディングページ | 獲得 | [/wireframes/landing.html](https://b-w-hiroki.github.io/mastergame-prototype/wireframes/landing.html) |
 | ⚙️ 運営コンソール（管理画面） | 運営 | [/wireframes/admin.html](https://b-w-hiroki.github.io/mastergame-prototype/wireframes/admin.html) |
+| 📊 ポイント経済シミュレーター | 企画 | [/wireframes/economy.html](https://b-w-hiroki.github.io/mastergame-prototype/wireframes/economy.html) |
 
 ## サービス概要
 
