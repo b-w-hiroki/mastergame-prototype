@@ -40,6 +40,7 @@ supabase gen types typescript --local > apps/mobile/src/lib/database.types.ts
 | 0007_admin | admin_overview / admin_user_rows（運営集計ビュー） |
 | 0008_rate | app_config（**point_yen_rate=1000 → 1,000P=1円**）/ points_to_yen() / missions.xp_reward（XPをポイントと分離）/ admin_overview に円換算列を追加 |
 | 0009_economy | payout_ratio（還元率50%）/ revenue_benchmarks（収益ベンチ）/ recommended_action_pricing（推奨単価ビュー）。詳細は [ECONOMY.md](ECONOMY.md) |
+| 0010_distribution | exchange_items.cost_rate_bps（交換先の実原価率）/ redemption_mix（交換先ミックス）/ effective_cost_rate()・face_to_real_cost()（額面→実コスト＝真の粗利） |
 
 すべて RLS 有効。ポイント残高・台帳の書き込みは SECURITY DEFINER の RPC 経由のみ。
 

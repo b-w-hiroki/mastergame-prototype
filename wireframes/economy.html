@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MasterGame ｜ ポイント経済シミュレーター</title>
-<meta name="description" content="eCPM・CPA・還元率からミッション単価と日次P&Lを逆算する、MasterGameのポイント経済シミュレーター。">
+<meta name="description" content="収益構造・マネタイズ構造・配布構造を図示する、MasterGameのポイント経済シミュレーター。eCPM・CPA・還元率からミッション単価と真の粗利を逆算。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -12,7 +12,8 @@
   :root{
     --ink:#0e1015; --ink2:#1a1f2b; --bg:#f4f6fa; --paper:#fff; --line:#e6e9ef; --line2:#dfe2ea;
     --accent:#4f46e5; --accent2:#7c5cff; --accent-soft:#eef0ff; --gold:#b88a2e; --gold-soft:#f6efda;
-    --ok:#179a5b; --ok-soft:#e6f4ec; --danger:#c0392b; --danger-soft:#fdecea; --sub:#565c6a; --muted:#9aa0ad;
+    --teal:#0f9b8e; --ok:#179a5b; --ok-soft:#e6f4ec; --danger:#c0392b; --danger-soft:#fdecea;
+    --sub:#565c6a; --muted:#9aa0ad; --gray:#aab0bd;
     --disp:"Plus Jakarta Sans","Noto Sans JP",system-ui,sans-serif;
     --body:"Noto Sans JP","Plus Jakarta Sans",system-ui,sans-serif;
   }
@@ -27,14 +28,13 @@
   .top .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(140deg,#5563e0,#7c5cff);display:grid;place-items:center;font-size:13px}
   .top .eyebrow{font-family:var(--disp);font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#a99bff}
   .top h1{font-size:clamp(26px,4vw,38px);font-weight:800;margin-top:10px}
-  .top p{color:#aeb3c8;margin-top:12px;max-width:680px;font-size:15px}
+  .top p{color:#aeb3c8;margin-top:12px;max-width:720px;font-size:15px}
 
   .stage{margin-top:-44px;padding-bottom:50px}
   .card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 24px 50px -34px rgba(20,22,40,.4);margin-bottom:18px}
   .card h2{font-size:16px;font-weight:800;margin-bottom:4px}
   .card .csub{font-size:12.5px;color:var(--muted);margin-bottom:18px}
 
-  /* controls */
   .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
   .ctrl label{font-size:12px;font-weight:800;color:var(--sub);display:block;margin-bottom:7px}
   .ctrl .row{display:flex;align-items:center;gap:10px}
@@ -45,16 +45,21 @@
   .presets{display:flex;gap:8px;margin-top:6px}
   .presets button{font-family:var(--disp);font-size:12px;font-weight:700;border:1px solid var(--line2);background:var(--paper);border-radius:8px;padding:6px 11px;cursor:pointer}
   .presets button:hover{border-color:var(--accent);color:var(--accent)}
+  .subhead{font-size:12px;font-weight:800;color:var(--sub);margin:20px 0 12px;padding-top:16px;border-top:1px dashed var(--line2)}
+  .mini{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .mini .ctrl label{font-size:11px}
+  .mini input[type=number]{padding:9px 10px;font-size:14px}
 
   /* table */
   .twrap{overflow-x:auto}
   table{width:100%;border-collapse:collapse;min-width:760px}
   th,td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:13px;text-align:right;vertical-align:middle}
-  th{font-size:10.5px;color:var(--sub);font-weight:800;letter-spacing:.02em;white-space:nowrap}
+  th{font-size:10.5px;color:var(--sub);font-weight:800;white-space:nowrap}
   th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
   tbody tr:hover{background:#fafbfd}
   .actname{font-weight:700}
-  .badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;margin-left:6px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:middle}
+  .badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px}
   .badge.ad{background:var(--ok-soft);color:var(--ok)}
   .badge.engage{background:var(--accent-soft);color:var(--accent)}
   td input{width:84px;border:1px solid var(--line2);border-radius:8px;padding:7px 8px;font-size:13px;font-family:var(--disp);font-weight:700;text-align:right}
@@ -64,22 +69,41 @@
   .delta.up{color:var(--ok)} .delta.down{color:var(--danger)}
   tfoot td{font-weight:800;border-top:2px solid var(--line2);border-bottom:none;font-size:12.5px}
 
+  /* ===== 資金循環マップ ===== */
+  .flow{display:flex;flex-direction:column;gap:6px}
+  .stageblk{}
+  .stagehd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+  .stagehd .t{font-family:var(--disp);font-weight:800;font-size:13.5px}
+  .stagehd .t small{font-weight:700;color:var(--muted);font-size:11px;margin-left:7px}
+  .stagehd .amt{font-family:var(--disp);font-weight:900;font-size:17px}
+  .track{background:#f0f1f6;border-radius:10px;overflow:hidden;height:42px;display:flex;width:100%}
+  .seg{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;font-family:var(--disp);
+    white-space:nowrap;overflow:hidden;transition:width .35s ease;min-width:0}
+  .seg span{padding:0 4px;text-overflow:ellipsis;overflow:hidden}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:9px}
+  .legend .lg{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--sub);font-weight:600}
+  .legend .lg b{color:var(--ink);font-weight:800;font-family:var(--disp)}
+  .arrow{text-align:center;color:var(--line2);font-size:20px;line-height:1;margin:2px 0}
+  .flow-note{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+  .splitrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  .chiplab{font-size:11px;font-weight:700;color:var(--sub);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+  .chiplab b{font-family:var(--disp);color:var(--ink)}
+
   /* P&L */
   .pnl{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
   .stat{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .stat.hl{background:#0e1015;color:#fff;border-color:transparent}
   .stat .l{font-size:11.5px;color:var(--sub);font-weight:700}
-  .stat .v{font-family:var(--disp);font-size:24px;font-weight:900;margin-top:6px}
-  .stat .v.ok{color:var(--ok)} .stat .v.bad{color:var(--danger)}
+  .stat.hl .l{color:#9aa0c8}
+  .stat .v{font-family:var(--disp);font-size:23px;font-weight:900;margin-top:6px}
+  .stat .v.ok{color:var(--ok)} .stat .v.bad{color:var(--danger)} .stat.hl .v.ok{color:#5fe0a0}
   .stat .s{font-size:11px;color:var(--muted);margin-top:3px}
-  .bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:16px}
-  .bar i{display:block;height:100%;border-radius:99px}
-  .bar .rev{background:var(--ok)}
-  .barlabels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:8px;font-weight:700}
+  .stat.hl .s{color:#8b91a8}
 
   .note{font-size:11.5px;color:var(--muted);line-height:1.7;margin-top:14px}
   .note b{color:var(--ink2)}
   footer{padding:26px 0;text-align:center;color:var(--muted);font-size:12px}
-  @media(max-width:760px){.controls{grid-template-columns:1fr}.pnl{grid-template-columns:1fr 1fr}}
+  @media(max-width:760px){.controls,.mini{grid-template-columns:1fr 1fr}.pnl{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -89,7 +113,9 @@
     <div class="brand"><span class="logo">MG</span>MasterGame</div>
     <div class="eyebrow">Economy Simulator</div>
     <h1>ポイント経済シミュレーター</h1>
-    <p>広告収益（eCPM / CPA）と還元率から、各アクションの<b style="color:#fff">推奨ポイント単価</b>と<b style="color:#fff">日次の収益・付与コスト・粗利</b>を逆算します。数値はすべて編集でき、結果は即時に更新されます。</p>
+    <p>お金の流れを <b style="color:#fff">収益（流入）→ マネタイズ（取り分）→ 配布（流出先）</b> で図示します。
+      とくに<b style="color:#fff">「付与した額面」と「実コスト」は別物</b>——ゲームアイテムは提携先提供で原価が低く、未交換（breakage）も発生するため、
+      <b style="color:#fff">真の粗利</b>は額面の計算より大きくなります。すべての数値は編集でき、図と試算は即時に更新されます。</p>
   </div>
 </section>
 
@@ -99,12 +125,12 @@
     <!-- controls -->
     <div class="card">
       <h2>① 前提を設定</h2>
-      <div class="csub">レート・還元率・規模を決めます。還元率＝広告収益のうちユーザーへポイント還元する割合。</div>
+      <div class="csub">レート・還元率・規模、そして「配布の中身」（交換先ミックスと原価率）を決めます。</div>
       <div class="controls">
         <div class="ctrl">
           <label>レート（1円 = ? ポイント）</label>
           <input type="number" id="rate" value="1000" min="1" step="100">
-          <div class="hint">現行の経済レート：1,000P = 1円</div>
+          <div class="hint">現行：1,000P = 1円</div>
         </div>
         <div class="ctrl">
           <label>還元率（広告収益→ユーザー）</label>
@@ -121,6 +147,16 @@
           <div class="hint">日次P&Lの規模計算に使用</div>
         </div>
       </div>
+
+      <div class="subhead">配布構造：交換先ミックスと原価率（MasterGameの実コストを左右）</div>
+      <div class="mini">
+        <div class="ctrl"><label>ゲームアイテム %</label><input type="number" id="mixItem" value="70" min="0" max="100" step="5"></div>
+        <div class="ctrl"><label>ギフト券 %</label><input type="number" id="mixGift" value="20" min="0" max="100" step="5"></div>
+        <div class="ctrl"><label>未交換(失効) %</label><input type="number" id="mixBreak" value="10" min="0" max="100" step="5"></div>
+        <div class="ctrl"><label>アイテム原価率 %</label><input type="number" id="costItem" value="15" min="0" max="100" step="5"></div>
+        <div class="ctrl"><label>ギフト原価率 %</label><input type="number" id="costGift" value="100" min="0" max="100" step="5"></div>
+      </div>
+      <div class="flow-note" id="mixNote"></div>
     </div>
 
     <!-- table -->
@@ -128,127 +164,192 @@
       <h2>② アクション別の推奨単価</h2>
       <div class="csub">
         <span class="badge ad">広告/オファー</span> 収益連動：推奨単価 ＝ 収益/回 × 還元率 × レート
-        <span class="badge engage">エンゲージ</span> 固定予算：継続施策として単価を直接設定（収益とは独立）
+        <span class="badge engage">エンゲージ</span> 固定予算：継続施策として単価を直接設定
       </div>
       <div class="twrap">
         <table>
           <thead><tr>
-            <th>アクション</th><th>種別</th>
-            <th>収益/回(¥)</th><th>頻度<br>(回/人・日)</th>
-            <th>推奨単価(P)</th><th>現行(P)</th><th>差分</th>
-            <th>日次付与(¥)</th>
+            <th>アクション</th><th>種別</th><th>収益/回(¥)</th><th>頻度<br>(回/人・日)</th>
+            <th>推奨単価(P)</th><th>現行(P)</th><th>差分</th><th>日次付与(¥)</th>
           </tr></thead>
           <tbody id="rows"></tbody>
-          <tfoot><tr>
-            <td colspan="7">合計 日次付与コスト</td>
-            <td id="totalCost">—</td>
-          </tr></tfoot>
+          <tfoot><tr><td colspan="7">合計 日次付与（額面）</td><td id="totalCost">—</td></tr></tfoot>
         </table>
       </div>
-      <div class="note">
-        ※ eCPM/CPAは日本市場の概算レンジ（ネットワーク・時期・地域で変動）。<b>動画リワード eCPM ¥1,500〜3,000/1000（≒¥1.5〜3/回）</b>、インストールCPA ¥150〜300、課金はレベニューシェア。実運用では各ネットワークの実績値に置換してください。
+      <div class="note">※ eCPM/CPAは日本市場の概算（動画リワード eCPM ¥1,500〜3,000/1000 等）。実運用は各ネットワーク実績へ置換。</div>
+    </div>
+
+    <!-- 資金循環マップ -->
+    <div class="card">
+      <h2>③ 資金循環マップ（収益 → 配布 → 実コスト）</h2>
+      <div class="csub">幅は金額に比例（最大値を100%）。お金が「どこから入り・どう配られ・実際いくら原価がかかるか」を表します。</div>
+      <div class="flow">
+
+        <div class="stageblk">
+          <div class="stagehd"><div class="t">① 収益（流入）<small>広告・オファーからの収入</small></div><div class="amt" id="f-rev">—</div></div>
+          <div class="track" id="bar-rev"></div>
+          <div class="legend" id="lg-rev"></div>
+        </div>
+
+        <div class="arrow">▼ ポイントとして配布</div>
+
+        <div class="stageblk">
+          <div class="stagehd"><div class="t">② 配布（額面）<small>付与ポイントの円換算</small></div><div class="amt" id="f-dist">—</div></div>
+          <div class="track" id="bar-dist"></div>
+          <div class="legend" id="lg-dist"></div>
+          <div class="flow-note">配布額面のうち、ユーザーが何と交換するか（ミックス）で実コストが決まります。</div>
+        </div>
+
+        <div class="arrow">▼ 交換時に実コスト発生</div>
+
+        <div class="stageblk">
+          <div class="stagehd"><div class="t">③ 収益の使われ方<small>実配布原価 と 真の粗利</small></div><div class="amt" id="f-rev2">—</div></div>
+          <div class="track" id="bar-final"></div>
+          <div class="legend" id="lg-final"></div>
+          <div class="flow-note" id="finalNote"></div>
+        </div>
+
       </div>
     </div>
 
     <!-- P&L -->
     <div class="card">
-      <h2>③ 日次 P&L（この前提での試算）</h2>
-      <div class="csub">広告収益 − ポイント付与コスト ＝ 粗利（運営固定費・決済手数料等は別途）</div>
+      <h2>④ 日次 P&L</h2>
+      <div class="csub">「額面」＝付与したポイントの円換算／「実原価」＝交換先ミックス×原価率で実際に発生するコスト。</div>
       <div class="pnl">
         <div class="stat"><div class="l">日次 広告収益</div><div class="v" id="revV">—</div><div class="s" id="arpdau">—</div></div>
-        <div class="stat"><div class="l">日次 ポイント付与</div><div class="v" id="costV">—</div><div class="s" id="perUser">—</div></div>
-        <div class="stat"><div class="l">日次 粗利</div><div class="v ok" id="grossV">—</div><div class="s">広告収益 − 付与</div></div>
-        <div class="stat"><div class="l">粗利率</div><div class="v" id="marginV">—</div><div class="s">対 広告収益</div></div>
+        <div class="stat"><div class="l">配布（額面）</div><div class="v" id="costV">—</div><div class="s" id="perUser">—</div></div>
+        <div class="stat"><div class="l">実配布原価</div><div class="v" id="realV">—</div><div class="s" id="realRate">—</div></div>
+        <div class="stat hl"><div class="l">真の粗利（実原価ベース）</div><div class="v ok" id="trueGrossV">—</div><div class="s" id="trueMarginV">—</div></div>
       </div>
-      <div class="bar"><i class="rev" id="payoutBar" style="width:50%"></i></div>
-      <div class="barlabels"><span>ユーザー還元（付与） <b id="barPayout">50%</b></span><span><b id="barMargin">50%</b> 運営粗利</span></div>
-      <div class="note">
-        <b>設計のコツ：</b> エンゲージ系（記事/X/ログボ）は収益に直結しない<b>継続のための固定予算</b>。広告/オファー系は<b>収益の一定割合</b>で単価を決めると破綻しません。
-        現金等価（ギフト券）はあえて割を悪くしてアイテム交換へ誘導するとマージンを守れます。
-      </div>
+      <div class="note" id="pnlNote"></div>
     </div>
 
-    <div style="text-align:center;margin-top:8px">
-      <a href="../index.html">← プロトタイプ確認ハブに戻る</a>
-    </div>
+    <div style="text-align:center;margin-top:8px"><a href="../index.html">← プロトタイプ確認ハブに戻る</a></div>
   </div>
 </div>
 
 <footer>© 2026 株式会社クリティカルヒット / MasterGame — Economy Simulator（前提値は概算）</footer>
 
 <script>
-// category: 'ad'（収益連動）/ 'engage'（固定予算）。rev=収益/回(¥)、freq=回/人日、cur=現行単価P
+// ---- アクション（種別・収益/回¥・頻度回/人日・現行単価P・色） ----
 const ACTIONS = [
-  {name:'動画リワード視聴',      cat:'ad',     rev:2.0, freq:3,    cur:500},
-  {name:'提携オファー：インストール', cat:'ad', rev:300, freq:0.02, cur:80000},
-  {name:'提携オファー：初回課金',  cat:'ad',     rev:800, freq:0.005,cur:500000},
-  {name:'アンケート回答',        cat:'ad',     rev:100, freq:0.3,  cur:12000},
-  {name:'攻略記事を読む',        cat:'engage', rev:1.0, freq:2,    cur:3000},
-  {name:'公式Xのポストを見る',    cat:'engage', rev:0.6, freq:1,    cur:2000},
-  {name:'ログインボーナス',      cat:'engage', rev:0,   freq:1,    cur:1000},
+  {name:'動画リワード視聴',          cat:'ad',     rev:2.0, freq:3,    cur:500,    col:'#4f46e5'},
+  {name:'提携オファー：インストール', cat:'ad',     rev:300, freq:0.02, cur:80000,  col:'#0f9b8e'},
+  {name:'提携オファー：初回課金',     cat:'ad',     rev:800, freq:0.005,cur:500000, col:'#7c5cff'},
+  {name:'アンケート回答',            cat:'ad',     rev:100, freq:0.3,  cur:12000,  col:'#b88a2e'},
+  {name:'攻略記事を読む',            cat:'engage', rev:1.0, freq:2,    cur:3000,   col:'#8a90a6'},
+  {name:'公式Xのポストを見る',        cat:'engage', rev:0.6, freq:1,    cur:2000,   col:'#a3a9ba'},
+  {name:'ログインボーナス',          cat:'engage', rev:0,   freq:1,    cur:1000,   col:'#c2c7d2'},
 ];
 const yen = n => '¥' + Math.round(n).toLocaleString();
 const P   = n => Math.round(n).toLocaleString() + ' P';
+const val = id => +document.getElementById(id).value || 0;
 
-function recommended(a, payout, rate){
-  if(a.cat === 'ad') return a.rev * payout * rate;   // 収益 × 還元率 × レート
-  return a.cur;                                       // engage は固定予算（現行を採用）
+function recommended(a, payout, rate){ return a.cat==='ad' ? a.rev*payout*rate : a.cur; }
+
+function bar(trackId, segs, maxVal){
+  // segs: [{w(¥), col, label}], 幅は maxVal を 100% とする
+  const el = document.getElementById(trackId);
+  const total = segs.reduce((s,x)=>s+x.w,0);
+  el.style.width = maxVal>0 ? Math.min(100,(total/maxVal*100))+'%' : '0%';
+  el.innerHTML = segs.filter(s=>s.w>0).map(s=>{
+    const pct = total>0 ? s.w/total*100 : 0;
+    return `<div class="seg" style="width:${pct}%;background:${s.col}" title="${s.label} ${yen(s.w)}">${pct>=12?`<span>${yen(s.w)}</span>`:''}</div>`;
+  }).join('');
+}
+function legend(id, items){
+  document.getElementById(id).innerHTML = items.filter(i=>i.w>0).map(i=>
+    `<span class="lg"><span class="dot" style="background:${i.col}"></span>${i.label} <b>${yen(i.w)}</b></span>`).join('');
 }
 
 function render(){
-  const rate   = Math.max(1, +document.getElementById('rate').value || 1000);
-  const payout = (+document.getElementById('payout').value || 50) / 100;
-  const dau    = Math.max(0, +document.getElementById('dau').value || 0);
-  document.getElementById('payoutV').textContent = Math.round(payout*100) + '%';
+  const rate=Math.max(1,val('rate')), payout=val('payout')/100, dau=Math.max(0,val('dau'));
+  document.getElementById('payoutV').textContent = Math.round(payout*100)+'%';
 
-  let totalRev = 0, totalCost = 0;
-  document.getElementById('rows').innerHTML = ACTIONS.map((a, i) => {
-    const rec = recommended(a, payout, rate);
-    const appliedP = rec;                              // 推奨単価を適用してP&L
-    const costYenPerDay = (appliedP / rate) * a.freq * dau;
-    const revYenPerDay  = (a.cat === 'ad') ? a.rev * a.freq * dau : 0;
-    totalCost += costYenPerDay; totalRev += revYenPerDay;
+  // mix 正規化
+  let mItem=val('mixItem'), mGift=val('mixGift'), mBreak=val('mixBreak');
+  const ms = mItem+mGift+mBreak || 1;
+  const pItem=mItem/ms, pGift=mGift/ms, pBreak=mBreak/ms;
+  const cItem=val('costItem')/100, cGift=val('costGift')/100;
+  document.getElementById('mixNote').innerHTML =
+    `配布の内訳：ゲームアイテム <b>${Math.round(pItem*100)}%</b>（原価率 ${Math.round(cItem*100)}%）／ ギフト券 <b>${Math.round(pGift*100)}%</b>（原価率 ${Math.round(cGift*100)}%）／ 未交換 <b>${Math.round(pBreak*100)}%</b>（原価0＝breakage）`;
 
-    const diff = rec - a.cur;
-    const diffHtml = a.cat === 'engage' ? '<span class="cur">固定</span>'
-      : (diff === 0 ? '—'
-        : `<span class="delta ${diff>0?'up':'down'}">${diff>0?'▲':'▼'} ${Math.abs(Math.round(diff)).toLocaleString()}P</span>`);
-
+  // 表 & 集計
+  let totalRev=0, totalFace=0;
+  const revSegs=[];
+  document.getElementById('rows').innerHTML = ACTIONS.map((a,i)=>{
+    const rec=recommended(a,payout,rate), faceYen=(rec/rate)*a.freq*dau, revYen=(a.cat==='ad')?a.rev*a.freq*dau:0;
+    totalFace+=faceYen; totalRev+=revYen;
+    if(revYen>0) revSegs.push({w:revYen,col:a.col,label:a.name});
+    const diff=rec-a.cur;
+    const diffHtml = a.cat==='engage' ? '<span class="cur">固定</span>'
+      : (diff===0?'—':`<span class="delta ${diff>0?'up':'down'}">${diff>0?'▲':'▼'} ${Math.abs(Math.round(diff)).toLocaleString()}P</span>`);
     return `<tr>
-      <td class="actname">${a.name}</td>
+      <td class="actname"><span class="dot" style="background:${a.col}"></span>${a.name}</td>
       <td><span class="badge ${a.cat}">${a.cat==='ad'?'広告/オファー':'エンゲージ'}</span></td>
-      <td><input type="number" step="0.1" value="${a.rev}" oninput="upd(${i},'rev',this.value)" ${a.cat==='engage'?'title="間接収益（参考）"':''}></td>
+      <td><input type="number" step="0.1" value="${a.rev}" oninput="upd(${i},'rev',this.value)"></td>
       <td><input type="number" step="0.005" value="${a.freq}" oninput="upd(${i},'freq',this.value)"></td>
       <td class="rec">${a.cat==='ad'?P(rec):'<span class="cur">—</span>'}</td>
       <td class="cur">${a.cur.toLocaleString()} P</td>
       <td>${diffHtml}</td>
-      <td>${yen(costYenPerDay)}</td>
+      <td>${yen(faceYen)}</td>
     </tr>`;
   }).join('');
+  document.getElementById('totalCost').textContent = yen(totalFace);
 
-  document.getElementById('totalCost').textContent = yen(totalCost);
+  // 配布の交換先別 額面
+  const faceItem=totalFace*pItem, faceGift=totalFace*pGift, faceBreak=totalFace*pBreak;
+  // 実原価
+  const realItem=faceItem*cItem, realGift=faceGift*cGift, realBreak=0;
+  const realCost=realItem+realGift+realBreak;
+  const trueGross=totalRev-realCost, trueMargin=totalRev>0?trueGross/totalRev:0;
+  const faceGross=totalRev-totalFace, faceMargin=totalRev>0?faceGross/totalRev:0;
 
-  const gross = totalRev - totalCost;
-  const margin = totalRev > 0 ? gross / totalRev : 0;
-  document.getElementById('revV').textContent  = yen(totalRev);
-  document.getElementById('costV').textContent = yen(totalCost);
-  document.getElementById('arpdau').textContent = 'ARPDAU ' + (dau? yen(totalRev/dau).replace('¥','¥') : '¥0');
-  document.getElementById('perUser').textContent = '1人あたり ' + (dau? yen(totalCost/dau) : '¥0') + '/日';
-  const g = document.getElementById('grossV');
-  g.textContent = yen(gross); g.className = 'v ' + (gross>=0?'ok':'bad');
-  document.getElementById('marginV').textContent = Math.round(margin*100) + '%';
+  // ===== 資金循環マップ =====
+  const maxVal=Math.max(totalRev,totalFace,1);
+  document.getElementById('f-rev').textContent=yen(totalRev);
+  document.getElementById('f-dist').textContent=yen(totalFace);
+  document.getElementById('f-rev2').textContent=yen(totalRev);
 
-  // bar: ユーザー還元（広告収益に対する付与コストの割合）
-  const payoutPct = totalRev>0 ? Math.min(100, Math.max(0, totalCost/totalRev*100)) : 0;
-  document.getElementById('payoutBar').style.width = payoutPct + '%';
-  document.getElementById('payoutBar').style.background = payoutPct>100 ? 'var(--danger)' : 'var(--ok)';
-  document.getElementById('barPayout').textContent = Math.round(payoutPct) + '%';
-  document.getElementById('barMargin').textContent = Math.round(Math.max(0,100-payoutPct)) + '%';
+  bar('bar-rev', revSegs, maxVal);
+  legend('lg-rev', revSegs);
+
+  const distSegs=[
+    {w:faceItem, col:'#4f46e5', label:'ゲームアイテム'},
+    {w:faceGift, col:'#b88a2e', label:'ギフト券'},
+    {w:faceBreak,col:'#c2c7d2', label:'未交換(breakage)'},
+  ];
+  bar('bar-dist', distSegs, maxVal);
+  legend('lg-dist', distSegs);
+
+  const finalSegs=[
+    {w:Math.max(0,realCost),         col:'#c0392b', label:'実配布原価'},
+    {w:Math.max(0,trueGross),        col:'#179a5b', label:'真の粗利'},
+  ];
+  bar('bar-final', finalSegs, maxVal);
+  legend('lg-final', finalSegs);
+  document.getElementById('finalNote').innerHTML =
+    `実配布原価 <b>${yen(realCost)}</b>（額面 ${yen(totalFace)} の <b>${totalFace>0?Math.round(realCost/totalFace*100):0}%</b>）。
+     アイテムは原価が低く、未交換は原価0のため、<b>実コストは額面より小さく</b>なります。`;
+
+  // ===== P&L =====
+  document.getElementById('revV').textContent=yen(totalRev);
+  document.getElementById('arpdau').textContent='ARPDAU '+(dau?yen(totalRev/dau):'¥0');
+  document.getElementById('costV').textContent=yen(totalFace);
+  document.getElementById('perUser').textContent='1人 '+(dau?yen(totalFace/dau):'¥0')+'/日（額面）';
+  document.getElementById('realV').textContent=yen(realCost);
+  document.getElementById('realRate').textContent='額面の '+(totalFace>0?Math.round(realCost/totalFace*100):0)+'%';
+  const tg=document.getElementById('trueGrossV'); tg.textContent=yen(trueGross); tg.className='v '+(trueGross>=0?'ok':'bad');
+  document.getElementById('trueMarginV').textContent='粗利率 '+Math.round(trueMargin*100)+'%';
+  document.getElementById('pnlNote').innerHTML =
+    `<b>額面ベースの粗利</b>＝収益−配布額面＝<b>${yen(faceGross)}（${Math.round(faceMargin*100)}%）</b>（保守的な見方）。
+     <b>真の粗利</b>＝収益−実配布原価＝<b>${yen(trueGross)}（${Math.round(trueMargin*100)}%）</b>。
+     差は<b>提携アイテムの低原価＋breakage</b>＝アフィリエイトモデルの強み。現金等価（ギフト券）比率が上がるほど真の粗利は縮みます。`;
 }
-function upd(i, key, v){ ACTIONS[i][key] = parseFloat(v) || 0; render(); }
-function setPayout(p){ document.getElementById('payout').value = p; render(); }
-
-['rate','payout','dau'].forEach(id => document.getElementById(id).addEventListener('input', render));
+function upd(i,key,v){ ACTIONS[i][key]=parseFloat(v)||0; render(); }
+function setPayout(p){ document.getElementById('payout').value=p; render(); }
+['rate','payout','dau','mixItem','mixGift','mixBreak','costItem','costGift'].forEach(id=>document.getElementById(id).addEventListener('input',render));
 render();
 </script>
 </body>
