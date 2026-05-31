@@ -9,9 +9,9 @@ type Overview = {
   exchange_users: number;
   open_reports: number;
   pending_postbacks: number;
+  distributed_yen: number;
+  exchanged_yen: number; // 円換算（1,000P = 1円。レートは app_config.point_yen_rate）
 };
-
-const yen = (p: number) => '¥' + p.toLocaleString(); // 1P = 1円（概算）
 
 export default async function Dashboard() {
   // service_role で集計ビューを参照（admin_overview は 0007_admin.sql）
@@ -36,7 +36,7 @@ export default async function Dashboard() {
         <div className="kpi"><div className="l">総ユーザー数</div><div className="v">{data.total_users.toLocaleString()}<small> 人</small></div></div>
         <div className="kpi"><div className="l">配布ポイント総数</div><div className="v">{data.distributed_points.toLocaleString()}<small> P</small></div></div>
         <div className="kpi"><div className="l">交換済みポイント</div><div className="v">{data.exchanged_points.toLocaleString()}<small> P</small></div></div>
-        <div className="kpi"><div className="l">配布交換金額(概算)</div><div className="v">{yen(data.exchanged_points)}</div></div>
+        <div className="kpi"><div className="l">配布交換金額(1,000P=1円)</div><div className="v">¥{data.exchanged_yen.toLocaleString()}</div></div>
         <div className="kpi"><div className="l">交換実績ユーザー</div><div className="v">{data.exchange_users.toLocaleString()}<small> 人</small></div></div>
         <div className="kpi"><div className="l">未対応の通報</div><div className="v">{data.open_reports.toLocaleString()}</div></div>
       </div>

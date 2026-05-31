@@ -585,7 +585,7 @@
       <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
       <div class="appbar">
         <div class="title">ホーム</div>
-        <div class="ptchip">🪙 <span class="p" id="bal-home">1,250</span> P</div>
+        <div class="ptchip">🪙 <span class="p" id="bal-home">125,000</span> P</div>
         <div class="iconbtn" onclick="toast('通知：新着3件')">🔔</div>
       </div>
       <div class="body">
@@ -608,7 +608,7 @@
         <div class="promo" onclick="go('mission')">
           <div>
             <div class="big">今日のデイリーミッション、あと2件！</div>
-            <div class="sm">達成して最大 +150P を獲得しよう</div>
+            <div class="sm">達成して最大 +15,000P を獲得しよう</div>
           </div>
           <div class="go">行く ▸</div>
         </div>
@@ -629,7 +629,7 @@
       <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
       <div class="appbar">
         <div class="title">ミッション</div>
-        <div class="ptchip">🪙 <span class="p" id="bal-mission">1,250</span> P</div>
+        <div class="ptchip">🪙 <span class="p" id="bal-mission">125,000</span> P</div>
       </div>
       <div class="body">
         <div class="tabs">
@@ -652,7 +652,7 @@
       <div class="body">
         <div class="balance">
           <div class="lbl">保有ポイント</div>
-          <div class="num"><span id="bal-points">1,250</span><small>P</small></div>
+          <div class="num"><span id="bal-points">125,000</span><small>P</small></div>
           <div class="row">
             <div class="b" onclick="pseg('exchange')">🎁 交換する</div>
             <div class="b" onclick="pseg('history')">🧾 履歴</div>
@@ -752,7 +752,7 @@
           <button class="edit" onclick="toast('プロフィール編集（実装予定）')">編集</button>
         </div>
         <div class="pstats">
-          <div class="pstat"><div class="v" id="my-bal">1,250<small> P</small></div><div class="l">保有ポイント</div></div>
+          <div class="pstat"><div class="v" id="my-bal">125,000<small> P</small></div><div class="l">保有ポイント</div></div>
           <div class="pstat"><div class="v">12</div><div class="l">達成ミッション</div></div>
           <div class="pstat"><div class="v">7<small> 日</small></div><div class="l">連続ログイン</div></div>
         </div>
@@ -806,45 +806,46 @@ const NAV=[
   {id:'forum',ic:'💬',t:'コミュニティ'},
   {id:'mypage',ic:'👤',t:'マイページ'},
 ];
-let balance=1250;
+const POINT_PER_YEN=1000; // 経済レート：1000P = 1円（表示は全てポイント）
+let balance=125000;
 
 const MISSIONS={
   daily:[
-    {ic:'📰',t:'ゲーム攻略記事を1本読む',rw:30,cur:1,max:1},
-    {ic:'𝕏',t:'公式Xのポストを見る',rw:20,cur:0,max:1},
-    {ic:'✅',t:'ログインボーナスを受け取る',rw:10,cur:1,max:1},
-    {ic:'💬',t:'フォーラムに1回投稿する',rw:50,cur:0,max:1},
-    {ic:'🎮',t:'提携ゲームを起動する',rw:40,cur:0,max:3,prog:'1/3'},
+    {ic:'📰',t:'ゲーム攻略記事を1本読む',rw:3000,cur:1,max:1},
+    {ic:'𝕏',t:'公式Xのポストを見る',rw:2000,cur:0,max:1},
+    {ic:'✅',t:'ログインボーナスを受け取る',rw:1000,cur:1,max:1},
+    {ic:'💬',t:'フォーラムに1回投稿する',rw:5000,cur:0,max:1},
+    {ic:'🎮',t:'提携ゲームを起動する',rw:4000,cur:0,max:3,prog:'1/3'},
   ],
   weekly:[
-    {ic:'🎯',t:'デイリーミッションを5日達成',rw:200,cur:3,max:5,prog:'3/5'},
-    {ic:'🤝',t:'フォーラムで3件の質問に回答',rw:150,cur:1,max:3,prog:'1/3'},
-    {ic:'📝',t:'プロフィールを完成させる',rw:80,cur:1,max:1},
+    {ic:'🎯',t:'デイリーミッションを5日達成',rw:20000,cur:3,max:5,prog:'3/5'},
+    {ic:'🤝',t:'フォーラムで3件の質問に回答',rw:15000,cur:1,max:3,prog:'1/3'},
+    {ic:'📝',t:'プロフィールを完成させる',rw:8000,cur:1,max:1},
   ],
   ach:[
-    {ic:'🏅',t:'初めてのポイント交換',rw:100,cur:0,max:1},
-    {ic:'🔥',t:'累計7日連続ログイン',rw:300,cur:4,max:7,prog:'4/7'},
-    {ic:'👑',t:'累計10,000P獲得',rw:500,cur:1250,max:10000,prog:'1,250/10,000'},
+    {ic:'🏅',t:'初めてのポイント交換',rw:10000,cur:0,max:1},
+    {ic:'🔥',t:'累計7日連続ログイン',rw:30000,cur:4,max:7,prog:'4/7'},
+    {ic:'👑',t:'累計1,000,000P獲得',rw:50000,cur:125000,max:1000000,prog:'125,000/1,000,000'},
   ],
   event:[
-    {ic:'⚔️',t:'『エルディア戦記』事前登録',rw:500,cur:0,max:1,tie:'タイアップ'},
-    {ic:'🎁',t:'コラボガチャを1回引く',rw:120,cur:0,max:1,tie:'48時間限定'},
+    {ic:'⚔️',t:'『エルディア戦記』事前登録',rw:50000,cur:0,max:1,tie:'タイアップ'},
+    {ic:'🎁',t:'コラボガチャを1回引く',rw:12000,cur:0,max:1,tie:'48時間限定'},
   ],
 };
 const ITEMS=[
-  {nm:'ゲーム内通貨 1,000',gm:'エルディア戦記',cost:800},
-  {nm:'スタミナ回復ドリンク ×5',gm:'エルディア戦記',cost:300},
-  {nm:'ガチャチケット ×3',gm:'モンスターアリーナ',cost:1500},
-  {nm:'限定レアキャラ確定チケット',gm:'モンスターアリーナ',cost:1200},
-  {nm:'プレミアム装備スキン',gm:'スターフォール',cost:1600},
-  {nm:'Amazonギフト券 500円分',gm:'実物報酬',cost:5000},
+  {nm:'ゲーム内通貨 1,000',gm:'エルディア戦記',cost:80000},
+  {nm:'スタミナ回復ドリンク ×5',gm:'エルディア戦記',cost:30000},
+  {nm:'ガチャチケット ×3',gm:'モンスターアリーナ',cost:150000},
+  {nm:'限定レアキャラ確定チケット',gm:'モンスターアリーナ',cost:120000},
+  {nm:'プレミアム装備スキン',gm:'スターフォール',cost:160000},
+  {nm:'Amazonギフト券 500円分',gm:'実物報酬',cost:500000},
 ];
 // ---- offerwall (CPA offers) + reward video ----
 const OFFERS=[
-  {ic:'🎮',t:'『パズルキングダム』をインストール',net:'AppLovin',desc:'インストール＋チュートリアル完了で',rw:800},
-  {ic:'⚔️',t:'『戦国アリーナ』新規登録＋7日ログイン',net:'Tapjoy',desc:'7日ログインで段階付与',rw:1500},
-  {ic:'💳',t:'『カジノロワイヤル』初回課金',net:'ironSource',desc:'初回¥120以上の課金で',rw:5000},
-  {ic:'📋',t:'アンケート（約3分）に回答',net:'PollFish',desc:'回答完了で即時付与',rw:120},
+  {ic:'🎮',t:'『パズルキングダム』をインストール',net:'AppLovin',desc:'インストール＋チュートリアル完了で',rw:80000},
+  {ic:'⚔️',t:'『戦国アリーナ』新規登録＋7日ログイン',net:'Tapjoy',desc:'7日ログインで段階付与',rw:150000},
+  {ic:'💳',t:'『カジノロワイヤル』初回課金',net:'ironSource',desc:'初回¥120以上の課金で',rw:500000},
+  {ic:'📋',t:'アンケート（約3分）に回答',net:'PollFish',desc:'回答完了で即時付与',rw:12000},
 ];
 // ---- community / guilds ----
 const GUILDS=[
@@ -875,9 +876,9 @@ const TOPICS={
 };
 const KIND={q:['質問','q'],chat:['雑談','chat'],recruit:['募集','recruit']};
 let history=[
-  {ic:'📰',t:'記事を読む（デイリー）',d:'今日 09:12',p:'+30',cls:'plus'},
-  {ic:'✅',t:'ログインボーナス',d:'今日 09:10',p:'+10',cls:'plus'},
-  {ic:'🎯',t:'デイリー5日達成',d:'昨日 21:40',p:'+200',cls:'plus'},
+  {ic:'📰',t:'記事を読む（デイリー）',d:'今日 09:12',p:'+3,000',cls:'plus'},
+  {ic:'✅',t:'ログインボーナス',d:'今日 09:10',p:'+1,000',cls:'plus'},
+  {ic:'🎯',t:'デイリー5日達成',d:'昨日 21:40',p:'+20,000',cls:'plus'},
 ];
 
 /* ---------------- nav / screens ---------------- */
@@ -996,10 +997,10 @@ function claim(tab,i){
   const m=MISSIONS[tab][i];
   m.claimed=true;
   document.querySelector('#congrats .burst').textContent='🎉';
-  document.getElementById('cong-pt').textContent='+'+m.rw+' P';
+  document.getElementById('cong-pt').textContent='+'+m.rw.toLocaleString()+' P';
   document.getElementById('cong-title').textContent='ミッション達成！';
   document.getElementById('congrats').classList.add('show');
-  pendingPt=m.rw; pendingHist={ic:m.ic,t:m.t+'（ミッション）',d:'今日 たった今',p:'+'+m.rw,cls:'plus'};
+  pendingPt=m.rw; pendingHist={ic:m.ic,t:m.t+'（ミッション）',d:'今日 たった今',p:'+'+m.rw.toLocaleString(),cls:'plus'};
 }
 let pendingPt=0,pendingHist=null;
 function closeCongrats(){
@@ -1044,7 +1045,7 @@ function openItem(i){
 function exchange(i){
   const it=ITEMS[i];
   balance-=it.cost;
-  history.unshift({ic:'🎁',t:it.nm+'と交換',d:'今日 たった今',p:'-'+it.cost,cls:'minus',wait:true});
+  history.unshift({ic:'🎁',t:it.nm+'と交換',d:'今日 たった今',p:'-'+it.cost.toLocaleString(),cls:'minus',wait:true});
   closeSheet();syncBalance();
   document.getElementById('cong-pt').textContent='交換申請 完了';
   document.getElementById('cong-title').textContent='交換を受け付けました';
@@ -1064,8 +1065,8 @@ function renderHist(){
 
 /* ---------------- point trend chart ---------------- */
 const PT_DATA=[
-  {m:'1月',e:1800,b:1800},{m:'2月',e:2400,b:3400},{m:'3月',e:2100,b:4200},
-  {m:'4月',e:3200,b:5800},{m:'5月',e:2900,b:5200},{m:'6月',e:3600,b:0},
+  {m:'1月',e:180000,b:180000},{m:'2月',e:240000,b:340000},{m:'3月',e:210000,b:420000},
+  {m:'4月',e:320000,b:580000},{m:'5月',e:290000,b:520000},{m:'6月',e:360000,b:0},
 ];
 function renderPtChart(){
   const el=document.getElementById('ptChart'); if(!el)return;
@@ -1094,7 +1095,7 @@ const VIP_RANKS=[
   {name:'プラチナ',ic:'💎',xp:30000,stake:3.0,col:'#3b9c8f',col2:'#1f6a60'},
   {name:'ダイヤ',ic:'👑',xp:80000,stake:5.0,col:'#6a5cd0',col2:'#463aa0'},
 ];
-let vipXP=6400, stakeAccrued=84;
+let vipXP=6400, stakeAccrued=8400;
 function curRank(){ let i=0; VIP_RANKS.forEach((r,k)=>{if(vipXP>=r.xp)i=k;}); return i; }
 function renderStake(){
   const el=document.getElementById('stakeMount'); if(!el)return;
@@ -1104,7 +1105,7 @@ function renderStake(){
     <div class="st-row">
       <div class="st-box"><div class="v">${r.stake.toFixed(1)}<small>%/月</small></div><div class="l">${r.name}ランク利率</div></div>
       <div class="st-box"><div class="v">+${monthly.toLocaleString()}<small> P</small></div><div class="l">翌月付与の見込み</div></div>
-      <div class="st-box"><div class="v">+${stakeAccrued}<small> P</small></div><div class="l">累計ボーナス</div></div>
+      <div class="st-box"><div class="v">+${stakeAccrued.toLocaleString()}<small> P</small></div><div class="l">累計ボーナス</div></div>
     </div>
     <div class="st-note">交換せず保有しているポイントに、毎月ランク利率でボーナスが付与されます。ランクが上がるほど利率もアップ。</div>
   </div>`;
@@ -1142,7 +1143,7 @@ function renderNudge(){
   const rec=recs.sort((a,b)=>Math.abs(a.rw-need)-Math.abs(b.rw-need))[0];
   el.innerHTML=`<div class="ico">🎯</div>
     <div><div class="big">あと <b>${need.toLocaleString()}P</b> で「${next.nm}」と交換できます</div>
-    <div class="sm">${rec?`おすすめ：${rec.t}（＋${rec.rw}P）でぐっと近づく`:'ミッションを達成して貯めよう'}</div></div>
+    <div class="sm">${rec?`おすすめ：${rec.t}（＋${rec.rw.toLocaleString()}P）でぐっと近づく`:'ミッションを達成して貯めよう'}</div></div>
     <div class="go">貯める ▸</div>`;
 }
 
@@ -1164,8 +1165,8 @@ function renderOffers(list){
 function watchVideo(){
   toast('📺 動画広告を再生中…');
   setTimeout(()=>{
-    balance+=5; history.unshift({ic:'📺',t:'動画広告の視聴',d:'今日 たった今',p:'+5',cls:'plus'});
-    document.getElementById('cong-pt').textContent='+5 P';
+    balance+=500; history.unshift({ic:'📺',t:'動画広告の視聴',d:'今日 たった今',p:'+500',cls:'plus'});
+    document.getElementById('cong-pt').textContent='+500 P';
     document.getElementById('cong-title').textContent='視聴完了！';
     document.querySelector('#congrats .burst').textContent='📺';
     pendingPt=0; pendingHist=null; syncBalance(); renderHist();
@@ -1185,7 +1186,7 @@ function startOffer(i){
 }
 function beginOffer(i){
   const o=OFFERS[i]; closeSheet();
-  const h={ic:o.ic,t:o.t.replace(/『|』/g,'')+'（提携オファー）',d:'今日 たった今',p:'+'+o.rw,cls:'plus',pending:true};
+  const h={ic:o.ic,t:o.t.replace(/『|』/g,'')+'（提携オファー）',d:'今日 たった今',p:'+'+o.rw.toLocaleString(),cls:'plus',pending:true};
   history.unshift(h);
   toast('外部へ遷移しました。達成を待っています…');
   go('points'); pseg('history');
@@ -1333,11 +1334,11 @@ let tT;
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),1800);}
 function resetPw(){ go('login'); setTimeout(()=>toast('再設定リンクを送信しました'),200); }
-function resetApp(){balance=1250;Object.values(MISSIONS).flat().forEach(m=>m.claimed=false);
+function resetApp(){balance=125000;Object.values(MISSIONS).flat().forEach(m=>m.claimed=false);
   Object.values(TOPICS).flat().forEach(t=>{delete t.resolved;});
-  history=[{ic:'📰',t:'記事を読む（デイリー）',d:'今日 09:12',p:'+30',cls:'plus'},
-    {ic:'✅',t:'ログインボーナス',d:'今日 09:10',p:'+10',cls:'plus'},
-    {ic:'🎯',t:'デイリー5日達成',d:'昨日 21:40',p:'+200',cls:'plus'}];
+  history=[{ic:'📰',t:'記事を読む（デイリー）',d:'今日 09:12',p:'+3,000',cls:'plus'},
+    {ic:'✅',t:'ログインボーナス',d:'今日 09:10',p:'+1,000',cls:'plus'},
+    {ic:'🎯',t:'デイリー5日達成',d:'昨日 21:40',p:'+20,000',cls:'plus'}];
   document.querySelector('#congrats .burst').textContent='🎉';
   go('splash');toast('リセットしました');}
 

@@ -23,26 +23,26 @@ insert into public.games (slug, name, genre) values
   ('puzzle-kingdom','パズルキングダム','puzzle'),
   ('sengoku','戦国アリーナ','strategy');
 
--- missions
-insert into public.missions (type, title, reward_points, icon, max_progress, requires_verification) values
-  ('daily','攻略記事を1本読む',30,'news',1,false),
-  ('daily','公式Xのポストを見る',20,'x',1,false),
-  ('daily','ログインボーナスを受け取る',10,'check',1,false),
-  ('weekly','デイリーミッションを5日達成',200,'target',5,false),
-  ('achievement','累計10,000P獲得',500,'crown',10000,false),
-  ('event','『エルディア戦記』事前登録',500,'sword',1,true),    -- 要postback検証
-  ('offer','『パズルキングダム』をインストール',800,'game',1,true);
+-- missions （reward_points は 1,000P=1円 換算。xp_reward は活動量ベースで独立）
+insert into public.missions (type, title, reward_points, xp_reward, icon, max_progress, requires_verification) values
+  ('daily','攻略記事を1本読む',3000,30,'news',1,false),
+  ('daily','公式Xのポストを見る',2000,20,'x',1,false),
+  ('daily','ログインボーナスを受け取る',1000,10,'check',1,false),
+  ('weekly','デイリーミッションを5日達成',20000,200,'target',5,false),
+  ('achievement','累計1,000,000P獲得',50000,500,'crown',1000000,false),
+  ('event','『エルディア戦記』事前登録',50000,500,'sword',1,true),    -- 要postback検証
+  ('offer','『パズルキングダム』をインストール',80000,300,'game',1,true);
 
 -- exchange items
 insert into public.exchange_items (name, game_id, cost_points, delivery_method, stock, sort)
 select v.name, g.id, v.cost, v.method, v.stock, v.sort
 from (values
-  ('ゲーム内通貨 1,000','eldia',800,'code',null,1),
-  ('スタミナ回復ドリンク ×5','eldia',300,'code',null,2),
-  ('ガチャチケット ×3','monster',1500,'api',120,3),
-  ('限定レアキャラ確定チケット','monster',1200,'code',0,4),
-  ('プレミアム装備スキン','starfall',1600,'code',null,5),
-  ('Amazonギフト券 500円分',null,5000,'csv',58,6)
+  ('ゲーム内通貨 1,000','eldia',80000,'code',null,1),
+  ('スタミナ回復ドリンク ×5','eldia',30000,'code',null,2),
+  ('ガチャチケット ×3','monster',150000,'api',120,3),
+  ('限定レアキャラ確定チケット','monster',120000,'code',0,4),
+  ('プレミアム装備スキン','starfall',160000,'code',null,5),
+  ('Amazonギフト券 500円分',null,500000,'csv',58,6)   -- 500円 ÷ (1000P=1円) = 500,000P
 ) as v(name,gslug,cost,method,stock,sort)
 left join public.games g on g.slug = v.gslug;
 

@@ -170,7 +170,7 @@
       <div class="kpis">
         <div class="kpi"><div class="l"><span class="d" style="background:var(--indigo)"></span>DAU</div><div class="v">8,420</div><div class="t up">▲ 6.2% 前日比</div></div>
         <div class="kpi"><div class="l"><span class="d" style="background:var(--purple)"></span>MAU</div><div class="v">62,100</div><div class="t up">▲ 11.4% 前月比</div></div>
-        <div class="kpi"><div class="l"><span class="d" style="background:var(--warn)"></span>発行ポイント(日)</div><div class="v">1.24<small>M P</small></div><div class="t up">▲ 3.1%</div></div>
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--warn)"></span>発行ポイント(日)</div><div class="v">124<small>M P</small></div><div class="t up">▲ 3.1%</div></div>
         <div class="kpi"><div class="l"><span class="d" style="background:var(--ok)"></span>交換申請(日)</div><div class="v">342</div><div class="t up">▲ 8.0%</div></div>
         <div class="kpi"><div class="l"><span class="d" style="background:var(--danger)"></span>未対応の通報</div><div class="v">3</div><div class="t down">要対応</div></div>
       </div>
@@ -200,7 +200,7 @@
         <div class="kpi"><div class="l"><span class="d" style="background:var(--indigo)"></span>総ユーザー数</div><div class="v" id="u-total">—</div></div>
         <div class="kpi"><div class="l"><span class="d" style="background:var(--warn)"></span>配布ポイント総数</div><div class="v" id="u-earned">—</div></div>
         <div class="kpi"><div class="l"><span class="d" style="background:var(--purple)"></span>交換済みポイント</div><div class="v" id="u-exchanged">—</div></div>
-        <div class="kpi"><div class="l"><span class="d" style="background:var(--ok)"></span>配布交換金額(概算)</div><div class="v" id="u-yen">—</div></div>
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--ok)"></span>配布交換金額(1,000P=1円)</div><div class="v" id="u-yen">—</div></div>
         <div class="kpi"><div class="l"><span class="d" style="background:var(--blue)"></span>交換実績ユーザー</div><div class="v" id="u-exusers">—</div></div>
       </div>
       <div class="tablewrap">
@@ -216,7 +216,7 @@
           <th>状態</th><th>登録日時</th><th>操作</th></tr></thead>
           <tbody id="tb-users"></tbody></table>
       </div>
-      <div class="twonote">※ 列見出し（累計獲得P / 交換済みP / 保有P）クリックで昇順・降順ソート。配布交換金額は 1P=1円 の概算。凍結＝期間限定ログイン不可 ／ BAN＝永久ログイン不可 ／ マーキング＝チート監視ログ。</div>
+      <div class="twonote">※ 列見出し（累計獲得P / 交換済みP / 保有P）クリックで昇順・降順ソート。配布交換金額は <b>1,000P = 1円</b> 換算（経済レート）。凍結＝期間限定ログイン不可 ／ BAN＝永久ログイン不可 ／ マーキング＝チート監視ログ。</div>
     </section>
 
     <!-- MISSIONS -->
@@ -281,16 +281,16 @@ const AV=['#3b4cca','#7a4fd0','#1f9d57','#c98a16','#c0392b','#2563c9'];
 const initial=s=>s.charAt(0);
 function avc(i){return AV[i%AV.length];}
 
-const POINT_YEN=1; // 配布交換金額の概算レート（1P = 1円）
+const POINT_PER_YEN=1000; // 経済レート：1000P = 1円（配布交換金額の換算に使用）
 let users=[
-  {n:'リオ',id:'10482',rank:'シルバー',earned:8200,exchanged:3380,st:'active',date:'2025-06-12 14:32'},
-  {n:'みう',id:'10765',rank:'ブロンズ',earned:1250,exchanged:0,st:'active',date:'2025-06-14 09:05'},
-  {n:'カイ',id:'11023',rank:'ゴールド',earned:18400,exchanged:6000,st:'active',date:'2025-06-18 21:47'},
-  {n:'ナナ',id:'11890',rank:'ブロンズ',earned:640,exchanged:0,st:'frozen',date:'2025-07-02 12:18'},
-  {n:'ジン',id:'20931',rank:'シルバー',earned:5110,exchanged:2000,st:'marked',date:'2025-07-09 18:53'},
-  {n:'そら',id:'21044',rank:'ブロンズ',earned:1480,exchanged:500,st:'active',date:'2025-07-15 07:41'},
-  {n:'あお',id:'21560',rank:'ブロンズ',earned:220,exchanged:0,st:'banned',date:'2025-07-20 23:09'},
-  {n:'ゆい',id:'22011',rank:'シルバー',earned:7300,exchanged:2000,st:'active',date:'2025-07-28 16:24'},
+  {n:'リオ',id:'10482',rank:'シルバー',earned:820000,exchanged:338000,st:'active',date:'2025-06-12 14:32'},
+  {n:'みう',id:'10765',rank:'ブロンズ',earned:125000,exchanged:0,st:'active',date:'2025-06-14 09:05'},
+  {n:'カイ',id:'11023',rank:'ゴールド',earned:1840000,exchanged:600000,st:'active',date:'2025-06-18 21:47'},
+  {n:'ナナ',id:'11890',rank:'ブロンズ',earned:64000,exchanged:0,st:'frozen',date:'2025-07-02 12:18'},
+  {n:'ジン',id:'20931',rank:'シルバー',earned:511000,exchanged:200000,st:'marked',date:'2025-07-09 18:53'},
+  {n:'そら',id:'21044',rank:'ブロンズ',earned:148000,exchanged:50000,st:'active',date:'2025-07-15 07:41'},
+  {n:'あお',id:'21560',rank:'ブロンズ',earned:22000,exchanged:0,st:'banned',date:'2025-07-20 23:09'},
+  {n:'ゆい',id:'22011',rank:'シルバー',earned:730000,exchanged:200000,st:'active',date:'2025-07-28 16:24'},
 ];
 users.forEach(u=>u.balance=u.earned-u.exchanged);
 const UST={active:['ok','● アクティブ'],frozen:['warn','❄ 凍結'],banned:['danger','⛔ BAN'],marked:['blue','🔎 マーキング']};
@@ -324,24 +324,24 @@ function renderUsers(){
   document.getElementById('u-total').innerHTML=users.length+'<small> 人</small>';
   document.getElementById('u-earned').innerHTML=totEarned.toLocaleString()+'<small> P</small>';
   document.getElementById('u-exchanged').innerHTML=totEx.toLocaleString()+'<small> P</small>';
-  document.getElementById('u-yen').innerHTML='¥'+(totEx*POINT_YEN).toLocaleString();
+  document.getElementById('u-yen').innerHTML='¥'+Math.round(totEx/POINT_PER_YEN).toLocaleString();
   document.getElementById('u-exusers').innerHTML=exUsers+'<small> 人</small>';
 }
 function setUser(i,st){ users[i].st=st; renderUsers(); toast(users[i].n+' を「'+UST[st][1].replace(/^[^ ]+ /,'')+'」に変更しました'); }
 
 let missions=[
-  {seg:'デイリー',t:'攻略記事を1本読む',rw:30,term:'常設',on:true},
-  {seg:'デイリー',t:'公式Xのポストを見る',rw:20,term:'常設',on:true},
-  {seg:'ウィークリー',t:'デイリー5日達成',rw:200,term:'毎週',on:true},
-  {seg:'期間限定',t:'『エルディア戦記』事前登録',rw:500,term:'〜8/31',on:true},
-  {seg:'期間限定',t:'コラボガチャを引く',rw:120,term:'48時間',on:false},
-  {seg:'実績',t:'累計10,000P獲得',rw:500,term:'常設',on:true},
+  {seg:'デイリー',t:'攻略記事を1本読む',rw:3000,term:'常設',on:true},
+  {seg:'デイリー',t:'公式Xのポストを見る',rw:2000,term:'常設',on:true},
+  {seg:'ウィークリー',t:'デイリー5日達成',rw:20000,term:'毎週',on:true},
+  {seg:'期間限定',t:'『エルディア戦記』事前登録',rw:50000,term:'〜8/31',on:true},
+  {seg:'期間限定',t:'コラボガチャを引く',rw:12000,term:'48時間',on:false},
+  {seg:'実績',t:'累計1,000,000P獲得',rw:50000,term:'常設',on:true},
 ];
 const SEGC={'デイリー':'blue','ウィークリー':'mute','期間限定':'danger','実績':'warn'};
 function renderMissions(){
   document.getElementById('tb-missions').innerHTML=missions.map((m,i)=>`<tr>
     <td><span class="pill ${SEGC[m.seg]}">${m.seg}</span></td><td>${m.t}</td>
-    <td><b>＋${m.rw}</b> P</td><td class="mono">${m.term}</td>
+    <td><b>＋${m.rw.toLocaleString()}</b> P</td><td class="mono">${m.term}</td>
     <td><span class="pill ${m.on?'ok':'mute'}">${m.on?'● 公開中':'■ 停止中'}</span></td>
     <td><div class="act"><button onclick="toast('編集（デモ）')">編集</button>
       <button class="${m.on?'warn':'ok'}" onclick="toggleMission(${i})">${m.on?'停止':'公開'}</button></div></td></tr>`).join('');
@@ -349,11 +349,11 @@ function renderMissions(){
 function toggleMission(i){ missions[i].on=!missions[i].on; renderMissions(); toast('ミッションを'+(missions[i].on?'公開':'停止')+'しました'); }
 
 let items=[
-  {nm:'ゲーム内通貨 1,000',gm:'エルディア戦記',cost:'800',way:'コード式',stock:'∞',on:true},
-  {nm:'スタミナ回復 ×5',gm:'エルディア戦記',cost:'300',way:'コード式',stock:'∞',on:true},
-  {nm:'ガチャチケット ×3',gm:'モンスターアリーナ',cost:'1,500',way:'API式',stock:'120',on:true},
-  {nm:'限定レアキャラ確定券',gm:'モンスターアリーナ',cost:'1,200',way:'コード式',stock:'0',on:false},
-  {nm:'Amazonギフト 500円',gm:'実物報酬',cost:'5,000',way:'CSV式',stock:'58',on:true},
+  {nm:'ゲーム内通貨 1,000',gm:'エルディア戦記',cost:'80,000',way:'コード式',stock:'∞',on:true},
+  {nm:'スタミナ回復 ×5',gm:'エルディア戦記',cost:'30,000',way:'コード式',stock:'∞',on:true},
+  {nm:'ガチャチケット ×3',gm:'モンスターアリーナ',cost:'150,000',way:'API式',stock:'120',on:true},
+  {nm:'限定レアキャラ確定券',gm:'モンスターアリーナ',cost:'120,000',way:'コード式',stock:'0',on:false},
+  {nm:'Amazonギフト 500円',gm:'実物報酬',cost:'500,000',way:'CSV式',stock:'58',on:true},
 ];
 function renderItems(){
   document.getElementById('tb-items').innerHTML=items.map((it,i)=>`<tr>
@@ -386,12 +386,12 @@ function renderReports(){
 function resolveReport(i,act){ reports[i].done=true; renderReports(); toast('通報を「'+act+'」で対応しました'); }
 
 let posts=[
-  {tx:'tx_9f31a8c2',pt:'AppLovin',user:'#10482',rw:'800',st:'confirmed',at:'2分前'},
-  {tx:'tx_7b02d514',pt:'Tapjoy',user:'#10765',rw:'1,500',st:'confirmed',at:'8分前'},
-  {tx:'tx_5e88f0a1',pt:'ironSource',user:'#20931',rw:'5,000',st:'pending',at:'12分前'},
-  {tx:'tx_3a17c9bd',pt:'PollFish',user:'#21044',rw:'120',st:'confirmed',at:'20分前'},
-  {tx:'tx_1c44e7f9',pt:'Tapjoy',user:'#21560',rw:'1,500',st:'rejected',at:'33分前'},
-  {tx:'tx_8d20b6ee',pt:'AppLovin',user:'#22011',rw:'800',st:'pending',at:'41分前'},
+  {tx:'tx_9f31a8c2',pt:'AppLovin',user:'#10482',rw:'80,000',st:'confirmed',at:'2分前'},
+  {tx:'tx_7b02d514',pt:'Tapjoy',user:'#10765',rw:'150,000',st:'confirmed',at:'8分前'},
+  {tx:'tx_5e88f0a1',pt:'ironSource',user:'#20931',rw:'500,000',st:'pending',at:'12分前'},
+  {tx:'tx_3a17c9bd',pt:'PollFish',user:'#21044',rw:'12,000',st:'confirmed',at:'20分前'},
+  {tx:'tx_1c44e7f9',pt:'Tapjoy',user:'#21560',rw:'150,000',st:'rejected',at:'33分前'},
+  {tx:'tx_8d20b6ee',pt:'AppLovin',user:'#22011',rw:'80,000',st:'pending',at:'41分前'},
 ];
 const PST={confirmed:['ok','✓ 確定'],pending:['warn','⏳ 保留'],rejected:['danger','✕ 却下']};
 function renderPost(){

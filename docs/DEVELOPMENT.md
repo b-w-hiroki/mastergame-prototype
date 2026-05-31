@@ -38,6 +38,7 @@ supabase gen types typescript --local > apps/mobile/src/lib/database.types.ts
 | 0005_nudge | nudge_events / nudge_cooldowns |
 | 0006_functions | apply_points / claim_mission / request_exchange / next_nudge_target（SECURITY DEFINER RPC） |
 | 0007_admin | admin_overview / admin_user_rows（運営集計ビュー） |
+| 0008_rate | app_config（**point_yen_rate=1000 → 1,000P=1円**）/ points_to_yen() / missions.xp_reward（XPをポイントと分離）/ admin_overview に円換算列を追加 |
 
 すべて RLS 有効。ポイント残高・台帳の書き込みは SECURITY DEFINER の RPC 経由のみ。
 
