@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MasterGame 運営コンソール</title>
+<style>
+  :root{
+    --navy:#12152a; --navy2:#1b1f3a; --ink:#1f2430; --sub:#6b7280; --muted:#9aa0ac;
+    --indigo:#3b4cca; --indigo-soft:#e9ebfb; --bg:#f4f6fa; --paper:#fff; --line:#e6e9ef;
+    --ok:#1f9d57; --ok-soft:#e6f4ec; --warn:#c98a16; --warn-soft:#fbf2dc;
+    --danger:#c0392b; --danger-soft:#fdecea; --blue:#2563c9; --blue-soft:#e6eefb; --purple:#7a4fd0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,"Segoe UI",system-ui,sans-serif;
+    color:var(--ink);background:var(--bg);display:flex;min-height:100vh;font-size:14px}
+  button{font-family:inherit;cursor:pointer}
+
+  /* ---------- sidebar ---------- */
+  .side{width:240px;background:var(--navy);color:#fff;flex:0 0 auto;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .side .brand{display:flex;align-items:center;gap:10px;padding:20px 20px 18px;font-weight:900;font-size:17px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .side .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(140deg,#5563e0,#7a4fd0);display:grid;place-items:center;font-size:14px;font-weight:900}
+  .side .env{font-size:9px;background:var(--warn);color:#fff;padding:2px 7px;border-radius:5px;margin-left:auto;font-weight:800}
+  .nav{flex:1;padding:14px 12px;overflow-y:auto}
+  .navsec{font-size:10px;color:#6f7598;font-weight:800;letter-spacing:.08em;padding:14px 12px 7px}
+  .navi{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:#c4c8e0;font-size:13.5px;font-weight:600;cursor:pointer;transition:.15s;position:relative}
+  .navi:hover{background:rgba(255,255,255,.06);color:#fff}
+  .navi.on{background:linear-gradient(135deg,#3b4cca,#5563e0);color:#fff;font-weight:700}
+  .navi .ic{font-size:16px;width:20px;text-align:center}
+  .navi .bdg{margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:1px 7px}
+  .side .me{display:flex;align-items:center;gap:10px;padding:14px 18px;border-top:1px solid rgba(255,255,255,.08)}
+  .side .me .av{width:34px;height:34px;border-radius:50%;background:#3b4cca;display:grid;place-items:center;font-weight:800;font-size:14px}
+  .side .me .nm{font-size:12.5px;font-weight:700}
+  .side .me .rl{font-size:10.5px;color:#8a90b0}
+
+  /* ---------- main ---------- */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{height:62px;background:var(--paper);border-bottom:1px solid var(--line);display:flex;align-items:center;
+    gap:16px;padding:0 26px;position:sticky;top:0;z-index:20}
+  .topbar h1{font-size:18px;font-weight:800}
+  .topbar .search{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);
+    border-radius:10px;padding:8px 13px;width:260px;color:var(--muted);font-size:13px}
+  .topbar .search input{border:none;background:none;outline:none;font-family:inherit;font-size:13px;width:100%;color:var(--ink)}
+  .topbar .bell{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--paper);display:grid;place-items:center;font-size:16px}
+  .content{padding:24px 26px 40px;flex:1}
+  .view{display:none;animation:fade .25s ease}
+  .view.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ---------- cards / kpi ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+  .kpi{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .kpi .l{font-size:11.5px;color:var(--sub);font-weight:700;display:flex;align-items:center;gap:7px}
+  .kpi .l .d{width:8px;height:8px;border-radius:50%}
+  .kpi .v{font-size:26px;font-weight:900;margin-top:8px;letter-spacing:-.01em}
+  .kpi .v small{font-size:13px;font-weight:800;color:var(--muted)}
+  .kpi .t{font-size:11px;font-weight:800;margin-top:4px}
+  .kpi .t.up{color:var(--ok)} .kpi .t.down{color:var(--danger)}
+
+  .grid2{display:grid;grid-template-columns:1.55fr 1fr;gap:16px}
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .panel h3{font-size:14px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .panel .ph-sub{font-size:11.5px;color:var(--muted);margin-bottom:16px}
+
+  /* bar chart */
+  .chart{display:flex;align-items:flex-end;gap:10px;height:180px;padding-top:10px}
+  .chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end}
+  .chart .bar{width:62%;background:linear-gradient(180deg,#5563e0,#3b4cca);border-radius:6px 6px 0 0;transition:height .5s ease;min-height:4px}
+  .chart .cl{font-size:10.5px;color:var(--muted);font-weight:700}
+
+  /* feed */
+  .feed{display:flex;flex-direction:column}
+  .fi{display:flex;gap:11px;padding:11px 0;align-items:flex-start}
+  .fi+.fi{border-top:1px solid var(--line)}
+  .fi .fic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:14px;flex:0 0 auto}
+  .fi .ft{font-size:12.5px;font-weight:600;line-height:1.4}
+  .fi .fm{font-size:10.5px;color:var(--muted);margin-top:2px}
+
+  /* ---------- table ---------- */
+  .tablewrap{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .tbar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .tbar .seg{display:flex;gap:6px}
+  .tbar .seg button{border:1px solid var(--line);background:var(--paper);color:var(--sub);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700}
+  .tbar .seg button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tbar .add{margin-left:auto;background:var(--indigo);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:800}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:11px;color:var(--sub);font-weight:800;padding:11px 16px;border-bottom:1px solid var(--line);white-space:nowrap;letter-spacing:.02em}
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable:hover{color:var(--indigo)}
+  th.sortable .ar{color:var(--indigo);font-size:10px;margin-left:2px}
+  td.no{color:var(--muted);font-variant-numeric:tabular-nums}
+  td{padding:12px 16px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fafbfd}
+  .mono{font-family:"Consolas","SF Mono",monospace;font-size:11.5px;color:var(--sub)}
+  .uname{display:flex;align-items:center;gap:9px;font-weight:700}
+  .uname .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:800;flex:0 0 auto}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}
+  .pill.danger{background:var(--danger-soft);color:var(--danger)}
+  .pill.blue{background:var(--blue-soft);color:var(--blue)}
+  .pill.mute{background:#eef0f4;color:var(--sub)}
+  .pill .dt{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+  .act{display:flex;gap:6px}
+  .act button{border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;color:var(--sub)}
+  .act button:hover{border-color:var(--indigo);color:var(--indigo)}
+  .act button.warn:hover{border-color:var(--warn);color:var(--warn)}
+  .act button.danger:hover{border-color:var(--danger);color:var(--danger)}
+  .act button.ok:hover{border-color:var(--ok);color:var(--ok)}
+
+  .twonote{font-size:11px;color:var(--muted);margin-top:12px}
+  .stub-v{text-align:center;padding:70px 20px;color:var(--muted)}
+  .stub-v .e{font-size:46px}
+  .stub-v h3{color:var(--sub);font-size:16px;margin:14px 0 6px}
+
+  /* toast */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
+    padding:12px 20px;border-radius:11px;font-size:13px;font-weight:700;opacity:0;transition:.3s;z-index:100;box-shadow:0 14px 34px rgba(0,0,0,.25)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .hamb{display:none}
+  @media(max-width:900px){
+    .side{position:fixed;left:-240px;z-index:60;transition:.25s;box-shadow:0 0 40px rgba(0,0,0,.3)}
+    .side.open{left:0}
+    .hamb{display:grid;place-items:center;width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font-size:18px}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .grid2{grid-template-columns:1fr}
+    .topbar .search{display:none}
+    .content{padding:18px 14px 40px}
+    .tablewrap{overflow-x:auto}
+    table{min-width:680px}
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="side" id="side">
+  <div class="brand"><span class="logo">MG</span>MasterGame<span class="env">STG</span></div>
+  <nav class="nav">
+    <div class="navsec">運営</div>
+    <div class="navi on" data-view="dash" onclick="nav('dash',this)"><span class="ic">📊</span>ダッシュボード</div>
+    <div class="navi" data-view="users" onclick="nav('users',this)"><span class="ic">👥</span>ユーザー管理</div>
+    <div class="navsec">コンテンツ</div>
+    <div class="navi" data-view="missions" onclick="nav('missions',this)"><span class="ic">🎯</span>ミッション管理</div>
+    <div class="navi" data-view="items" onclick="nav('items',this)"><span class="ic">🎁</span>交換アイテム管理</div>
+    <div class="navsec">安全・連携</div>
+    <div class="navi" data-view="reports" onclick="nav('reports',this)"><span class="ic">🚩</span>通報・モデレーション<span class="bdg" id="repBdg">3</span></div>
+    <div class="navi" data-view="postback" onclick="nav('postback',this)"><span class="ic">🛡️</span>postback監視</div>
+    <div class="navi" data-view="settings" onclick="nav('settings',this)"><span class="ic">⚙️</span>設定</div>
+  </nav>
+  <div class="me"><div class="av">運</div><div><div class="nm">運営 太郎</div><div class="rl">管理者 (Admin)</div></div></div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <button class="hamb" onclick="document.getElementById('side').classList.toggle('open')">☰</button>
+    <h1 id="ptitle">ダッシュボード</h1>
+    <div class="search">🔍 <input placeholder="ユーザー・ミッションを検索…"></div>
+    <button class="bell" onclick="toast('通知：未対応の通報が3件')">🔔</button>
+  </div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <section class="view on" id="v-dash">
+      <div class="kpis">
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--indigo)"></span>DAU</div><div class="v">8,420</div><div class="t up">▲ 6.2% 前日比</div></div>
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--purple)"></span>MAU</div><div class="v">62,100</div><div class="t up">▲ 11.4% 前月比</div></div>
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--warn)"></span>発行ポイント(日)</div><div class="v">1.24<small>M P</small></div><div class="t up">▲ 3.1%</div></div>
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--ok)"></span>交換申請(日)</div><div class="v">342</div><div class="t up">▲ 8.0%</div></div>
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--danger)"></span>未対応の通報</div><div class="v">3</div><div class="t down">要対応</div></div>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <h3>📈 週次アクティブユーザー</h3>
+          <div class="ph-sub">直近7日間のDAU推移</div>
+          <div class="chart" id="chart"></div>
+        </div>
+        <div class="panel">
+          <h3>🕑 最近のアクティビティ</h3>
+          <div class="ph-sub">運営アクション・システムイベント</div>
+          <div class="feed">
+            <div class="fi"><div class="fic" style="background:var(--ok-soft)">✅</div><div><div class="ft">postback 承認：パズルキングダム install</div><div class="fm">2分前 ・ user #10482 に 800P 付与</div></div></div>
+            <div class="fi"><div class="fic" style="background:var(--danger-soft)">🚩</div><div><div class="ft">新規通報：誹謗中傷・ハラスメント</div><div class="fm">14分前 ・ エルディアギルド</div></div></div>
+            <div class="fi"><div class="fic" style="background:var(--indigo-soft)">🎯</div><div><div class="ft">ミッション公開：週末ポイント2倍</div><div class="fm">1時間前 ・ 運営 太郎</div></div></div>
+            <div class="fi"><div class="fic" style="background:var(--warn-soft)">⏳</div><div><div class="ft">postback 保留：不正検知しきい値超過</div><div class="fm">2時間前 ・ user #20931 をマーキング</div></div></div>
+            <div class="fi"><div class="fic" style="background:var(--blue-soft)">🎁</div><div><div class="ft">交換アイテム追加：限定スキン</div><div class="fm">3時間前 ・ スターフォール</div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- USERS -->
+    <section class="view" id="v-users">
+      <div class="kpis" style="grid-template-columns:repeat(5,1fr)">
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--indigo)"></span>総ユーザー数</div><div class="v" id="u-total">—</div></div>
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--warn)"></span>配布ポイント総数</div><div class="v" id="u-earned">—</div></div>
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--purple)"></span>交換済みポイント</div><div class="v" id="u-exchanged">—</div></div>
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--ok)"></span>配布交換金額(概算)</div><div class="v" id="u-yen">—</div></div>
+        <div class="kpi"><div class="l"><span class="d" style="background:var(--blue)"></span>交換実績ユーザー</div><div class="v" id="u-exusers">—</div></div>
+      </div>
+      <div class="tablewrap">
+        <div class="tbar">
+          <div class="seg"><button class="on">すべて</button><button>アクティブ</button><button>凍結</button><button>BAN</button></div>
+          <button class="add" onclick="toast('CSVエクスポート（デモ）')">⬇ エクスポート</button>
+        </div>
+        <table><thead><tr>
+          <th>No</th><th>ユーザー</th><th>ID</th><th>ランク</th>
+          <th class="sortable" onclick="sortUsers('earned')">累計獲得P<span class="ar" id="sort-earned"></span></th>
+          <th class="sortable" onclick="sortUsers('exchanged')">交換済みP<span class="ar" id="sort-exchanged"></span></th>
+          <th class="sortable" onclick="sortUsers('balance')">保有P<span class="ar" id="sort-balance"></span></th>
+          <th>状態</th><th>登録日時</th><th>操作</th></tr></thead>
+          <tbody id="tb-users"></tbody></table>
+      </div>
+      <div class="twonote">※ 列見出し（累計獲得P / 交換済みP / 保有P）クリックで昇順・降順ソート。配布交換金額は 1P=1円 の概算。凍結＝期間限定ログイン不可 ／ BAN＝永久ログイン不可 ／ マーキング＝チート監視ログ。</div>
+    </section>
+
+    <!-- MISSIONS -->
+    <section class="view" id="v-missions">
+      <div class="tablewrap">
+        <div class="tbar"><div class="seg"><button class="on">すべて</button><button>公開中</button><button>停止中</button></div>
+          <button class="add" onclick="toast('ミッション新規作成（デモ）')">＋ ミッション作成</button></div>
+        <table><thead><tr><th>種別</th><th>タイトル</th><th>報酬</th><th>期間</th><th>状態</th><th>操作</th></tr></thead>
+          <tbody id="tb-missions"></tbody></table>
+      </div>
+    </section>
+
+    <!-- ITEMS -->
+    <section class="view" id="v-items">
+      <div class="tablewrap">
+        <div class="tbar"><div class="seg"><button class="on">すべて</button><button>公開中</button><button>在庫切れ</button></div>
+          <button class="add" onclick="toast('アイテム新規登録（デモ）')">＋ アイテム登録</button></div>
+        <table><thead><tr><th>アイテム</th><th>提携ゲーム</th><th>必要P</th><th>納品方式</th><th>在庫</th><th>状態</th><th>操作</th></tr></thead>
+          <tbody id="tb-items"></tbody></table>
+      </div>
+      <div class="twonote">※ 納品方式：CSV式／コード式／API式（開発中）。報酬精算は翌々月末（仕様準拠）。</div>
+    </section>
+
+    <!-- REPORTS -->
+    <section class="view" id="v-reports">
+      <div class="tablewrap">
+        <div class="tbar"><div class="seg"><button class="on">未対応</button><button>対応済み</button></div></div>
+        <table><thead><tr><th>対象</th><th>理由</th><th>通報者</th><th>日時</th><th>状態</th><th>対応</th></tr></thead>
+          <tbody id="tb-reports"></tbody></table>
+      </div>
+      <div class="twonote">※ 対応：削除／警告／却下。NGワード自動フィルタで一次検知済みのものは自動でキュー登録（仕様：コミュニティ）。</div>
+    </section>
+
+    <!-- POSTBACK -->
+    <section class="view" id="v-postback">
+      <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi"><div class="l">本日のpostback</div><div class="v">1,284</div></div>
+        <div class="kpi"><div class="l">承認率</div><div class="v">96.4<small>%</small></div><div class="t up">健全</div></div>
+        <div class="kpi"><div class="l">保留(pending)</div><div class="v">18</div><div class="t down">要確認</div></div>
+        <div class="kpi"><div class="l">不正検知(rejected)</div><div class="v">29</div></div>
+      </div>
+      <div class="tablewrap">
+        <div class="tbar"><div class="seg"><button class="on">すべて</button><button>保留</button><button>確定</button><button>却下</button></div></div>
+        <table><thead><tr><th>transaction_id</th><th>パートナー</th><th>ユーザー</th><th>報酬</th><th>状態</th><th>受信</th><th>操作</th></tr></thead>
+          <tbody id="tb-postback"></tbody></table>
+      </div>
+      <div class="twonote">※ 署名検証・IP許可・冪等性チェック済み。pending は不正検知しきい値超過で保留中（仕様：postback検証）。</div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="v-settings">
+      <div class="stub-v"><div class="e">⚙️</div><h3>設定</h3><p>パートナー・権限・通知・ポイント経済の各設定をここに集約します。</p></div>
+    </section>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const AV=['#3b4cca','#7a4fd0','#1f9d57','#c98a16','#c0392b','#2563c9'];
+const initial=s=>s.charAt(0);
+function avc(i){return AV[i%AV.length];}
+
+const POINT_YEN=1; // 配布交換金額の概算レート（1P = 1円）
+let users=[
+  {n:'リオ',id:'10482',rank:'シルバー',earned:8200,exchanged:3380,st:'active',date:'2025-06-12 14:32'},
+  {n:'みう',id:'10765',rank:'ブロンズ',earned:1250,exchanged:0,st:'active',date:'2025-06-14 09:05'},
+  {n:'カイ',id:'11023',rank:'ゴールド',earned:18400,exchanged:6000,st:'active',date:'2025-06-18 21:47'},
+  {n:'ナナ',id:'11890',rank:'ブロンズ',earned:640,exchanged:0,st:'frozen',date:'2025-07-02 12:18'},
+  {n:'ジン',id:'20931',rank:'シルバー',earned:5110,exchanged:2000,st:'marked',date:'2025-07-09 18:53'},
+  {n:'そら',id:'21044',rank:'ブロンズ',earned:1480,exchanged:500,st:'active',date:'2025-07-15 07:41'},
+  {n:'あお',id:'21560',rank:'ブロンズ',earned:220,exchanged:0,st:'banned',date:'2025-07-20 23:09'},
+  {n:'ゆい',id:'22011',rank:'シルバー',earned:7300,exchanged:2000,st:'active',date:'2025-07-28 16:24'},
+];
+users.forEach(u=>u.balance=u.earned-u.exchanged);
+const UST={active:['ok','● アクティブ'],frozen:['warn','❄ 凍結'],banned:['danger','⛔ BAN'],marked:['blue','🔎 マーキング']};
+let sortKey='balance', sortDir='desc';
+function sortUsers(key){
+  if(sortKey===key){ sortDir = sortDir==='desc'?'asc':'desc'; } else { sortKey=key; sortDir='desc'; }
+  renderUsers();
+}
+function renderUsers(){
+  const arr=users.map((u,idx)=>({u,idx})).sort((a,b)=> sortDir==='desc' ? b.u[sortKey]-a.u[sortKey] : a.u[sortKey]-b.u[sortKey]);
+  document.getElementById('tb-users').innerHTML=arr.map((o,i)=>{
+    const u=o.u, oi=o.idx, s=UST[u.st];
+    return `<tr>
+      <td class="no">${i+1}</td>
+      <td><div class="uname"><div class="av" style="background:${avc(oi)}">${initial(u.n)}</div>${u.n}</div></td>
+      <td class="mono">#${u.id}</td><td>${u.rank}</td>
+      <td>${u.earned.toLocaleString()} P</td>
+      <td>${u.exchanged.toLocaleString()} P</td>
+      <td><b>${u.balance.toLocaleString()}</b> P</td>
+      <td><span class="pill ${s[0]}">${s[1]}</span></td><td class="mono">${u.date}</td>
+      <td><div class="act">
+        <button class="warn" onclick="setUser(${oi},'frozen')">凍結</button>
+        <button class="danger" onclick="setUser(${oi},'banned')">BAN</button>
+        <button class="ok" onclick="setUser(${oi},'active')">解除</button>
+      </div></td></tr>`;
+  }).join('');
+  ['earned','exchanged','balance'].forEach(k=>{
+    const el=document.getElementById('sort-'+k); if(el) el.textContent = sortKey===k ? (sortDir==='desc'?' ▼':' ▲') : '';
+  });
+  const totEarned=users.reduce((s,u)=>s+u.earned,0), totEx=users.reduce((s,u)=>s+u.exchanged,0), exUsers=users.filter(u=>u.exchanged>0).length;
+  document.getElementById('u-total').innerHTML=users.length+'<small> 人</small>';
+  document.getElementById('u-earned').innerHTML=totEarned.toLocaleString()+'<small> P</small>';
+  document.getElementById('u-exchanged').innerHTML=totEx.toLocaleString()+'<small> P</small>';
+  document.getElementById('u-yen').innerHTML='¥'+(totEx*POINT_YEN).toLocaleString();
+  document.getElementById('u-exusers').innerHTML=exUsers+'<small> 人</small>';
+}
+function setUser(i,st){ users[i].st=st; renderUsers(); toast(users[i].n+' を「'+UST[st][1].replace(/^[^ ]+ /,'')+'」に変更しました'); }
+
+let missions=[
+  {seg:'デイリー',t:'攻略記事を1本読む',rw:30,term:'常設',on:true},
+  {seg:'デイリー',t:'公式Xのポストを見る',rw:20,term:'常設',on:true},
+  {seg:'ウィークリー',t:'デイリー5日達成',rw:200,term:'毎週',on:true},
+  {seg:'期間限定',t:'『エルディア戦記』事前登録',rw:500,term:'〜8/31',on:true},
+  {seg:'期間限定',t:'コラボガチャを引く',rw:120,term:'48時間',on:false},
+  {seg:'実績',t:'累計10,000P獲得',rw:500,term:'常設',on:true},
+];
+const SEGC={'デイリー':'blue','ウィークリー':'mute','期間限定':'danger','実績':'warn'};
+function renderMissions(){
+  document.getElementById('tb-missions').innerHTML=missions.map((m,i)=>`<tr>
+    <td><span class="pill ${SEGC[m.seg]}">${m.seg}</span></td><td>${m.t}</td>
+    <td><b>＋${m.rw}</b> P</td><td class="mono">${m.term}</td>
+    <td><span class="pill ${m.on?'ok':'mute'}">${m.on?'● 公開中':'■ 停止中'}</span></td>
+    <td><div class="act"><button onclick="toast('編集（デモ）')">編集</button>
+      <button class="${m.on?'warn':'ok'}" onclick="toggleMission(${i})">${m.on?'停止':'公開'}</button></div></td></tr>`).join('');
+}
+function toggleMission(i){ missions[i].on=!missions[i].on; renderMissions(); toast('ミッションを'+(missions[i].on?'公開':'停止')+'しました'); }
+
+let items=[
+  {nm:'ゲーム内通貨 1,000',gm:'エルディア戦記',cost:'800',way:'コード式',stock:'∞',on:true},
+  {nm:'スタミナ回復 ×5',gm:'エルディア戦記',cost:'300',way:'コード式',stock:'∞',on:true},
+  {nm:'ガチャチケット ×3',gm:'モンスターアリーナ',cost:'1,500',way:'API式',stock:'120',on:true},
+  {nm:'限定レアキャラ確定券',gm:'モンスターアリーナ',cost:'1,200',way:'コード式',stock:'0',on:false},
+  {nm:'Amazonギフト 500円',gm:'実物報酬',cost:'5,000',way:'CSV式',stock:'58',on:true},
+];
+function renderItems(){
+  document.getElementById('tb-items').innerHTML=items.map((it,i)=>`<tr>
+    <td><b>${it.nm}</b></td><td>${it.gm}</td><td><b>${it.cost}</b> P</td>
+    <td><span class="pill ${it.way==='API式'?'blue':'mute'}">${it.way}</span></td>
+    <td>${it.stock==='0'?'<span class="pill danger">在庫切れ</span>':it.stock}</td>
+    <td><span class="pill ${it.on?'ok':'mute'}">${it.on?'● 公開中':'■ 停止中'}</span></td>
+    <td><div class="act"><button onclick="toast('編集（デモ）')">編集</button>
+      <button class="${it.on?'warn':'ok'}" onclick="toggleItem(${i})">${it.on?'停止':'公開'}</button></div></td></tr>`).join('');
+}
+function toggleItem(i){ items[i].on=!items[i].on; renderItems(); toast('アイテムを'+(items[i].on?'公開':'停止')+'しました'); }
+
+let reports=[
+  {tgt:'ベテランPさんの返信',reason:'誹謗中傷・ハラスメント',by:'リオ',at:'14分前',done:false},
+  {tgt:'トピック「最速の貯め方」',reason:'スパム・宣伝',by:'みう',at:'1時間前',done:false},
+  {tgt:'カイさんの投稿',reason:'不適切なコンテンツ',by:'ナナ',at:'3時間前',done:false},
+];
+function renderReports(){
+  document.getElementById('tb-reports').innerHTML=reports.map((r,i)=>`<tr>
+    <td><b>${r.tgt}</b></td><td><span class="pill danger">${r.reason}</span></td>
+    <td>${r.by}</td><td class="mono">${r.at}</td>
+    <td><span class="pill ${r.done?'mute':'warn'}">${r.done?'対応済み':'未対応'}</span></td>
+    <td><div class="act">${r.done?'<button disabled style="opacity:.5">完了</button>':
+      `<button class="danger" onclick="resolveReport(${i},'削除')">削除</button>
+       <button class="warn" onclick="resolveReport(${i},'警告')">警告</button>
+       <button onclick="resolveReport(${i},'却下')">却下</button>`}</div></td></tr>`).join('');
+  const open=reports.filter(r=>!r.done).length;
+  document.getElementById('repBdg').textContent=open; document.getElementById('repBdg').style.display=open?'':'none';
+}
+function resolveReport(i,act){ reports[i].done=true; renderReports(); toast('通報を「'+act+'」で対応しました'); }
+
+let posts=[
+  {tx:'tx_9f31a8c2',pt:'AppLovin',user:'#10482',rw:'800',st:'confirmed',at:'2分前'},
+  {tx:'tx_7b02d514',pt:'Tapjoy',user:'#10765',rw:'1,500',st:'confirmed',at:'8分前'},
+  {tx:'tx_5e88f0a1',pt:'ironSource',user:'#20931',rw:'5,000',st:'pending',at:'12分前'},
+  {tx:'tx_3a17c9bd',pt:'PollFish',user:'#21044',rw:'120',st:'confirmed',at:'20分前'},
+  {tx:'tx_1c44e7f9',pt:'Tapjoy',user:'#21560',rw:'1,500',st:'rejected',at:'33分前'},
+  {tx:'tx_8d20b6ee',pt:'AppLovin',user:'#22011',rw:'800',st:'pending',at:'41分前'},
+];
+const PST={confirmed:['ok','✓ 確定'],pending:['warn','⏳ 保留'],rejected:['danger','✕ 却下']};
+function renderPost(){
+  document.getElementById('tb-postback').innerHTML=posts.map((p,i)=>{
+    const s=PST[p.st];
+    return `<tr><td class="mono">${p.tx}</td><td>${p.pt}</td><td class="mono">${p.user}</td><td><b>＋${p.rw}</b> P</td>
+      <td><span class="pill ${s[0]}">${s[1]}</span></td><td class="mono">${p.at}</td>
+      <td><div class="act">${p.st==='pending'?
+        `<button class="ok" onclick="judgePost(${i},'confirmed')">承認</button>
+         <button class="danger" onclick="judgePost(${i},'rejected')">却下</button>`:
+        '<button onclick="toast(\'詳細\')">詳細</button>'}</div></td></tr>`;
+  }).join('');
+}
+function judgePost(i,st){ posts[i].st=st; renderPost(); toast('postback を'+(st==='confirmed'?'承認しました（ポイント付与）':'却下しました')); }
+
+// chart
+function renderChart(){
+  const data=[5200,6100,5800,6900,7400,8100,8420], max=9000;
+  const lbl=['月','火','水','木','金','土','日'];
+  document.getElementById('chart').innerHTML=data.map((v,i)=>`<div class="col">
+    <div class="bar" style="height:${Math.round(v/max*100)}%"></div><div class="cl">${lbl[i]}</div></div>`).join('');
+}
+
+// nav
+const TITLES={dash:'ダッシュボード',users:'ユーザー管理',missions:'ミッション管理',items:'交換アイテム管理',reports:'通報・モデレーション',postback:'postback監視',settings:'設定'};
+function nav(v,el){
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
+  document.getElementById('v-'+v).classList.add('on');
+  document.querySelectorAll('.navi').forEach(n=>n.classList.remove('on'));
+  if(el)el.classList.add('on');
+  document.getElementById('ptitle').textContent=TITLES[v];
+  document.getElementById('side').classList.remove('open');
+}
+let tT;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),2000);}
+
+renderChart();renderUsers();renderMissions();renderItems();renderReports();renderPost();
+</script>
+</body>
+</html>

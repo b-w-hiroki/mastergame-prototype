@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MasterGame ワイヤーフレーム — コアフロー (MVP1)</title>
+<style>
+  :root{
+    --ink:#1f2430; --sub:#6b7280; --line:#c9cdd6; --line2:#e4e7ec;
+    --bg:#eef0f4; --paper:#ffffff; --accent:#3b4cca; --accent-soft:#e7e9fb;
+    --gold:#c79a3a; --gold-soft:#f6efda; --ok:#2f8f5b; --muted:#aab0bb;
+    --radius:14px; --shadow:0 10px 30px rgba(20,24,40,.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,system-ui,sans-serif;
+    background:linear-gradient(160deg,#dfe3ea,#eef0f4 40%,#e9ebf1);color:var(--ink);
+    display:flex;gap:34px;align-items:flex-start;justify-content:center;
+    padding:34px 20px 60px;min-height:100%;
+  }
+  /* ---- side legend ---- */
+  .legend{width:248px;position:sticky;top:34px;font-size:12.5px;color:var(--sub)}
+  .legend h1{font-size:18px;color:var(--ink);margin:0 0 4px}
+  .legend .tag{display:inline-block;background:var(--accent-soft);color:var(--accent);
+    font-weight:700;font-size:11px;padding:3px 9px;border-radius:999px;margin-bottom:14px}
+  .legend p{line-height:1.7;margin:0 0 14px}
+  .legend ol{margin:0;padding-left:18px;line-height:1.9}
+  .legend ol b{color:var(--ink)}
+  .legend .note{margin-top:16px;padding:12px;border:1px dashed var(--line);border-radius:10px;
+    background:rgba(255,255,255,.55);font-size:11.5px;line-height:1.6}
+  .legend a{color:var(--accent);font-weight:600;cursor:pointer;text-decoration:none}
+
+  /* ---- phone ---- */
+  .phone{
+    width:390px;height:780px;background:#0d0f16;border-radius:46px;padding:13px;
+    box-shadow:var(--shadow);position:relative;flex:0 0 auto;
+  }
+  .phone:before{content:"";position:absolute;top:20px;left:50%;transform:translateX(-50%);
+    width:128px;height:26px;background:#0d0f16;border-radius:0 0 16px 16px;z-index:30}
+  .screenwrap{position:relative;width:100%;height:100%;background:var(--bg);
+    border-radius:34px;overflow:hidden}
+
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;
+    background:var(--bg);animation:fade .22s ease}
+  .screen.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* status bar */
+  .statusbar{height:44px;flex:0 0 auto;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 22px 6px;font-size:12px;font-weight:600;color:var(--ink);background:transparent}
+  .statusbar .dots{letter-spacing:1px}
+
+  /* app header */
+  .appbar{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:6px 16px 12px;background:var(--bg)}
+  .appbar .title{font-size:17px;font-weight:800}
+  .appbar .ptchip{margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--paper);
+    border:1px solid var(--line2);border-radius:999px;padding:6px 12px;font-weight:800;font-size:13px}
+  .appbar .ptchip .p{color:var(--gold)}
+  .iconbtn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line2);background:var(--paper);
+    display:grid;place-items:center;font-size:15px;color:var(--sub);cursor:pointer}
+
+  .body{flex:1 1 auto;overflow-y:auto;padding:4px 16px 16px}
+  .body::-webkit-scrollbar{width:0}
+
+  /* generic wireframe bits */
+  .ph-img{background:repeating-linear-gradient(45deg,#e9ebf1,#e9ebf1 9px,#e1e4ec 9px,#e1e4ec 18px);
+    border:1px solid var(--line2);border-radius:12px;display:grid;place-items:center;color:var(--muted);
+    font-size:12px;font-weight:600}
+  .card{background:var(--paper);border:1px solid var(--line2);border-radius:var(--radius);padding:14px}
+  .sec-label{font-size:12px;font-weight:800;color:var(--sub);letter-spacing:.04em;margin:18px 2px 9px;
+    display:flex;align-items:center;gap:8px}
+  .sec-label .more{margin-left:auto;color:var(--accent);font-weight:700;font-size:11.5px;cursor:pointer}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;cursor:pointer;
+    border-radius:12px;padding:14px;font-size:14.5px;font-weight:800;font-family:inherit}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-ghost{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
+  .btn-gold{background:var(--gold);color:#fff}
+  .btn:disabled{background:#d6d9e0;color:#fff;cursor:not-allowed}
+
+  /* ---------- splash ---------- */
+  #splash{background:radial-gradient(120% 80% at 50% 12%,#222a6b,#10122b 70%);color:#fff;
+    align-items:center;justify-content:center}
+  #splash .logo{width:84px;height:84px;border-radius:22px;background:linear-gradient(140deg,#5563e0,#8c5bd6);
+    display:grid;place-items:center;font-weight:900;font-size:34px;box-shadow:0 14px 40px rgba(80,70,220,.5)}
+  #splash h2{margin:22px 0 4px;font-size:26px;letter-spacing:.04em}
+  #splash .ja{color:#c8cbe6;font-size:13px}
+  #splash .start{margin-top:46px;color:#aab0e8;font-weight:800;letter-spacing:.3em;font-size:13px;
+    animation:blink 1.3s steps(2,start) infinite}
+  @keyframes blink{50%{opacity:.25}}
+
+  /* ---------- login ---------- */
+  #login{background:var(--bg)}
+  #login .head{padding:34px 22px 10px}
+  #login .head .logo-s{width:54px;height:54px;border-radius:15px;background:linear-gradient(140deg,#5563e0,#8c5bd6);
+    display:grid;place-items:center;color:#fff;font-weight:900;font-size:22px}
+  #login h2{font-size:22px;margin:16px 0 2px}
+  #login .head p{color:var(--sub);font-size:12.5px;margin:0}
+  .field{margin:0 22px 12px}
+  .field label{display:block;font-size:11.5px;font-weight:700;color:var(--sub);margin:0 0 5px}
+  .field input{width:100%;border:1px solid var(--line);border-radius:11px;padding:13px;font-size:14px;
+    font-family:inherit;background:var(--paper)}
+  .oauth{margin:6px 22px 0;display:flex;flex-direction:column;gap:9px}
+  .divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;margin:18px 22px}
+  .divider:before,.divider:after{content:"";height:1px;background:var(--line2);flex:1}
+  .oauthbtn{display:flex;align-items:center;gap:10px;justify-content:center;border:1px solid var(--line);
+    background:var(--paper);border-radius:11px;padding:12px;font-weight:700;font-size:13.5px;cursor:pointer}
+  .oauthbtn .g{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:900}
+  #login .links{text-align:center;margin:20px 0;font-size:12px;color:var(--accent);font-weight:600}
+  /* signup / pwreset reuse login look */
+  #signup,#pwreset{background:var(--bg)}
+  #signup .head,#pwreset .head{padding:10px 22px 10px}
+  #signup .head .logo-s,#pwreset .head .logo-s{width:50px;height:50px;border-radius:14px;background:linear-gradient(140deg,#5563e0,#8c5bd6);display:grid;place-items:center;color:#fff;font-weight:900;font-size:20px}
+  #signup h2,#pwreset h2{font-size:21px;margin:14px 0 2px}
+  #signup .head p,#pwreset .head p{color:var(--sub);font-size:12.5px;margin:0}
+  #signup .links,#pwreset .links{text-align:center;margin:18px 0;font-size:12px;color:var(--accent);font-weight:600}
+  .authtop{flex:0 0 auto;padding:8px 16px 0}
+  .checkrow{display:flex;align-items:flex-start;gap:9px;margin:2px 22px 14px;font-size:11.5px;color:var(--sub);line-height:1.5}
+  .checkrow input{margin-top:2px}
+  .checkrow a{color:var(--accent);font-weight:700}
+
+  /* ---------- home ---------- */
+  .carousel{display:flex;gap:12px;overflow-x:auto;padding:2px 0 6px;scroll-snap-type:x mandatory}
+  .carousel::-webkit-scrollbar{height:0}
+  .slide{flex:0 0 86%;height:150px;scroll-snap-align:start;border-radius:16px;overflow:hidden;position:relative;
+    border:1px solid var(--line2)}
+  .slide .ph-img{height:100%;border:none;border-radius:0}
+  .slide .cap{position:absolute;left:0;right:0;bottom:0;padding:12px 14px;color:#fff;font-weight:800;font-size:14px;
+    background:linear-gradient(transparent,rgba(15,18,35,.78))}
+  .slide .badge{position:absolute;top:10px;left:10px;background:var(--accent);color:#fff;font-size:10px;
+    font-weight:800;padding:3px 8px;border-radius:6px}
+  .dots-row{display:flex;gap:5px;justify-content:center;margin:8px 0 0}
+  .dots-row i{width:6px;height:6px;border-radius:50%;background:var(--line);display:block}
+  .dots-row i.on{background:var(--accent);width:16px;border-radius:3px}
+
+  .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px}
+  .quick .q{background:var(--paper);border:1px solid var(--line2);border-radius:13px;padding:12px 4px;text-align:center;cursor:pointer}
+  .quick .q .ic{font-size:20px}
+  .quick .q .t{font-size:10.5px;font-weight:700;color:var(--sub);margin-top:5px}
+
+  .feeditem{display:flex;gap:11px;padding:12px;align-items:center}
+  .feeditem+.feeditem{border-top:1px solid var(--line2)}
+  .feeditem .th{width:58px;height:58px;flex:0 0 auto;border-radius:10px}
+  .feeditem .ti{font-size:13px;font-weight:700;line-height:1.4}
+  .feeditem .mt{font-size:11px;color:var(--muted);margin-top:5px}
+
+  /* mission promo banner on home */
+  .promo{background:linear-gradient(135deg,#3b4cca,#7a4fd0);color:#fff;border-radius:16px;padding:16px;
+    display:flex;align-items:center;gap:12px;cursor:pointer}
+  .promo .big{font-size:13px;font-weight:800;line-height:1.4}
+  .promo .sm{font-size:11px;opacity:.85;margin-top:3px}
+  .promo .go{margin-left:auto;background:rgba(255,255,255,.2);border-radius:10px;padding:9px 12px;font-weight:800;font-size:12px}
+
+  /* ---------- mission ---------- */
+  .tabs{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px}
+  .tabs::-webkit-scrollbar{height:0}
+  .tab{flex:0 0 auto;border:1px solid var(--line);background:var(--paper);color:var(--sub);
+    border-radius:999px;padding:8px 15px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tab.fire.on{background:#c0392b;border-color:#c0392b}
+
+  .mission{background:var(--paper);border:1px solid var(--line2);border-radius:14px;padding:13px;margin-bottom:10px;
+    display:flex;gap:12px;align-items:center}
+  .mission .mi{width:46px;height:46px;flex:0 0 auto;border-radius:12px;display:grid;place-items:center;font-size:22px;
+    background:var(--accent-soft)}
+  .mission .grow{flex:1 1 auto;min-width:0}
+  .mission .mt{font-size:13px;font-weight:700;line-height:1.35}
+  .mission .reward{font-size:11px;color:var(--gold);font-weight:800;margin-top:3px}
+  .bar{height:7px;background:var(--line2);border-radius:99px;margin-top:8px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+  .bar.full i{background:var(--ok)}
+  .prog-n{font-size:10px;color:var(--muted);margin-top:4px}
+  .claim{flex:0 0 auto;border:none;border-radius:10px;padding:10px 12px;font-size:11.5px;font-weight:800;
+    font-family:inherit;cursor:pointer;background:#d6d9e0;color:#fff;white-space:nowrap}
+  .claim.ready{background:var(--ok);color:#fff}
+  .claim.done{background:transparent;color:var(--muted);border:1px solid var(--line2)}
+  .fire-banner{background:#fdecea;border:1px solid #f3c6c0;color:#a13226;border-radius:12px;padding:11px 13px;
+    font-size:11.5px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+
+  /* ---------- points / exchange ---------- */
+  .balance{background:linear-gradient(135deg,#1f2430,#363d57);color:#fff;border-radius:18px;padding:20px;text-align:center}
+  .balance .lbl{font-size:11px;color:#c2c6d8;letter-spacing:.1em;font-weight:700}
+  .balance .num{font-size:42px;font-weight:900;margin:4px 0 0;letter-spacing:-.02em}
+  .balance .num small{font-size:16px;font-weight:800;margin-left:3px}
+  .balance .row{display:flex;gap:8px;margin-top:16px}
+  .balance .row .b{flex:1;background:rgba(255,255,255,.14);border-radius:11px;padding:11px;font-size:12px;font-weight:800;cursor:pointer}
+
+  .seg{display:flex;background:var(--line2);border-radius:11px;padding:3px;margin:16px 0 4px}
+  .seg button{flex:1;border:none;background:transparent;padding:9px;border-radius:9px;font-weight:800;font-size:12.5px;
+    color:var(--sub);font-family:inherit;cursor:pointer}
+  .seg button.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .item{background:var(--paper);border:1px solid var(--line2);border-radius:14px;overflow:hidden;cursor:pointer}
+  .item .ph-img{height:96px;border:none;border-radius:0;border-bottom:1px solid var(--line2)}
+  .item .in{padding:10px 11px 12px}
+  .item .nm{font-size:12px;font-weight:700;line-height:1.35;height:33px;overflow:hidden}
+  .item .gm{font-size:10px;color:var(--muted);margin-top:2px}
+  .item .cost{font-size:14px;font-weight:900;color:var(--accent);margin-top:7px}
+  .item .cost small{font-size:10px}
+
+  .histrow{display:flex;align-items:center;gap:11px;padding:13px 2px}
+  .histrow+.histrow{border-top:1px solid var(--line2)}
+  .histrow .hi{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:16px;background:var(--accent-soft)}
+  .histrow .ht{font-size:12.5px;font-weight:700}
+  .histrow .hd{font-size:10.5px;color:var(--muted);margin-top:2px}
+  .histrow .hp{margin-left:auto;font-weight:900;font-size:14px}
+  .hp.plus{color:var(--ok)}.hp.minus{color:#c0392b}
+  .pill{display:inline-block;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px;margin-left:6px}
+  .pill.wait{background:var(--gold-soft);color:var(--gold)}
+  .pill.done{background:#e7f3ec;color:var(--ok)}
+
+  /* ---------- bottom nav ---------- */
+  .tabbar{flex:0 0 auto;display:flex;background:var(--paper);border-top:1px solid var(--line2);
+    padding:8px 6px 22px}
+  .tabbar .n{flex:1;background:none;border:none;font-family:inherit;cursor:pointer;display:flex;
+    flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:10px;font-weight:700;position:relative}
+  .tabbar .n .ic{font-size:20px}
+  .tabbar .n.on{color:var(--accent)}
+  .tabbar .n .dot{position:absolute;top:-2px;right:50%;transform:translateX(16px);width:7px;height:7px;
+    background:#c0392b;border-radius:50%}
+
+  /* ---------- modal / toast ---------- */
+  .overlay{position:absolute;inset:0;background:rgba(15,18,35,.55);display:none;align-items:flex-end;z-index:50}
+  .overlay.show{display:flex}
+  .sheet{background:var(--paper);width:100%;border-radius:22px 22px 0 0;padding:8px 18px 26px;animation:up .26s ease}
+  @keyframes up{from{transform:translateY(100%)}to{transform:none}}
+  .sheet .grab{width:40px;height:4px;border-radius:99px;background:var(--line);margin:8px auto 14px}
+  .sheet .ph-img{height:120px;margin-bottom:14px}
+  .sheet h3{margin:0 0 4px;font-size:17px}
+  .sheet .gm{color:var(--muted);font-size:12px;margin:0 0 14px}
+  .sheet .costline{display:flex;align-items:center;justify-content:space-between;background:var(--bg);
+    border-radius:11px;padding:13px;font-weight:800;margin-bottom:8px;font-size:13px}
+  .sheet .costline .c{color:var(--accent);font-size:18px;font-weight:900}
+  .sheet .after{font-size:11.5px;color:var(--sub);text-align:right;margin:0 2px 16px}
+
+  /* achievement popup */
+  .congrats{position:absolute;inset:0;background:rgba(15,18,35,.62);display:none;flex-direction:column;
+    align-items:center;justify-content:center;z-index:60;color:#fff;text-align:center;padding:30px}
+  .congrats.show{display:flex;animation:fade .25s}
+  .congrats .burst{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,#ffd86b,#e0a93a);
+    display:grid;place-items:center;font-size:56px;box-shadow:0 0 0 12px rgba(255,216,107,.18),0 0 60px rgba(255,200,90,.5);
+    animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+  .congrats h3{margin:22px 0 2px;font-size:20px}
+  .congrats .got{font-size:34px;font-weight:900;color:#ffd86b;margin:6px 0 26px}
+  .congrats .ok{background:#fff;color:var(--ink);border:none;border-radius:12px;padding:13px 40px;font-weight:800;
+    font-size:14px;font-family:inherit;cursor:pointer}
+
+  .toast{position:absolute;left:50%;bottom:120px;transform:translateX(-50%) translateY(20px);background:var(--ink);
+    color:#fff;padding:12px 18px;border-radius:12px;font-size:12.5px;font-weight:700;opacity:0;z-index:70;
+    transition:.3s;pointer-events:none;white-space:nowrap;box-shadow:var(--shadow)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .stub{padding:60px 24px;text-align:center;color:var(--muted)}
+  .stub .ic{font-size:40px}
+  .stub h3{color:var(--sub);margin:14px 0 6px;font-size:15px}
+  .stub p{font-size:12px;line-height:1.6;margin:0}
+  .stub .ph2{display:inline-block;margin-top:10px;font-size:10px;background:var(--accent-soft);color:var(--accent);
+    font-weight:800;padding:4px 10px;border-radius:999px}
+
+  /* ---------- smart nudge ---------- */
+  .nudge{background:var(--gold-soft);border:1px solid #e7d6a6;border-radius:16px;padding:13px 14px;margin:20px 0 12px;
+    display:flex;align-items:center;gap:12px;cursor:pointer}
+  .nudge .ico{width:40px;height:40px;flex:0 0 auto;border-radius:11px;background:#fff;display:grid;place-items:center;font-size:20px;border:1px solid #ecdcae}
+  .nudge .big{font-size:13px;font-weight:800;color:#7a5b16;line-height:1.4}
+  .nudge .big b{color:var(--gold)}
+  .nudge .sm{font-size:10.5px;color:#9a7e3a;margin-top:3px}
+  .nudge .go{margin-left:auto;flex:0 0 auto;background:var(--gold);color:#fff;border-radius:10px;padding:9px 11px;font-weight:800;font-size:11px;white-space:nowrap}
+  .item .near{font-size:9.5px;font-weight:800;color:var(--gold);margin-top:4px}
+
+  /* ---------- offerwall ---------- */
+  .tab.offer.on{background:#1f7a5b;border-color:#1f7a5b}
+  .offer-banner{background:linear-gradient(135deg,#0f7a5b,#13a06f);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+  .offer-banner .t{font-size:12.5px;font-weight:800}
+  .offer-banner .s{font-size:10.5px;opacity:.9;margin-top:3px}
+  .video-card{background:var(--ink);color:#fff;border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
+  .video-card .vic{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.14);display:grid;place-items:center;font-size:22px}
+  .video-card .vt{font-size:13px;font-weight:800}
+  .video-card .vs{font-size:10.5px;color:#c2c6d8;margin-top:2px}
+  .video-card .vr{margin-left:auto;color:var(--gold);font-weight:900;font-size:14px}
+  .offer{background:var(--paper);border:1px solid var(--line2);border-radius:14px;padding:13px;margin-bottom:10px;display:flex;gap:12px;align-items:center;cursor:pointer}
+  .offer .oic{width:48px;height:48px;flex:0 0 auto;border-radius:12px;background:var(--accent-soft);display:grid;place-items:center;font-size:24px}
+  .offer .grow{flex:1 1 auto;min-width:0}
+  .offer .ot{font-size:13px;font-weight:700;line-height:1.35}
+  .offer .od{font-size:10.5px;color:var(--muted);margin-top:3px}
+  .offer .onet{display:inline-block;font-size:9px;font-weight:800;color:var(--sub);background:var(--bg);border:1px solid var(--line2);border-radius:5px;padding:1px 6px;margin-top:5px}
+  .offer .opt{flex:0 0 auto;text-align:right}
+  .offer .opt .v{font-size:16px;font-weight:900;color:#13a06f}
+  .offer .opt .u{font-size:9px;color:var(--muted)}
+  .pill.pend{background:#fdf2d6;color:#a9802a}
+
+  /* ---------- community / guild ---------- */
+  .gtab{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px}
+  .gtab::-webkit-scrollbar{height:0}
+  .guild{background:var(--paper);border:1px solid var(--line2);border-radius:14px;padding:13px;margin-bottom:10px;display:flex;gap:12px;align-items:center;cursor:pointer}
+  .guild .gic{width:48px;height:48px;flex:0 0 auto;border-radius:13px;display:grid;place-items:center;font-size:24px;color:#fff;font-weight:800}
+  .guild .gt{font-size:14px;font-weight:800;line-height:1.3}
+  .guild .gd{font-size:10.5px;color:var(--muted);margin-top:3px}
+  .guild .gm{margin-left:auto;flex:0 0 auto;text-align:right;font-size:10px;color:var(--sub);font-weight:700}
+  .guild .gm .on{color:var(--ok)}
+  .backbtn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line2);background:var(--paper);display:grid;place-items:center;font-size:16px;color:var(--ink);cursor:pointer}
+  .topicseg{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .topicseg .ts{font-size:11px;font-weight:700;color:var(--sub);border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+  .topicseg .ts.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .topic{background:var(--paper);border:1px solid var(--line2);border-radius:13px;padding:13px;margin-bottom:9px;cursor:pointer}
+  .topic .tt{font-size:13px;font-weight:700;line-height:1.4}
+  .topic .meta{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:10.5px;color:var(--muted)}
+  .topic .meta .who{font-weight:700;color:var(--sub)}
+  .topic .meta .r{margin-left:auto}
+  .bounty{display:inline-flex;align-items:center;gap:4px;background:var(--gold-soft);color:var(--gold);font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px}
+  .kind{display:inline-block;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px}
+  .kind.q{background:var(--accent-soft);color:var(--accent)}
+  .kind.chat{background:#e8f0ea;color:var(--ok)}
+  .kind.recruit{background:var(--softp);color:var(--purple)}
+  /* topic detail */
+  .op{background:var(--paper);border:1px solid var(--line2);border-radius:14px;padding:15px;margin-bottom:14px}
+  .op .oph{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .op .av{width:34px;height:34px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;font-size:15px}
+  .op .nm{font-size:12px;font-weight:800}
+  .op .tm{font-size:10px;color:var(--muted)}
+  .op .obody{font-size:13px;line-height:1.6;color:var(--ink)}
+  .op .otitle{font-size:15px;font-weight:800;margin:0 0 8px;line-height:1.4}
+  .reply{display:flex;gap:10px;padding:12px 2px}
+  .reply+.reply{border-top:1px solid var(--line2)}
+  .reply .av{width:30px;height:30px;flex:0 0 auto;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:13px}
+  .reply .rb{flex:1 1 auto;min-width:0}
+  .reply .rnm{font-size:11.5px;font-weight:800}
+  .reply .rnm small{color:var(--muted);font-weight:600;margin-left:6px}
+  .reply .rtext{font-size:12.5px;line-height:1.5;margin-top:3px;color:var(--ink)}
+  .reply .ract{display:flex;align-items:center;gap:14px;margin-top:7px;font-size:11px;color:var(--sub);font-weight:700}
+  .reply .ract span{cursor:pointer}
+  .reply.best{background:#f0f8f3;border:1px solid #cfe9da;border-radius:11px;padding:12px;margin-top:6px}
+  .reply .bestbadge{display:inline-block;font-size:9.5px;font-weight:800;color:#fff;background:var(--ok);border-radius:6px;padding:2px 7px;margin-left:6px}
+  .pickbest{border:1px solid var(--ok);color:var(--ok);background:#fff;border-radius:9px;padding:5px 10px;font-size:10.5px;font-weight:800;font-family:inherit;cursor:pointer}
+  .replybar{flex:0 0 auto;display:flex;gap:8px;align-items:center;padding:10px 14px;background:var(--paper);border-top:1px solid var(--line2)}
+  .replybar input{flex:1;border:1px solid var(--line);border-radius:999px;padding:11px 14px;font-size:13px;font-family:inherit;background:var(--bg)}
+  .replybar .send{width:40px;height:40px;flex:0 0 auto;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:16px;cursor:pointer}
+  .flagbtn{cursor:pointer;color:var(--muted);font-size:13px;font-weight:700}
+  /* report modal */
+  .report-opt{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:11px;padding:13px;margin-bottom:8px;font-size:13px;font-weight:600;cursor:pointer}
+  .report-opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .report-opt .rd{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto}
+  .report-opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .report-opt.sel .rd{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px #fff}
+  /* FAB */
+  .fab{position:absolute;right:16px;bottom:92px;width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;
+    border:none;font-size:26px;cursor:pointer;box-shadow:0 8px 22px rgba(59,76,202,.45);z-index:20;display:grid;place-items:center}
+
+  /* ---------- onboarding ---------- */
+  #onboarding{background:var(--bg)}
+  .ob-top{flex:0 0 auto;display:flex;padding:44px 22px 0}
+  .ob-skip{margin-left:auto;font-size:13px;font-weight:700;color:var(--sub);cursor:pointer;background:none;border:none;font-family:inherit}
+  .ob-main{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 30px}
+  .ob-art{width:172px;height:172px;border-radius:40px;display:grid;place-items:center;font-size:80px;margin-bottom:34px;
+    box-shadow:0 24px 50px rgba(40,40,90,.22);transition:background .35s ease}
+  .ob-title{font-size:21px;font-weight:900;color:var(--ink);margin-bottom:13px;line-height:1.45}
+  .ob-desc{font-size:13.5px;color:var(--sub);line-height:1.75;max-width:280px}
+  .ob-bottom{flex:0 0 auto;padding:0 28px 40px}
+  .ob-dots{display:flex;gap:8px;justify-content:center;margin-bottom:22px}
+  .ob-dots i{width:8px;height:8px;border-radius:50%;background:var(--line);transition:.3s}
+  .ob-dots i.on{background:var(--accent);width:22px;border-radius:4px}
+
+  /* ---------- game select (personalization) ---------- */
+  #gameselect{background:var(--bg)}
+  .gs-head{flex:0 0 auto;padding:4px 24px 6px}
+  .gs-head h2{font-size:19px;font-weight:900;line-height:1.4}
+  .gs-head p{font-size:12px;color:var(--sub);margin-top:7px}
+  .gs-body{flex:1 1 auto;overflow-y:auto;padding:12px 20px}
+  .gs-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .gs-card{position:relative;background:var(--paper);border:2px solid var(--line2);border-radius:14px;padding:14px 10px;cursor:pointer;transition:.15s;text-align:center}
+  .gs-card.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .gs-card .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:23px;color:#fff;margin:0 auto 8px}
+  .gs-card .nm{font-size:12px;font-weight:800;color:var(--ink);line-height:1.3}
+  .gs-card .gn{font-size:10px;color:var(--muted);margin-top:2px}
+  .gs-card .chk{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;display:none;place-items:center}
+  .gs-card.sel .chk{display:grid}
+  .gs-foot{flex:0 0 auto;padding:12px 24px 32px;border-top:1px solid var(--line2);background:var(--paper)}
+  .gs-foot .cnt{font-size:11.5px;color:var(--sub);text-align:center;margin-bottom:10px;font-weight:700}
+
+  /* ---------- mypage ---------- */
+  .profhead{background:linear-gradient(135deg,#222a6b,#3b4cca);border-radius:18px;padding:18px;color:#fff;display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}
+  .profhead .av{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:29px;flex:0 0 auto}
+  .profhead .nm{font-size:17px;font-weight:800}
+  .profhead .hd{font-size:11.5px;color:#c8cbe6;margin-top:2px}
+  .profhead .rk{display:inline-block;margin-top:8px;background:rgba(255,255,255,.2);border-radius:999px;padding:3px 11px;font-size:10.5px;font-weight:800}
+  .profhead .edit{margin-left:auto;background:rgba(255,255,255,.16);border:none;color:#fff;border-radius:9px;padding:7px 12px;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer}
+  .pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .pstat{background:var(--paper);border:1px solid var(--line2);border-radius:13px;padding:12px 4px;text-align:center}
+  .pstat .v{font-size:18px;font-weight:900;color:var(--ink)}
+  .pstat .v small{font-size:10px;font-weight:800}
+  .pstat .l{font-size:10px;color:var(--muted);margin-top:2px}
+  .rankcard{background:var(--paper);border:1px solid var(--line2);border-radius:14px;padding:14px;margin-bottom:14px}
+  .rankcard .top{display:flex;justify-content:space-between;font-size:11.5px;font-weight:800;margin-bottom:8px}
+  .rankcard .top .next{color:var(--muted)}
+  .favchips{display:flex;gap:7px;flex-wrap:wrap}
+  .favchip{background:var(--accent-soft);color:var(--accent);font-size:10.5px;font-weight:800;border-radius:999px;padding:5px 11px}
+  .setlist{background:var(--paper);border:1px solid var(--line2);border-radius:14px;overflow:hidden;margin-bottom:12px}
+  .setrow{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer}
+  .setrow+.setrow{border-top:1px solid var(--line2)}
+  .setrow:active{background:var(--bg)}
+  .setrow .si{width:26px;text-align:center;font-size:16px}
+  .setrow .st{font-size:13px;font-weight:600;color:var(--ink)}
+  .setrow .ch{margin-left:auto;color:var(--muted);font-size:18px}
+  .setrow.accent .st{color:var(--accent);font-weight:800}
+  .setrow.danger .st{color:#c0392b}
+
+  /* ---------- point trend chart ---------- */
+  .trend{background:var(--paper);border:1px solid var(--line2);border-radius:16px;padding:15px;margin:14px 0}
+  .trend-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+  .trend .th-t{font-size:13px;font-weight:800}
+  .trend .th-s{font-size:10.5px;color:var(--muted);margin-top:2px}
+  .trend .lgnd{display:flex;gap:11px;flex-shrink:0}
+  .trend .lg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--sub);font-weight:700}
+  .trend .lg i{display:inline-block}
+  .trend .lg i.bar{width:11px;height:7px;border-radius:2px;background:var(--gold)}
+  .trend .lg i.line{width:14px;height:0;border-top:2px solid var(--accent)}
+  .trend-stats{display:flex;gap:10px;margin-top:10px}
+  .trend-stats .ts{flex:1;background:var(--bg);border-radius:10px;padding:9px 10px}
+  .trend-stats .ts .v{font-size:15px;font-weight:900;color:var(--ink)}
+  .trend-stats .ts .v small{font-size:9px;font-weight:800;color:var(--muted)}
+  .trend-stats .ts .l{font-size:9.5px;color:var(--muted);margin-top:1px}
+
+  /* ---------- VIP rank / staking ---------- */
+  .vipcard{border-radius:18px;padding:16px;margin:14px 0;color:#fff;position:relative;overflow:hidden}
+  .vipcard:after{content:"";position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.1);top:-60px;right:-40px}
+  .vip-top{display:flex;align-items:center;gap:11px;position:relative}
+  .vip-badge{width:46px;height:46px;border-radius:13px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:24px;flex:0 0 auto}
+  .vip-name{font-size:16px;font-weight:900}
+  .vip-sub{font-size:10.5px;opacity:.85;margin-top:1px}
+  .vip-xp{margin-top:14px;position:relative}
+  .vip-xp .lab{display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;opacity:.9;margin-bottom:6px}
+  .vip-bar{height:8px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden}
+  .vip-bar i{display:block;height:100%;background:#fff;border-radius:99px}
+  .buffs{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+  .buff{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line2);border-radius:12px;padding:11px}
+  .buff .bi{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:var(--accent-soft);flex:0 0 auto}
+  .buff .bt{font-size:12.5px;font-weight:700}
+  .buff .bd{font-size:10.5px;color:var(--muted);margin-top:1px}
+  .buff .bv{margin-left:auto;font-weight:900;font-size:13px;color:var(--accent)}
+  .buff.locked{opacity:.5}
+  .buff.locked .bv{color:var(--muted)}
+  .stake{background:linear-gradient(135deg,#0f7a5b,#13a06f);color:#fff;border-radius:16px;padding:15px;margin:14px 0;position:relative;overflow:hidden}
+  .stake:after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.1);bottom:-50px;left:-30px}
+  .stake .st-t{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px;position:relative}
+  .stake .st-row{display:flex;gap:10px;margin-top:12px;position:relative}
+  .stake .st-box{flex:1;background:rgba(255,255,255,.14);border-radius:11px;padding:10px 11px}
+  .stake .st-box .v{font-size:17px;font-weight:900}
+  .stake .st-box .v small{font-size:10px;font-weight:800}
+  .stake .st-box .l{font-size:9.5px;opacity:.85;margin-top:1px}
+  .stake .st-note{font-size:10px;opacity:.85;margin-top:10px;position:relative;line-height:1.5}
+  .ranklane{display:flex;gap:6px;margin:12px 0 2px}
+  .ranklane .rl{flex:1;text-align:center;font-size:9px;font-weight:800;padding:6px 2px;border-radius:8px;background:var(--bg);color:var(--muted);border:1px solid var(--line2)}
+  .ranklane .rl.cur{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ranklane .rl.done{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+
+  @media(max-width:760px){.legend{display:none}}
+</style>
+</head>
+<body>
+
+<aside class="legend">
+  <h1>MasterGame</h1>
+  <span class="tag">WIREFRAME · MVP1 ＋ 追加機能</span>
+  <p>コアフロー（貯めて交換）に加え、追加提案した4機能を操作可能な形で確認できます。</p>
+  <ol>
+    <li><b>初回起動</b>：オンボーディング（概要/TIPS）→ ログイン</li>
+    <li><b>ホーム</b>：残高・ニュース＋<b>スマートナッジ</b>（あと◯P）</li>
+    <li><b>ミッション</b>：4種＋<b>提携オファー</b>（オファーウォール／動画広告）</li>
+    <li><b>提携オファー</b>：達成は<b>postback検証</b>で「検証中→確定」</li>
+    <li><b>ポイント / 交換</b>：交換カードに「あと◯P」表示</li>
+    <li><b>コミュニティ</b>：<b>ギルド→トピック→返信</b>、賭け質問・通報</li>
+  </ol>
+  <div class="note">下部ナビ・タブ・各ボタンは実際に動作します。残高はミッション達成／オファー／交換で増減。<br><br>
+  ※グレー斜線部は画像プレースホルダ。<br>
+  <a onclick="resetApp()">↻ 状態をリセット</a></div>
+</aside>
+
+<div class="phone">
+  <div class="screenwrap" id="root">
+
+    <!-- ============ SPLASH ============ -->
+    <section class="screen active" id="splash" onclick="go('onboarding')">
+      <div class="logo">MG</div>
+      <h2>MASTER GAME</h2>
+      <div class="ja">ゲームを、もっと得する遊びに。</div>
+      <div class="start">SERVICE START ▸</div>
+    </section>
+
+    <!-- ============ ONBOARDING (初回アクセス時) ============ -->
+    <section class="screen" id="onboarding">
+      <div class="ob-top"><button class="ob-skip" onclick="go('login')">スキップ ›</button></div>
+      <div class="ob-main">
+        <div class="ob-art" id="obArt">🎮</div>
+        <div class="ob-title" id="obTitle"></div>
+        <div class="ob-desc" id="obDesc"></div>
+      </div>
+      <div class="ob-bottom">
+        <div class="ob-dots" id="obDots"></div>
+        <button class="btn btn-primary" id="obBtn" onclick="obNext()">次へ</button>
+      </div>
+    </section>
+
+    <!-- ============ GAME SELECT (パーソナライズ初期化) ============ -->
+    <section class="screen" id="gameselect">
+      <div class="ob-top"><button class="ob-skip" onclick="go('login')">スキップ ›</button></div>
+      <div class="gs-head">
+        <h2>好きなゲームのジャンルを<br>教えてください 🎮</h2>
+        <p>選んだジャンルに合わせて、ミッションと交換アイテムをおすすめします（3つ以上が目安）</p>
+      </div>
+      <div class="gs-body"><div class="gs-grid" id="gsGrid"></div></div>
+      <div class="gs-foot">
+        <div class="cnt" id="gsCnt">タップして選択（複数可）</div>
+        <button class="btn btn-primary" onclick="finishGameSelect()">この内容ではじめる</button>
+      </div>
+    </section>
+
+    <!-- ============ LOGIN ============ -->
+    <section class="screen" id="login">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+      <div class="body" style="padding:0">
+        <div class="head">
+          <div class="logo-s">MG</div>
+          <h2>おかえりなさい</h2>
+          <p>ログインしてミッションを続けよう</p>
+        </div>
+        <div class="field"><label>メールアドレス</label><input value="player@example.com" inputmode="email"></div>
+        <div class="field"><label>パスワード</label><input type="password" value="********"></div>
+        <div style="padding:0 22px"><button class="btn btn-primary" onclick="go('home')">ログイン</button></div>
+        <div class="divider">または</div>
+        <div class="oauth">
+          <button class="oauthbtn" onclick="go('home')"><span class="g" style="background:#db4437">G</span>Googleでログイン</button>
+          <button class="oauthbtn" onclick="go('home')"><span class="g" style="background:#000">A</span>Appleでログイン</button>
+          <button class="oauthbtn" onclick="go('home')"><span class="g" style="background:#06c755">L</span>LINEでログイン</button>
+        </div>
+        <div class="links"><span onclick="go('signup')" style="cursor:pointer">新規アカウント作成</span> ・ <span onclick="go('pwreset')" style="cursor:pointer">パスワードを忘れた方</span></div>
+      </div>
+    </section>
+
+    <!-- ============ SIGN UP ============ -->
+    <section class="screen" id="signup">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+      <div class="authtop"><button class="backbtn" onclick="go('login')">‹</button></div>
+      <div class="body" style="padding:0">
+        <div class="head">
+          <div class="logo-s">MG</div>
+          <h2>アカウント作成</h2>
+          <p>30秒で完了。今日からポイントが貯まります</p>
+        </div>
+        <div class="field"><label>ユーザー名（任意・あとで変更可）</label><input placeholder="プレイヤー名"></div>
+        <div class="field"><label>メールアドレス</label><input placeholder="you@example.com" inputmode="email"></div>
+        <div class="field"><label>パスワード</label><input type="password" placeholder="8文字以上"></div>
+        <div class="field"><label>パスワード（確認）</label><input type="password" placeholder="もう一度入力"></div>
+        <label class="checkrow"><input type="checkbox" checked><span><a>利用規約</a>・<a>プライバシーポリシー</a>に同意する</span></label>
+        <div style="padding:0 22px"><button class="btn btn-primary" onclick="go('home')">アカウントを作成</button></div>
+        <div class="divider">または</div>
+        <div class="oauth">
+          <button class="oauthbtn" onclick="go('home')"><span class="g" style="background:#db4437">G</span>Googleで登録</button>
+          <button class="oauthbtn" onclick="go('home')"><span class="g" style="background:#000">A</span>Appleで登録</button>
+          <button class="oauthbtn" onclick="go('home')"><span class="g" style="background:#06c755">L</span>LINEで登録</button>
+        </div>
+        <div class="links"><span onclick="go('login')" style="cursor:pointer">すでにアカウントをお持ちの方はログイン</span></div>
+      </div>
+    </section>
+
+    <!-- ============ PASSWORD RESET ============ -->
+    <section class="screen" id="pwreset">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+      <div class="authtop"><button class="backbtn" onclick="go('login')">‹</button></div>
+      <div class="body" style="padding:0">
+        <div class="head">
+          <div class="logo-s">🔑</div>
+          <h2>パスワード再設定</h2>
+          <p>登録メールアドレスに再設定リンクをお送りします</p>
+        </div>
+        <div class="field"><label>メールアドレス</label><input placeholder="you@example.com" inputmode="email"></div>
+        <div style="padding:0 22px"><button class="btn btn-primary" onclick="resetPw()">再設定リンクを送信</button></div>
+        <div class="links"><span onclick="go('login')" style="cursor:pointer">‹ ログインに戻る</span></div>
+      </div>
+    </section>
+
+    <!-- ============ HOME ============ -->
+    <section class="screen" id="home">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+      <div class="appbar">
+        <div class="title">ホーム</div>
+        <div class="ptchip">🪙 <span class="p" id="bal-home">1,250</span> P</div>
+        <div class="iconbtn" onclick="toast('通知：新着3件')">🔔</div>
+      </div>
+      <div class="body">
+        <div class="carousel">
+          <div class="slide"><div class="ph-img">KV / イベント画像</div><span class="badge">PR</span><div class="cap">新作RPG『エルディア戦記』事前登録受付中</div></div>
+          <div class="slide"><div class="ph-img">バナー画像</div><span class="badge">提携</span><div class="cap">人気タイトル限定ミッション開催中</div></div>
+          <div class="slide"><div class="ph-img">バナー画像</div><div class="cap">週末ポイント2倍キャンペーン</div></div>
+        </div>
+        <div class="dots-row"><i class="on"></i><i></i><i></i></div>
+
+        <div class="quick">
+          <div class="q" onclick="go('mission')"><div class="ic">🎯</div><div class="t">ミッション</div></div>
+          <div class="q" onclick="go('points')"><div class="ic">🎁</div><div class="t">交換する</div></div>
+          <div class="q" onclick="go('forum')"><div class="ic">💬</div><div class="t">フォーラム</div></div>
+          <div class="q" onclick="go('points')"><div class="ic">📊</div><div class="t">ポイント</div></div>
+        </div>
+
+        <div class="nudge" id="homeNudge" onclick="go('mission')"></div>
+
+        <div class="promo" onclick="go('mission')">
+          <div>
+            <div class="big">今日のデイリーミッション、あと2件！</div>
+            <div class="sm">達成して最大 +150P を獲得しよう</div>
+          </div>
+          <div class="go">行く ▸</div>
+        </div>
+
+        <div class="sec-label">ゲームニュース <span class="more" onclick="toast('記事一覧へ（実装予定）')">すべて見る</span></div>
+        <div class="card" style="padding:0">
+          <div class="feeditem"><div class="ph-img th"></div><div><div class="ti">『エルディア戦記』大型アップデート情報まとめ</div><div class="mt">攻略・MasterGame編集部 ・ 2時間前</div></div></div>
+          <div class="feeditem"><div class="ph-img th"></div><div><div class="ti">初心者必見！効率的なポイントの貯め方ガイド</div><div class="mt">お知らせ ・ 5時間前</div></div></div>
+          <div class="feeditem"><div class="ph-img th"></div><div><div class="ti">期間限定タイアップミッション開催のお知らせ</div><div class="mt">お知らせ ・ 1日前</div></div></div>
+        </div>
+        <div style="height:8px"></div>
+      </div>
+      <nav class="tabbar" data-nav></nav>
+    </section>
+
+    <!-- ============ MISSION ============ -->
+    <section class="screen" id="mission">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+      <div class="appbar">
+        <div class="title">ミッション</div>
+        <div class="ptchip">🪙 <span class="p" id="bal-mission">1,250</span> P</div>
+      </div>
+      <div class="body">
+        <div class="tabs">
+          <button class="tab on" data-mtab="daily" onclick="mtab('daily',this)">デイリー</button>
+          <button class="tab" data-mtab="weekly" onclick="mtab('weekly',this)">ウィークリー</button>
+          <button class="tab" data-mtab="ach" onclick="mtab('ach',this)">実績</button>
+          <button class="tab fire" data-mtab="event" onclick="mtab('event',this)">🔥 期間限定</button>
+          <button class="tab offer" data-mtab="offer" onclick="mtab('offer',this)">🎁 提携オファー</button>
+        </div>
+        <div id="mlist"></div>
+        <div style="height:8px"></div>
+      </div>
+      <nav class="tabbar" data-nav></nav>
+    </section>
+
+    <!-- ============ POINTS / EXCHANGE ============ -->
+    <section class="screen" id="points">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+      <div class="appbar"><div class="title">ポイント</div></div>
+      <div class="body">
+        <div class="balance">
+          <div class="lbl">保有ポイント</div>
+          <div class="num"><span id="bal-points">1,250</span><small>P</small></div>
+          <div class="row">
+            <div class="b" onclick="pseg('exchange')">🎁 交換する</div>
+            <div class="b" onclick="pseg('history')">🧾 履歴</div>
+          </div>
+        </div>
+
+        <div class="trend">
+          <div class="trend-head">
+            <div><div class="th-t">ポイント推移</div><div class="th-s">直近6ヶ月の獲得量と保有量</div></div>
+            <div class="lgnd"><span class="lg"><i class="bar"></i>月間獲得</span><span class="lg"><i class="line"></i>保有量</span></div>
+          </div>
+          <div id="ptChart"></div>
+          <div class="trend-stats">
+            <div class="ts"><div class="v" id="pt-total">—<small> P</small></div><div class="l">累計獲得</div></div>
+            <div class="ts"><div class="v" id="pt-avg">—<small> P</small></div><div class="l">月平均獲得</div></div>
+            <div class="ts"><div class="v" id="pt-best">—<small> P</small></div><div class="l">最高月</div></div>
+          </div>
+        </div>
+
+        <div id="stakeMount"></div>
+
+        <div class="seg">
+          <button class="on" id="seg-exchange" onclick="pseg('exchange')">交換アイテム</button>
+          <button id="seg-history" onclick="pseg('history')">獲得・交換履歴</button>
+        </div>
+
+        <!-- exchange grid -->
+        <div id="pane-exchange">
+          <div class="sec-label">提携ゲームのアイテム</div>
+          <div class="grid2" id="itemgrid"></div>
+          <div style="height:10px"></div>
+        </div>
+
+        <!-- history -->
+        <div id="pane-history" style="display:none">
+          <div id="histlist"></div>
+        </div>
+      </div>
+      <nav class="tabbar" data-nav></nav>
+    </section>
+
+    <!-- ============ COMMUNITY: GUILD LIST ============ -->
+    <section class="screen" id="forum">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+      <div class="appbar">
+        <div class="title">コミュニティ</div>
+        <div class="iconbtn" onclick="toast('ギルド検索（実装予定）')">🔍</div>
+      </div>
+      <div class="body">
+        <div class="sec-label">参加中・おすすめのギルド <span class="more" onclick="toast('すべてのギルド（実装予定）')">すべて</span></div>
+        <div id="guildlist"></div>
+        <div style="height:8px"></div>
+      </div>
+      <nav class="tabbar" data-nav></nav>
+    </section>
+
+    <!-- ============ COMMUNITY: TOPIC LIST ============ -->
+    <section class="screen" id="forumTopics">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+      <div class="appbar">
+        <div class="backbtn" onclick="go('forum')">‹</div>
+        <div class="title" id="guildTitle" style="font-size:15px">ギルド</div>
+      </div>
+      <div class="body">
+        <div class="topicseg" id="topicseg"></div>
+        <div id="topiclist"></div>
+        <div style="height:8px"></div>
+      </div>
+      <button class="fab" onclick="openCreateTopic()">＋</button>
+      <nav class="tabbar" data-nav></nav>
+    </section>
+
+    <!-- ============ COMMUNITY: TOPIC DETAIL ============ -->
+    <section class="screen" id="forumTopic">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+      <div class="appbar">
+        <div class="backbtn" onclick="go('forumTopics')">‹</div>
+        <div class="title" style="font-size:15px">トピック</div>
+        <div class="iconbtn" onclick="openReport('このトピック')">⚑</div>
+      </div>
+      <div class="body" id="topicbody"></div>
+      <div class="replybar">
+        <input id="replyInput" placeholder="返信を入力…">
+        <button class="send" onclick="sendReply()">➤</button>
+      </div>
+      <nav class="tabbar" data-nav></nav>
+    </section>
+
+    <!-- ============ MYPAGE (stub) ============ -->
+    <section class="screen" id="mypage">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+      <div class="appbar"><div class="title">マイページ</div><div class="iconbtn" onclick="toast('設定（実装予定）')">⚙️</div></div>
+      <div class="body">
+        <div class="profhead">
+          <div class="av">🦊</div>
+          <div><div class="nm">プレイヤー名</div><div class="hd">@player_1221</div><span class="rk" id="my-rank">🥈 シルバーランク</span></div>
+          <button class="edit" onclick="toast('プロフィール編集（実装予定）')">編集</button>
+        </div>
+        <div class="pstats">
+          <div class="pstat"><div class="v" id="my-bal">1,250<small> P</small></div><div class="l">保有ポイント</div></div>
+          <div class="pstat"><div class="v">12</div><div class="l">達成ミッション</div></div>
+          <div class="pstat"><div class="v">7<small> 日</small></div><div class="l">連続ログイン</div></div>
+        </div>
+        <div class="sec-label">VIPランク・特典</div>
+        <div id="vipMount"></div>
+        <div class="sec-label">好きなジャンル <span class="more" onclick="go('gameselect')">編集</span></div>
+        <div class="card" style="padding:13px;margin-bottom:14px"><div class="favchips" id="myFav"></div></div>
+        <div class="sec-label">アカウント</div>
+        <div class="setlist">
+          <div class="setrow" onclick="toast('プロフィール編集（実装予定）')"><span class="si">👤</span><span class="st">プロフィール編集</span><span class="ch">›</span></div>
+          <div class="setrow" onclick="toast('SNS連携（実装予定）')"><span class="si">🔗</span><span class="st">SNS連携（Google / Apple / LINE）</span><span class="ch">›</span></div>
+          <div class="setrow" onclick="toast('通知設定（実装予定）')"><span class="si">🔔</span><span class="st">通知設定</span><span class="ch">›</span></div>
+          <div class="setrow" onclick="go('points')"><span class="si">🧾</span><span class="st">ポイント履歴</span><span class="ch">›</span></div>
+        </div>
+        <div class="sec-label">サポート</div>
+        <div class="setlist">
+          <div class="setrow" onclick="toast('ヘルプ / FAQ（実装予定）')"><span class="si">❓</span><span class="st">ヘルプ / FAQ</span><span class="ch">›</span></div>
+          <div class="setrow" onclick="toast('お問い合わせ（実装予定）')"><span class="si">✉️</span><span class="st">お問い合わせ</span><span class="ch">›</span></div>
+          <div class="setrow" onclick="toast('利用規約・プライバシー（実装予定）')"><span class="si">📄</span><span class="st">利用規約・プライバシー</span><span class="ch">›</span></div>
+        </div>
+        <div class="setlist">
+          <div class="setrow accent" onclick="logout()"><span class="si">↪️</span><span class="st">ログアウト</span><span class="ch">›</span></div>
+          <div class="setrow danger" onclick="toast('退会手続き（実装予定）')"><span class="si">🗑️</span><span class="st">退会する</span><span class="ch">›</span></div>
+        </div>
+        <div style="height:8px"></div>
+      </div>
+      <nav class="tabbar" data-nav></nav>
+    </section>
+
+    <!-- overlays -->
+    <div class="overlay" id="overlay" onclick="if(event.target===this)closeSheet()">
+      <div class="sheet" id="sheet"></div>
+    </div>
+    <div class="congrats" id="congrats">
+      <div class="burst">🎉</div>
+      <h3 id="cong-title">ミッション達成！</h3>
+      <div class="got" id="cong-pt">+100 P</div>
+      <button class="ok" onclick="closeCongrats()">受け取る</button>
+    </div>
+    <div class="toast" id="toast"></div>
+
+  </div>
+</div>
+
+<script>
+/* ---------------- state ---------------- */
+const NAV=[
+  {id:'home',ic:'🏠',t:'ホーム'},
+  {id:'mission',ic:'🎯',t:'ミッション',dot:true},
+  {id:'points',ic:'🎁',t:'交換'},
+  {id:'forum',ic:'💬',t:'コミュニティ'},
+  {id:'mypage',ic:'👤',t:'マイページ'},
+];
+let balance=1250;
+
+const MISSIONS={
+  daily:[
+    {ic:'📰',t:'ゲーム攻略記事を1本読む',rw:30,cur:1,max:1},
+    {ic:'𝕏',t:'公式Xのポストを見る',rw:20,cur:0,max:1},
+    {ic:'✅',t:'ログインボーナスを受け取る',rw:10,cur:1,max:1},
+    {ic:'💬',t:'フォーラムに1回投稿する',rw:50,cur:0,max:1},
+    {ic:'🎮',t:'提携ゲームを起動する',rw:40,cur:0,max:3,prog:'1/3'},
+  ],
+  weekly:[
+    {ic:'🎯',t:'デイリーミッションを5日達成',rw:200,cur:3,max:5,prog:'3/5'},
+    {ic:'🤝',t:'フォーラムで3件の質問に回答',rw:150,cur:1,max:3,prog:'1/3'},
+    {ic:'📝',t:'プロフィールを完成させる',rw:80,cur:1,max:1},
+  ],
+  ach:[
+    {ic:'🏅',t:'初めてのポイント交換',rw:100,cur:0,max:1},
+    {ic:'🔥',t:'累計7日連続ログイン',rw:300,cur:4,max:7,prog:'4/7'},
+    {ic:'👑',t:'累計10,000P獲得',rw:500,cur:1250,max:10000,prog:'1,250/10,000'},
+  ],
+  event:[
+    {ic:'⚔️',t:'『エルディア戦記』事前登録',rw:500,cur:0,max:1,tie:'タイアップ'},
+    {ic:'🎁',t:'コラボガチャを1回引く',rw:120,cur:0,max:1,tie:'48時間限定'},
+  ],
+};
+const ITEMS=[
+  {nm:'ゲーム内通貨 1,000',gm:'エルディア戦記',cost:800},
+  {nm:'スタミナ回復ドリンク ×5',gm:'エルディア戦記',cost:300},
+  {nm:'ガチャチケット ×3',gm:'モンスターアリーナ',cost:1500},
+  {nm:'限定レアキャラ確定チケット',gm:'モンスターアリーナ',cost:1200},
+  {nm:'プレミアム装備スキン',gm:'スターフォール',cost:1600},
+  {nm:'Amazonギフト券 500円分',gm:'実物報酬',cost:5000},
+];
+// ---- offerwall (CPA offers) + reward video ----
+const OFFERS=[
+  {ic:'🎮',t:'『パズルキングダム』をインストール',net:'AppLovin',desc:'インストール＋チュートリアル完了で',rw:800},
+  {ic:'⚔️',t:'『戦国アリーナ』新規登録＋7日ログイン',net:'Tapjoy',desc:'7日ログインで段階付与',rw:1500},
+  {ic:'💳',t:'『カジノロワイヤル』初回課金',net:'ironSource',desc:'初回¥120以上の課金で',rw:5000},
+  {ic:'📋',t:'アンケート（約3分）に回答',net:'PollFish',desc:'回答完了で即時付与',rw:120},
+];
+// ---- community / guilds ----
+const GUILDS=[
+  {id:'lounge',ic:'🏠',col:'3B4CCA',t:'公開ラウンジ',d:'なんでも雑談OKの広場',members:'12,480',online:'342'},
+  {id:'eldia',ic:'⚔️',col:'7A4FD0',t:'エルディア戦記 ギルド',d:'攻略・パーティ募集・質問',members:'5,210',online:'128'},
+  {id:'monster',ic:'👾',col:'1F7A5B',t:'モンスターアリーナ ギルド',d:'対戦・編成相談',members:'3,870',online:'74'},
+  {id:'beginner',ic:'🔰',col:'C79A3A',t:'初心者の館',d:'はじめての人を助け合う',members:'8,940',online:'201'},
+];
+const TOPICS={
+  eldia:[
+    {id:1,kind:'q',title:'隠しボス「常闇のドレイク」の倒し方を教えてください',who:'リオ',ago:'15分前',replies:8,bounty:100},
+    {id:2,kind:'recruit',title:'今夜21時〜 レイド一緒に回れる人募集！',who:'カイ',ago:'1時間前',replies:3,bounty:0},
+    {id:3,kind:'chat',title:'新キャラのイラスト良すぎませんか？',who:'ナナ',ago:'3時間前',replies:21,bounty:0},
+    {id:4,kind:'q',title:'無課金で最効率に星6まで上げる方法',who:'みう',ago:'昨日',replies:12,bounty:50},
+  ],
+  lounge:[
+    {id:11,kind:'chat',title:'みんな今いちばんハマってるゲーム何？',who:'そら',ago:'25分前',replies:34,bounty:0},
+    {id:12,kind:'q',title:'MasterGameのポイント、最速の貯め方ある？',who:'ゆい',ago:'2時間前',replies:9,bounty:30},
+  ],
+  monster:[
+    {id:21,kind:'recruit',title:'ランクマ用の編成、晒し合いしましょう',who:'ジン',ago:'40分前',replies:6,bounty:0},
+    {id:22,kind:'q',title:'初心者おすすめの最初の1体は？',who:'あお',ago:'5時間前',replies:15,bounty:0},
+  ],
+  beginner:[
+    {id:31,kind:'q',title:'スタミナの効率的な使い方がわかりません',who:'はじめ',ago:'10分前',replies:4,bounty:20},
+    {id:32,kind:'chat',title:'今日から始めました！よろしくお願いします',who:'newびー',ago:'1時間前',replies:18,bounty:0},
+  ],
+};
+const KIND={q:['質問','q'],chat:['雑談','chat'],recruit:['募集','recruit']};
+let history=[
+  {ic:'📰',t:'記事を読む（デイリー）',d:'今日 09:12',p:'+30',cls:'plus'},
+  {ic:'✅',t:'ログインボーナス',d:'今日 09:10',p:'+10',cls:'plus'},
+  {ic:'🎯',t:'デイリー5日達成',d:'昨日 21:40',p:'+200',cls:'plus'},
+];
+
+/* ---------------- nav / screens ---------------- */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('root').scrollTop=0;
+  document.querySelectorAll('.body').forEach(b=>b.scrollTop=0);
+  if(id==='mission')renderMissions();
+  if(id==='points'){pseg('exchange');renderItems();renderHist();renderPtChart();renderStake();}
+  if(id==='home')renderNudge();
+  if(id==='forum')renderGuilds();
+  if(id==='onboarding'){obStep=0;renderOb();}
+  if(id==='gameselect')renderGameSelect();
+  if(id==='mypage')renderMypage();
+  syncBalance();
+}
+function renderMypage(){
+  renderVip();
+  const b=document.getElementById('my-bal'); if(b)b.innerHTML=balance.toLocaleString()+'<small> P</small>';
+  const el=document.getElementById('myFav'); if(!el)return;
+  el.innerHTML = favGames.length
+    ? favGames.map(id=>{const g=GAMES.find(x=>x.id===id);return g?`<span class="favchip">${g.ic} ${g.nm}</span>`:'';}).join('')
+    : '<span style="color:var(--muted);font-size:11.5px">未設定 — タップして選択</span>';
+}
+function logout(){ go('login'); setTimeout(()=>toast('ログアウトしました'),200); }
+
+/* ---------------- onboarding ---------------- */
+const OB=[
+  {e:'🎮',bg:'linear-gradient(140deg,#5563e0,#7a4fd0)',t:'ようこそ、MasterGame へ',d:'遊ぶ・助け合う・活動する。あなたのゲーム時間が“得”に変わる、新しい体験へ。'},
+  {e:'🎯',bg:'linear-gradient(140deg,#3b4cca,#5563e0)',t:'ミッションでポイントを貯めよう',d:'記事を読む・公式Xを見る・ゲームをプレイ。かんたんなミッションでポイントが貯まります。'},
+  {e:'🎁',bg:'linear-gradient(140deg,#e0b450,#c79a3a)',t:'アイテムと交換しよう',d:'貯めたポイントを提携ゲームのアイテムや実物報酬と交換。ここでしか手に入らない限定品も。'},
+  {e:'💬',bg:'linear-gradient(140deg,#9166dd,#7a4fd0)',t:'ギルドで仲間と助け合おう',d:'質問・募集・雑談。ゲーム別ギルドで攻略も交流も。さあ、はじめよう！'},
+];
+let obStep=0;
+function renderOb(){
+  const o=OB[obStep], art=document.getElementById('obArt');
+  art.style.background=o.bg; art.textContent=o.e;
+  document.getElementById('obTitle').textContent=o.t;
+  document.getElementById('obDesc').textContent=o.d;
+  document.getElementById('obDots').innerHTML=OB.map((_,i)=>`<i class="${i===obStep?'on':''}"></i>`).join('');
+  document.getElementById('obBtn').textContent=(obStep===OB.length-1)?'はじめる':'次へ';
+}
+function obNext(){ if(obStep<OB.length-1){obStep++;renderOb();}else{go('gameselect');} }
+
+/* ---------------- game select (personalization) ---------------- */
+const GAMES=[
+  {id:'rpg',ic:'⚔️',col:'7A4FD0',nm:'RPG',gn:'冒険・育成'},
+  {id:'action',ic:'🎮',col:'C0392B',nm:'アクション',gn:'反射・操作'},
+  {id:'puzzle',ic:'🧩',col:'1F7A5B',nm:'パズル',gn:'頭脳・暇つぶし'},
+  {id:'shooter',ic:'🎯',col:'3B4CCA',nm:'シューティング',gn:'FPS / TPS'},
+  {id:'strategy',ic:'♟️',col:'C79A3A',nm:'ストラテジー',gn:'戦略・シム'},
+  {id:'sports',ic:'⚽',col:'179A5B',nm:'スポーツ / レース',gn:'競技・対戦'},
+  {id:'sim',ic:'🏝️',col:'2563C9',nm:'シミュレーション',gn:'箱庭・経営'},
+  {id:'casual',ic:'🍬',col:'D6608F',nm:'カジュアル',gn:'手軽・癒し'},
+];
+let favGames=[];
+function renderGameSelect(){
+  document.getElementById('gsGrid').innerHTML=GAMES.map(g=>`
+    <div class="gs-card ${favGames.includes(g.id)?'sel':''}" onclick="toggleGame('${g.id}')">
+      <div class="chk">✓</div>
+      <div class="ic" style="background:#${g.col}">${g.ic}</div>
+      <div class="nm">${g.nm}</div><div class="gn">${g.gn}</div>
+    </div>`).join('');
+  const n=favGames.length;
+  document.getElementById('gsCnt').textContent = n ? n+'件 選択中 — おすすめを最適化します' : 'タップして選択（複数可）';
+}
+function toggleGame(id){
+  const i=favGames.indexOf(id);
+  if(i>=0)favGames.splice(i,1); else favGames.push(id);
+  renderGameSelect();
+}
+function finishGameSelect(){
+  go('login');
+  if(favGames.length) setTimeout(()=>toast('おすすめを最適化しました（'+favGames.length+'タイトル）'),200);
+}
+function buildNav(){
+  document.querySelectorAll('[data-nav]').forEach(nav=>{
+    let cur=nav.closest('.screen').id;
+    if(cur.indexOf('forum')===0)cur='forum';
+    nav.innerHTML=NAV.map(n=>`<button class="n ${n.id===cur?'on':''}" onclick="go('${n.id}')">
+      <span class="ic">${n.ic}</span>${n.id==='mission'?'<span class="dot"></span>':''}${n.t}</button>`).join('');
+  });
+}
+function syncBalance(){
+  ['home','mission','points'].forEach(s=>{const e=document.getElementById('bal-'+s);if(e)e.textContent=balance.toLocaleString();});
+  renderNudge();
+}
+
+/* ---------------- missions ---------------- */
+let curTab='daily';
+function mtab(k,el){curTab=k;document.querySelectorAll('[data-mtab]').forEach(t=>t.classList.remove('on'));el.classList.add('on');renderMissions();}
+function renderMissions(){
+  const list=document.getElementById('mlist');
+  if(curTab==='offer'){ renderOffers(list); return; }
+  let html='';
+  if(curTab==='event')html+=`<div class="fire-banner">🔥 期間限定ミッションは今だけ！ タイアップ報酬を見逃さないで</div>`;
+  html+=MISSIONS[curTab].map((m,i)=>{
+    const pct=Math.round(m.cur/m.max*100);
+    const ready=m.cur>=m.max&&!m.claimed;
+    const done=m.claimed;
+    let btn=`<button class="claim ${ready?'ready':''} ${done?'done':''}" ${ready?`onclick="claim('${curTab}',${i})"`:''} ${(!ready&&!done)?'disabled':''}>
+      ${done?'受取済':ready?'受け取る':'未達成'}</button>`;
+    return `<div class="mission">
+      <div class="mi">${m.ic}</div>
+      <div class="grow">
+        <div class="mt">${m.t}${m.tie?` <span class="pill wait">${m.tie}</span>`:''}</div>
+        <div class="reward">＋${m.rw} P</div>
+        <div class="bar ${pct>=100?'full':''}"><i style="width:${pct}%"></i></div>
+        ${m.prog?`<div class="prog-n">${m.prog}</div>`:''}
+      </div>${btn}</div>`;
+  }).join('');
+  list.innerHTML=html;
+}
+function claim(tab,i){
+  const m=MISSIONS[tab][i];
+  m.claimed=true;
+  document.querySelector('#congrats .burst').textContent='🎉';
+  document.getElementById('cong-pt').textContent='+'+m.rw+' P';
+  document.getElementById('cong-title').textContent='ミッション達成！';
+  document.getElementById('congrats').classList.add('show');
+  pendingPt=m.rw; pendingHist={ic:m.ic,t:m.t+'（ミッション）',d:'今日 たった今',p:'+'+m.rw,cls:'plus'};
+}
+let pendingPt=0,pendingHist=null;
+function closeCongrats(){
+  balance+=pendingPt; if(pendingHist)history.unshift(pendingHist);
+  pendingPt=0;pendingHist=null;
+  document.getElementById('congrats').classList.remove('show');
+  syncBalance();renderMissions();
+}
+
+/* ---------------- points / exchange ---------------- */
+function pseg(k){
+  document.getElementById('pane-exchange').style.display=k==='exchange'?'':'none';
+  document.getElementById('pane-history').style.display=k==='history'?'':'none';
+  document.getElementById('seg-exchange').classList.toggle('on',k==='exchange');
+  document.getElementById('seg-history').classList.toggle('on',k==='history');
+  if(k==='history')renderHist();
+}
+function renderItems(){
+  document.getElementById('itemgrid').innerHTML=ITEMS.map((it,i)=>`
+    <div class="item" onclick="openItem(${i})">
+      <div class="ph-img">アイテム画像</div>
+      <div class="in"><div class="nm">${it.nm}</div><div class="gm">${it.gm}</div>
+      <div class="cost">${it.cost.toLocaleString()}<small> P</small></div>
+      ${it.cost>balance?`<div class="near">あと ${(it.cost-balance).toLocaleString()}P</div>`:`<div class="near" style="color:var(--ok)">✓ 交換できます</div>`}</div>
+    </div>`).join('');
+}
+function openItem(i){
+  const it=ITEMS[i];
+  const enough=balance>=it.cost;
+  const after=balance-it.cost;
+  document.getElementById('sheet').innerHTML=`
+    <div class="grab"></div>
+    <div class="ph-img">アイテム画像</div>
+    <h3>${it.nm}</h3>
+    <p class="gm">${it.gm}</p>
+    <div class="costline"><span>必要ポイント</span><span class="c">${it.cost.toLocaleString()} P</span></div>
+    <div class="after">交換後の残高：${enough?after.toLocaleString():'—'} P</div>
+    <button class="btn ${enough?'btn-primary':''}" ${enough?`onclick="exchange(${i})"`:'disabled'}>
+      ${enough?'このアイテムと交換する':'ポイントが不足しています'}</button>`;
+  document.getElementById('overlay').classList.add('show');
+}
+function exchange(i){
+  const it=ITEMS[i];
+  balance-=it.cost;
+  history.unshift({ic:'🎁',t:it.nm+'と交換',d:'今日 たった今',p:'-'+it.cost,cls:'minus',wait:true});
+  closeSheet();syncBalance();
+  document.getElementById('cong-pt').textContent='交換申請 完了';
+  document.getElementById('cong-title').textContent='交換を受け付けました';
+  document.getElementById('congrats').classList.add('show');
+  document.querySelector('#congrats .burst').textContent='✅';
+  pendingPt=0;pendingHist=null;
+  setTimeout(()=>{pseg('history');},100);
+}
+function closeSheet(){document.getElementById('overlay').classList.remove('show');}
+function renderHist(){
+  document.getElementById('histlist').innerHTML=history.map(h=>`
+    <div class="histrow"><div class="hi">${h.ic}</div>
+      <div><div class="ht">${h.t}${h.wait?'<span class="pill wait">処理中</span>':''}${h.pending?'<span class="pill pend">検証中</span>':''}</div><div class="hd">${h.d}</div></div>
+      <div class="hp ${h.cls}">${h.p}<small style="font-weight:700;font-size:10px"> P</small></div>
+    </div>`).join('');
+}
+
+/* ---------------- point trend chart ---------------- */
+const PT_DATA=[
+  {m:'1月',e:1800,b:1800},{m:'2月',e:2400,b:3400},{m:'3月',e:2100,b:4200},
+  {m:'4月',e:3200,b:5800},{m:'5月',e:2900,b:5200},{m:'6月',e:3600,b:0},
+];
+function renderPtChart(){
+  const el=document.getElementById('ptChart'); if(!el)return;
+  const data=PT_DATA.map((d,i)=> i===PT_DATA.length-1 ? {m:d.m,e:d.e,b:balance} : d);
+  const W=320,H=148,bw=20,base=H-22,top=14;
+  const max=Math.max(...data.map(d=>Math.max(d.e,d.b)))*1.12||1;
+  const X=i=>26+i*((W-52)/(data.length-1)), Y=v=>base-(v/max)*(base-top);
+  const bars=data.map((d,i)=>`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${Y(d.e).toFixed(1)}" width="${bw}" height="${(base-Y(d.e)).toFixed(1)}" rx="4" fill="url(#ptg)"/>`).join('');
+  const line=data.map((d,i)=>`${X(i).toFixed(1)},${Y(d.b).toFixed(1)}`).join(' ');
+  const dots=data.map((d,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(d.b).toFixed(1)}" r="3.5" fill="#fff" stroke="#3b4cca" stroke-width="2"/>`).join('');
+  const labels=data.map((d,i)=>`<text x="${X(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9" fill="#9aa0ac">${d.m}</text>`).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="148" preserveAspectRatio="xMidYMid meet">
+    <defs><linearGradient id="ptg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3c879"/><stop offset="1" stop-color="#f3e8c6"/></linearGradient></defs>
+    ${bars}<polyline points="${line}" fill="none" stroke="#3b4cca" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}${labels}</svg>`;
+  const tot=PT_DATA.reduce((s,d)=>s+d.e,0), avg=Math.round(tot/PT_DATA.length), best=Math.max(...PT_DATA.map(d=>d.e));
+  document.getElementById('pt-total').innerHTML=tot.toLocaleString()+'<small> P</small>';
+  document.getElementById('pt-avg').innerHTML=avg.toLocaleString()+'<small> P</small>';
+  document.getElementById('pt-best').innerHTML=best.toLocaleString()+'<small> P</small>';
+}
+
+/* ---------------- VIP rank / staking ---------------- */
+const VIP_RANKS=[
+  {name:'ブロンズ',ic:'🥉',xp:0,stake:1.0,col:'#9a7b3a',col2:'#6b5526'},
+  {name:'シルバー',ic:'🥈',xp:3000,stake:1.5,col:'#7d8694',col2:'#535b68'},
+  {name:'ゴールド',ic:'🥇',xp:10000,stake:2.0,col:'#c79a3a',col2:'#9a7322'},
+  {name:'プラチナ',ic:'💎',xp:30000,stake:3.0,col:'#3b9c8f',col2:'#1f6a60'},
+  {name:'ダイヤ',ic:'👑',xp:80000,stake:5.0,col:'#6a5cd0',col2:'#463aa0'},
+];
+let vipXP=6400, stakeAccrued=84;
+function curRank(){ let i=0; VIP_RANKS.forEach((r,k)=>{if(vipXP>=r.xp)i=k;}); return i; }
+function renderStake(){
+  const el=document.getElementById('stakeMount'); if(!el)return;
+  const r=VIP_RANKS[curRank()], monthly=Math.round(balance*r.stake/100);
+  el.innerHTML=`<div class="stake">
+    <div class="st-t">💰 ステーキング（保有ボーナス）</div>
+    <div class="st-row">
+      <div class="st-box"><div class="v">${r.stake.toFixed(1)}<small>%/月</small></div><div class="l">${r.name}ランク利率</div></div>
+      <div class="st-box"><div class="v">+${monthly.toLocaleString()}<small> P</small></div><div class="l">翌月付与の見込み</div></div>
+      <div class="st-box"><div class="v">+${stakeAccrued}<small> P</small></div><div class="l">累計ボーナス</div></div>
+    </div>
+    <div class="st-note">交換せず保有しているポイントに、毎月ランク利率でボーナスが付与されます。ランクが上がるほど利率もアップ。</div>
+  </div>`;
+}
+function renderVip(){
+  const el=document.getElementById('vipMount'); if(!el)return;
+  const idx=curRank(), r=VIP_RANKS[idx], nx=VIP_RANKS[idx+1];
+  const pct = nx ? Math.round((vipXP-r.xp)/(nx.xp-r.xp)*100) : 100;
+  const lane=VIP_RANKS.map((rr,i)=>`<div class="rl ${i<idx?'done':''} ${i===idx?'cur':''}">${rr.ic}<br>${rr.name}</div>`).join('');
+  const buffs=[
+    {ic:'⚡',t:'ポイント獲得ブースト',d:'全ミッション報酬に加算',v:'+'+(idx*2+3)+'%',need:0},
+    {ic:'💰',t:'ステーキング利率',d:'保有ボーナスの月利',v:r.stake.toFixed(1)+'%',need:0},
+    {ic:'🎁',t:'限定交換アクセス',d:'上位ランク限定アイテム',v:idx>=1?'解放':'🔒',need:1},
+    {ic:'👑',t:'プレミアム特典',d:'VIP限定キャンペーン',v:idx>=3?'解放':'🔒',need:3},
+  ];
+  el.innerHTML=`<div class="vipcard" style="background:linear-gradient(135deg,${r.col},${r.col2})">
+    <div class="vip-top"><div class="vip-badge">${r.ic}</div>
+      <div><div class="vip-name">${r.name} ランク</div><div class="vip-sub">VIP会員 ・ ${vipXP.toLocaleString()} XP（活動で蓄積）</div></div></div>
+    <div class="vip-xp"><div class="lab"><span>${r.name}</span><span>${nx?'次：'+nx.name+' まで '+(nx.xp-vipXP).toLocaleString()+' XP':'最高ランク達成'}</span></div>
+      <div class="vip-bar"><i style="width:${pct}%"></i></div></div></div>
+    <div class="ranklane">${lane}</div>
+    <div class="buffs">${buffs.map(b=>`<div class="buff ${idx>=b.need?'':'locked'}"><div class="bi">${b.ic}</div>
+      <div><div class="bt">${b.t}</div><div class="bd">${b.d}</div></div><div class="bv">${b.v}</div></div>`).join('')}</div>`;
+  const rk=document.getElementById('my-rank'); if(rk)rk.textContent=r.ic+' '+r.name+'ランク';
+}
+
+/* ---------------- smart nudge ---------------- */
+function renderNudge(){
+  const el=document.getElementById('homeNudge'); if(!el)return;
+  const next=ITEMS.filter(it=>it.cost>balance).sort((a,b)=>a.cost-b.cost)[0];
+  if(!next){ el.style.display='none'; return; }
+  el.style.display='flex';
+  const need=next.cost-balance;
+  const recs=[...MISSIONS.daily,...MISSIONS.weekly].filter(m=>!m.claimed);
+  const rec=recs.sort((a,b)=>Math.abs(a.rw-need)-Math.abs(b.rw-need))[0];
+  el.innerHTML=`<div class="ico">🎯</div>
+    <div><div class="big">あと <b>${need.toLocaleString()}P</b> で「${next.nm}」と交換できます</div>
+    <div class="sm">${rec?`おすすめ：${rec.t}（＋${rec.rw}P）でぐっと近づく`:'ミッションを達成して貯めよう'}</div></div>
+    <div class="go">貯める ▸</div>`;
+}
+
+/* ---------------- offerwall ---------------- */
+function renderOffers(list){
+  let html=`<div class="offer-banner"><div class="t">提携オファー・動画広告で貯める</div>
+    <div class="s">外部ネットワーク提供の高額オファー。達成はサーバー検証（postback）後に確定します。</div></div>`;
+  html+=`<div class="video-card" onclick="watchVideo()"><div class="vic">📺</div>
+    <div><div class="vt">動画広告を見る</div><div class="vs">30秒視聴で即時付与・1日10回まで</div></div>
+    <div class="vr">＋5P</div></div>`;
+  html+=OFFERS.map((o,i)=>`<div class="offer" onclick="startOffer(${i})">
+    <div class="oic">${o.ic}</div>
+    <div class="grow"><div class="ot">${o.t}</div><div class="od">${o.desc}</div>
+      <span class="onet">via ${o.net}</span></div>
+    <div class="opt"><div class="v">+${o.rw.toLocaleString()}</div><div class="u">P</div></div>
+  </div>`).join('');
+  list.innerHTML=html;
+}
+function watchVideo(){
+  toast('📺 動画広告を再生中…');
+  setTimeout(()=>{
+    balance+=5; history.unshift({ic:'📺',t:'動画広告の視聴',d:'今日 たった今',p:'+5',cls:'plus'});
+    document.getElementById('cong-pt').textContent='+5 P';
+    document.getElementById('cong-title').textContent='視聴完了！';
+    document.querySelector('#congrats .burst').textContent='📺';
+    pendingPt=0; pendingHist=null; syncBalance(); renderHist();
+    document.getElementById('congrats').classList.add('show');
+  },1200);
+}
+function startOffer(i){
+  const o=OFFERS[i];
+  document.getElementById('sheet').innerHTML=`<div class="grab"></div>
+    <div class="ph-img" style="height:90px">${o.net} オファー</div>
+    <h3 style="margin-top:12px">${o.t}</h3>
+    <p class="gm">${o.desc} <b style="color:#13a06f">+${o.rw.toLocaleString()}P</b></p>
+    <div class="costline"><span>提供元ネットワーク</span><span style="color:var(--sub);font-weight:800">${o.net}</span></div>
+    <div class="after">外部アプリ／サイトへ遷移します。達成は提供元からのサーバー通知（postback）で確認後にポイントが確定します。</div>
+    <button class="btn btn-primary" onclick="beginOffer(${i})">オファーを開始する</button>`;
+  document.getElementById('overlay').classList.add('show');
+}
+function beginOffer(i){
+  const o=OFFERS[i]; closeSheet();
+  const h={ic:o.ic,t:o.t.replace(/『|』/g,'')+'（提携オファー）',d:'今日 たった今',p:'+'+o.rw,cls:'plus',pending:true};
+  history.unshift(h);
+  toast('外部へ遷移しました。達成を待っています…');
+  go('points'); pseg('history');
+  setTimeout(()=>{
+    h.pending=false; balance+=o.rw; syncBalance(); renderHist();
+    toast('✅ サーバー検証完了：'+o.rw.toLocaleString()+'P を付与');
+  },2600);
+}
+
+/* ---------------- community / guild ---------------- */
+let curGuild=null, curTopic=null, topicFilter='all', curReplies=[];
+function renderGuilds(){
+  const el=document.getElementById('guildlist'); if(!el)return;
+  el.innerHTML=GUILDS.map(g=>`
+    <div class="guild" onclick="openGuild('${g.id}')">
+      <div class="gic" style="background:#${g.col}">${g.ic}</div>
+      <div style="flex:1;min-width:0"><div class="gt">${g.t}</div><div class="gd">${g.d}</div></div>
+      <div class="gm">${g.members}人<br><span class="on">●${g.online} online</span></div>
+    </div>`).join('');
+}
+function openGuild(id){
+  curGuild=id; topicFilter='all';
+  const g=GUILDS.find(x=>x.id===id);
+  document.getElementById('guildTitle').textContent=g.t;
+  renderTopics(); go('forumTopics');
+}
+function setTopicFilter(f){ topicFilter=f; renderTopics(); }
+function renderTopics(){
+  const seg=document.getElementById('topicseg');
+  const filters=[['all','すべて'],['q','質問'],['recruit','募集'],['chat','雑談']];
+  seg.innerHTML=filters.map(f=>`<div class="ts ${topicFilter===f[0]?'on':''}" onclick="setTopicFilter('${f[0]}')">${f[1]}</div>`).join('');
+  const list=(TOPICS[curGuild]||[]).filter(t=>topicFilter==='all'||t.kind===topicFilter);
+  const box=document.getElementById('topiclist');
+  box.innerHTML=list.length? list.map(t=>{
+    const k=KIND[t.kind];
+    return `<div class="topic" onclick='openTopic(${JSON.stringify(t)})'>
+      <div class="tt">${t.title}</div>
+      <div class="meta"><span class="kind ${k[1]}">${k[0]}</span>
+        ${t.bounty?`<span class="bounty">🏅 ${t.bounty}P</span>`:''}
+        <span class="who">${t.who}</span><span>· ${t.ago}</span>
+        <span class="r">💬 ${t.replies}</span></div>
+    </div>`;
+  }).join('') : `<div class="stub"><div class="ic">🗒️</div><p>このカテゴリのトピックはまだありません</p></div>`;
+}
+function topicBody(t){
+  if(t.kind==='q')return 'どうしても自力でクリアできず困っています。おすすめの編成や立ち回りがあれば教えてください！'+(t.bounty?' ベストアンサーにはポイントを進呈します🙏':'');
+  if(t.kind==='recruit')return '気軽に参加OK！初心者の方も大歓迎です。コメントください〜';
+  return 'みんなの意見が聞きたくて立てました。気軽にコメントどうぞ！';
+}
+function sampleReplies(){
+  return [
+    {who:'ベテランP',ago:'12分前',text:'まず属性相性を合わせるのが大事。氷属性パで挑むと一気に楽になりますよ。',likes:14,best:false},
+    {who:'攻略班Aki',ago:'8分前',text:'第2形態のブレス前にバフを切らさないこと。スタンを1枚挟むと安定します。',likes:9,best:false},
+    {who:'みう',ago:'5分前',text:'横から失礼、無課金でも上記でいけました！回復はサブ1体で十分です。',likes:5,best:false},
+  ];
+}
+function openTopic(t){ curTopic=t; curReplies=sampleReplies(); renderTopic(); go('forumTopic'); }
+function renderTopic(){
+  const t=curTopic, k=KIND[t.kind];
+  document.getElementById('topicbody').innerHTML=`
+    <div class="op">
+      <div class="oph"><div class="av">🙂</div><div><div class="nm">${t.who}</div><div class="tm">${t.ago}</div></div></div>
+      <div class="otitle">${t.title}</div>
+      <div style="margin-bottom:10px"><span class="kind ${k[1]}">${k[0]}</span> ${t.bounty?`<span class="bounty">🏅 ${t.bounty}P 賭け</span>`:''}</div>
+      <div class="obody">${topicBody(t)}</div>
+    </div>
+    <div class="sec-label">返信 ${curReplies.length}</div>
+    <div id="replylist"></div>`;
+  renderReplies();
+}
+function renderReplies(){
+  const t=curTopic;
+  document.getElementById('replylist').innerHTML=curReplies.map((r,i)=>`
+    <div class="reply ${r.best?'best':''}">
+      <div class="av">🙂</div>
+      <div class="rb">
+        <div class="rnm">${r.who}${r.best?'<span class="bestbadge">ベストアンサー</span>':`<small>${r.ago}</small>`}</div>
+        <div class="rtext">${r.text}</div>
+        <div class="ract">
+          <span onclick="likeReply(${i})">👍 ${r.likes}</span>
+          <span class="flagbtn" onclick="openReport('${r.who}さんの返信')">⚑ 通報</span>
+          ${(t.bounty&&!t.resolved)?`<button class="pickbest" onclick="pickBest(${i})">ベストに選ぶ</button>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+function likeReply(i){ curReplies[i].likes++; renderReplies(); }
+function pickBest(i){
+  curReplies.forEach((r,j)=>r.best=(j===i));
+  curTopic.resolved=true; renderReplies();
+  document.getElementById('cong-pt').textContent='🏅 '+curTopic.bounty+'P を進呈';
+  document.getElementById('cong-title').textContent='ベストアンサーを選びました';
+  document.querySelector('#congrats .burst').textContent='🏅';
+  pendingPt=0; pendingHist=null;
+  document.getElementById('congrats').classList.add('show');
+}
+function sendReply(){
+  const inp=document.getElementById('replyInput'), v=inp.value.trim();
+  if(!v)return;
+  curReplies.push({who:'あなた',ago:'たった今',text:v,likes:0,best:false});
+  inp.value=''; renderReplies();
+  const b=document.querySelector('#forumTopic .body'); if(b)b.scrollTop=b.scrollHeight;
+}
+function openCreateTopic(){
+  const g=GUILDS.find(x=>x.id===curGuild)||{};
+  document.getElementById('sheet').innerHTML=`<div class="grab"></div>
+    <h3>トピックを作成</h3><p class="gm">${g.t||''}</p>
+    <div class="field" style="margin:0 0 12px"><label>タイトル</label><input id="ntTitle" placeholder="例：おすすめ編成を教えてください"></div>
+    <div class="field" style="margin:0 0 14px"><label>種別</label>
+      <select id="ntKind" style="width:100%;border:1px solid var(--line);border-radius:11px;padding:13px;font-size:14px;font-family:inherit;background:#fff">
+        <option value="q">質問</option><option value="recruit">募集</option><option value="chat">雑談</option></select></div>
+    <button class="btn btn-primary" onclick="addTopic()">投稿する</button>`;
+  document.getElementById('overlay').classList.add('show');
+}
+function addTopic(){
+  const title=document.getElementById('ntTitle').value.trim();
+  if(!title){ toast('タイトルを入力してください'); return; }
+  const kind=document.getElementById('ntKind').value;
+  (TOPICS[curGuild]=TOPICS[curGuild]||[]).unshift({id:Date.now(),kind,title,who:'あなた',ago:'たった今',replies:0,bounty:0});
+  closeSheet(); renderTopics(); toast('トピックを作成しました');
+}
+/* report */
+let reportReason=null;
+function openReport(target){
+  reportReason=null;
+  const reasons=['スパム・宣伝','不適切なコンテンツ','誹謗中傷・ハラスメント','その他'];
+  document.getElementById('sheet').innerHTML=`<div class="grab"></div>
+    <h3>通報する</h3><p class="gm">${target} を運営に報告します</p>
+    ${reasons.map((r,i)=>`<div class="report-opt" id="ro${i}" onclick="selReason(${i},'${r}')"><div class="rd"></div>${r}</div>`).join('')}
+    <button class="btn btn-primary" style="margin-top:8px" onclick="submitReport()">通報を送信</button>`;
+  document.getElementById('overlay').classList.add('show');
+}
+function selReason(i,txt){
+  reportReason=txt;
+  document.querySelectorAll('.report-opt').forEach(e=>e.classList.remove('sel'));
+  document.getElementById('ro'+i).classList.add('sel');
+}
+function submitReport(){
+  if(!reportReason){ toast('理由を選択してください'); return; }
+  closeSheet(); toast('通報を受け付けました。運営が確認します');
+}
+
+/* ---------------- misc ---------------- */
+let tT;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),1800);}
+function resetPw(){ go('login'); setTimeout(()=>toast('再設定リンクを送信しました'),200); }
+function resetApp(){balance=1250;Object.values(MISSIONS).flat().forEach(m=>m.claimed=false);
+  Object.values(TOPICS).flat().forEach(t=>{delete t.resolved;});
+  history=[{ic:'📰',t:'記事を読む（デイリー）',d:'今日 09:12',p:'+30',cls:'plus'},
+    {ic:'✅',t:'ログインボーナス',d:'今日 09:10',p:'+10',cls:'plus'},
+    {ic:'🎯',t:'デイリー5日達成',d:'昨日 21:40',p:'+200',cls:'plus'}];
+  document.querySelector('#congrats .burst').textContent='🎉';
+  go('splash');toast('リセットしました');}
+
+buildNav();renderMissions();renderItems();renderHist();renderGuilds();renderNudge();syncBalance();
+</script>
+</body>
+</html>

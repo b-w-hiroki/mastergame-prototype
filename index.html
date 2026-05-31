@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MasterGame ｜ プロトタイプ確認ハブ</title>
+<meta name="description" content="MasterGame（ポイ活×ゲームコミュニティ）の動作プロトタイプ集。アプリ・集客LP・運営管理画面を確認できます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0e1015; --ink2:#1a1f2b; --bg:#ffffff; --bg2:#f6f7fa; --bg3:#eef0f6;
+    --line:#e7e9ef; --line2:#dfe2ea; --accent:#4f46e5; --accent2:#7c5cff; --accent-soft:#eef0ff;
+    --gold:#b88a2e; --ok:#179a5b; --text-sub:#565c6a; --muted:#9aa0ad;
+    --disp:"Plus Jakarta Sans","Noto Sans JP",system-ui,sans-serif;
+    --body:"Noto Sans JP","Plus Jakarta Sans",system-ui,sans-serif;
+    --maxw:1120px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg2);line-height:1.7;-webkit-font-smoothing:antialiased;letter-spacing:.01em}
+  a{color:inherit;text-decoration:none}
+  h1,h2,h3,.disp{font-family:var(--disp);letter-spacing:-.02em;line-height:1.2}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+
+  /* hero */
+  .hero{background:radial-gradient(80% 100% at 50% -20%,#23264d,#0e1015 70%);color:#fff;padding:72px 0 110px;position:relative;overflow:hidden}
+  .hero:after{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,255,.35),transparent 60%);top:-180px;right:-120px}
+  .hbrand{display:flex;align-items:center;gap:11px;font-family:var(--disp);font-weight:800;font-size:18px;margin-bottom:54px;position:relative}
+  .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(140deg,#5563e0,#7c5cff);display:grid;place-items:center;font-weight:800;font-size:15px;box-shadow:0 8px 20px rgba(80,70,220,.4)}
+  .htag{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:7px 15px;font-size:12.5px;font-weight:700;color:#dfe2f7;margin-bottom:22px;position:relative}
+  .htag .dot{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.25)}
+  .hero h1{font-size:clamp(32px,5vw,52px);font-weight:800;position:relative;max-width:760px}
+  .hero h1 .em{background:linear-gradient(120deg,#a99bff,#7c5cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{font-size:clamp(15px,1.7vw,18px);color:#aeb3c8;margin-top:20px;max-width:600px;position:relative;font-weight:400}
+  .meta{display:flex;gap:26px;flex-wrap:wrap;margin-top:34px;position:relative}
+  .meta .m .n{font-family:var(--disp);font-size:22px;font-weight:800}
+  .meta .m .l{font-size:11.5px;color:#8b91a8;margin-top:2px}
+
+  /* cards section pulled up */
+  .stage{margin-top:-66px;position:relative;z-index:5;padding-bottom:20px}
+  .lead-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+  .lead-row .eyebrow{font-family:var(--disp);font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#cdd1e6}
+  .lead-row .hint{font-size:12.5px;color:var(--muted)}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:0 30px 60px -36px rgba(20,22,40,.4);transition:transform .2s,box-shadow .2s}
+  .card:hover{transform:translateY(-5px);box-shadow:0 40px 70px -34px rgba(20,22,40,.5)}
+  .thumb{height:180px;position:relative;overflow:hidden;display:grid;place-items:center}
+  .thumb.app{background:radial-gradient(120% 90% at 50% 0%,#2a2f5c,#12152a)}
+  .thumb.lp{background:radial-gradient(120% 90% at 50% 0%,#eceaff,#dfe0ee)}
+  .thumb.admin{background:radial-gradient(120% 90% at 50% 0%,#1b2236,#0c1018)}
+  .badge{position:absolute;top:14px;left:14px;font-family:var(--disp);font-size:10.5px;font-weight:800;letter-spacing:.04em;
+    background:rgba(255,255,255,.9);color:var(--ink);padding:4px 10px;border-radius:999px}
+  .thumb.lp .badge{background:var(--ink);color:#fff}
+  /* mini phone */
+  .miniphone{width:118px;height:152px;background:#0a0c16;border-radius:20px 20px 0 0;padding:7px 7px 0;box-shadow:0 20px 40px rgba(0,0,0,.4)}
+  .miniphone .scr{background:#f6f7fa;border-radius:15px 15px 0 0;height:100%;overflow:hidden;padding:8px}
+  .mp-bar{height:22px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#7c5cff);margin-bottom:6px}
+  .mp-l{height:9px;border-radius:4px;background:#e4e6ef;margin-bottom:5px}
+  .mp-l.s{width:60%}
+  .mp-gold{height:14px;border-radius:5px;background:#f3e8c6;margin:7px 0}
+  /* mini browser */
+  .minibrowser{width:200px;height:128px;background:#fff;border-radius:12px;box-shadow:0 20px 40px rgba(20,22,40,.18);overflow:hidden;border:1px solid var(--line)}
+  .mb-bar{height:22px;background:#f1f2f6;display:flex;align-items:center;gap:5px;padding:0 9px;border-bottom:1px solid var(--line)}
+  .mb-bar i{width:7px;height:7px;border-radius:50%;background:#d4d7e0}
+  .mb-body{padding:11px}
+  .mb-hero{height:30px;border-radius:7px;background:linear-gradient(135deg,#4f46e5,#7c5cff);margin-bottom:8px;width:75%}
+  .mb-l{height:7px;border-radius:3px;background:#e4e6ef;margin-bottom:6px}
+  .mb-l.s{width:50%}
+  .mb-cards{display:flex;gap:6px;margin-top:9px}
+  .mb-cards span{flex:1;height:24px;border-radius:6px;background:#eef0f6}
+  /* mini admin */
+  .miniadmin{width:210px;height:130px;background:#fff;border-radius:12px;box-shadow:0 20px 40px rgba(20,22,40,.22);overflow:hidden;display:flex;border:1px solid var(--line)}
+  .ma-side{width:52px;background:#12152a;padding:9px 7px}
+  .ma-side i{display:block;height:8px;border-radius:3px;background:rgba(255,255,255,.14);margin-bottom:7px}
+  .ma-side i.on{background:#4f46e5}
+  .ma-main{flex:1;padding:10px}
+  .ma-kpi{display:flex;gap:5px;margin-bottom:8px}
+  .ma-kpi span{flex:1;height:22px;border-radius:5px;background:#eef0f6}
+  .ma-row{height:8px;border-radius:3px;background:#eef0f6;margin-bottom:5px}
+
+  .cbody{padding:22px 22px 24px;display:flex;flex-direction:column;flex:1}
+  .cbody h3{font-size:19px;font-weight:800;display:flex;align-items:center;gap:9px}
+  .cbody .role{font-family:var(--disp);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.04em;margin-top:3px}
+  .cbody p{font-size:13.5px;color:var(--text-sub);margin:12px 0 16px}
+  .checks{list-style:none;margin-bottom:20px}
+  .checks li{font-size:12.5px;color:var(--ink2);display:flex;align-items:flex-start;gap:8px;margin-bottom:7px}
+  .checks li .ic{width:16px;height:16px;color:var(--ok);margin-top:3px}
+  .open{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--ink);color:#fff;
+    border-radius:11px;padding:13px;font-family:var(--disp);font-weight:700;font-size:14px;transition:background .2s}
+  .open:hover{background:#000}
+  .open .ic{width:17px;height:17px}
+
+  /* secondary resources */
+  .sec{padding:64px 0}
+  .sec h2{font-size:24px;font-weight:800;margin-bottom:6px}
+  .sec .sub{font-size:14px;color:var(--text-sub);margin-bottom:26px}
+  .res{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .resitem{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+  .resitem .ri{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:0 0 auto}
+  .resitem h4{font-size:15px;font-weight:800}
+  .resitem p{font-size:12.5px;color:var(--text-sub);margin-top:4px}
+  .resitem .files{font-size:11.5px;color:var(--muted);margin-top:8px;font-family:"Consolas",monospace}
+
+  /* roadmap */
+  .road{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+  .ph{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}
+  .ph .pt{font-family:var(--disp);font-weight:800;font-size:14px}
+  .ph .pt b{color:var(--accent)}
+  .ph .pd{font-size:11.5px;color:var(--text-sub);margin-top:6px}
+  .ph .pw{font-size:10.5px;color:var(--muted);margin-top:8px;font-weight:700}
+
+  .note{margin-top:26px;background:#fff;border:1px dashed var(--line2);border-radius:14px;padding:16px 20px;font-size:12.5px;color:var(--text-sub);line-height:1.7}
+  .note b{color:var(--ink)}
+
+  footer{background:var(--ink);color:#9097a6;padding:40px 0;font-size:13px;margin-top:20px}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;align-items:center}
+  footer .fb{display:flex;align-items:center;gap:10px;color:#fff;font-family:var(--disp);font-weight:800}
+  footer .logo{width:30px;height:30px;font-size:12px}
+
+  @media(max-width:920px){
+    .grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}
+    .res{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M19 5l-9 9"/><path d="M19 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13a0 0 0 0 1 0 0H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-deck" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+</defs></svg>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hbrand"><span class="logo">MG</span>MasterGame</div>
+    <span class="htag"><span class="dot"></span>動作プロトタイプ ・ クリックで確認できます</span>
+    <h1>遊ぶほど得をする、<br><span class="em">MasterGame</span> のプロトタイプ。</h1>
+    <p>ポイ活 × ゲームコミュニティ。アプリ・集客LP・運営管理画面の3つを、ブラウザ上で実際に操作して確認できます。</p>
+    <div class="meta">
+      <div class="m"><div class="n">3</div><div class="l">プロトタイプ</div></div>
+      <div class="m"><div class="n">13+</div><div class="l">アプリ画面</div></div>
+      <div class="m"><div class="n">4</div><div class="l">機能仕様書</div></div>
+      <div class="m"><div class="n">18</div><div class="l">提案スライド</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="stage">
+  <div class="wrap">
+    <div class="lead-row">
+      <span class="eyebrow">Prototypes</span>
+      <span class="hint">各カードの「プロトタイプを開く」から操作できます</span>
+    </div>
+    <div class="grid">
+
+      <!-- APP -->
+      <article class="card">
+        <div class="thumb app">
+          <span class="badge">モバイルアプリ</span>
+          <div class="miniphone"><div class="scr">
+            <div class="mp-bar"></div><div class="mp-gold"></div>
+            <div class="mp-l"></div><div class="mp-l s"></div><div class="mp-l"></div>
+          </div></div>
+        </div>
+        <div class="cbody">
+          <h3>アプリ（コアフロー）</h3>
+          <div class="role">FOR USERS</div>
+          <p>オンボーディングから、ミッション・ポイント交換・コミュニティ・VIPランクまで一気通貫で操作できます。</p>
+          <ul class="checks">
+            <li><svg class="ic"><use href="#i-check"/></svg>ミッション達成 → ポイント → 交換</li>
+            <li><svg class="ic"><use href="#i-check"/></svg>提携オファー・postback検証・ナッジ</li>
+            <li><svg class="ic"><use href="#i-check"/></svg>ギルド/通報・ポイント推移・VIP/ステーキング</li>
+          </ul>
+          <a class="open" href="wireframes/core-flow.html" target="_blank" rel="noopener">プロトタイプを開く<svg class="ic"><use href="#i-ext"/></svg></a>
+        </div>
+      </article>
+
+      <!-- LP -->
+      <article class="card">
+        <div class="thumb lp">
+          <span class="badge">集客LP</span>
+          <div class="minibrowser">
+            <div class="mb-bar"><i></i><i></i><i></i></div>
+            <div class="mb-body"><div class="mb-hero"></div><div class="mb-l"></div><div class="mb-l s"></div>
+              <div class="mb-cards"><span></span><span></span><span></span></div></div>
+          </div>
+        </div>
+        <div class="cbody">
+          <h3>集客ランディングページ</h3>
+          <div class="role">FOR ACQUISITION</div>
+          <p>未登録ユーザー向けの1ページLP。価値訴求からダウンロード導線まで。A/Bの訴求軸切替つき。</p>
+          <ul class="checks">
+            <li><svg class="ic"><use href="#i-check"/></svg>ヒーロー・仕組み・機能（ベント型）</li>
+            <li><svg class="ic"><use href="#i-check"/></svg>数字・ユーザーの声・FAQ・CTA</li>
+            <li><svg class="ic"><use href="#i-check"/></svg>左下で訴求軸 A/B（お得/無課金/仲間）</li>
+          </ul>
+          <a class="open" href="wireframes/landing.html" target="_blank" rel="noopener">プロトタイプを開く<svg class="ic"><use href="#i-ext"/></svg></a>
+        </div>
+      </article>
+
+      <!-- ADMIN -->
+      <article class="card">
+        <div class="thumb admin">
+          <span class="badge">運営管理</span>
+          <div class="miniadmin">
+            <div class="ma-side"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+            <div class="ma-main"><div class="ma-kpi"><span></span><span></span><span></span></div>
+              <div class="ma-row"></div><div class="ma-row"></div><div class="ma-row"></div><div class="ma-row"></div></div>
+          </div>
+        </div>
+        <div class="cbody">
+          <h3>運営コンソール（管理画面）</h3>
+          <div class="role">FOR OPERATORS</div>
+          <p>運営向けのWeb管理画面。ダッシュボード、ユーザー管理、モデレーション、postback監視まで。</p>
+          <ul class="checks">
+            <li><svg class="ic"><use href="#i-check"/></svg>KPIダッシュボード・週次チャート</li>
+            <li><svg class="ic"><use href="#i-check"/></svg>ユーザー管理（集計・ソート・BAN/凍結）</li>
+            <li><svg class="ic"><use href="#i-check"/></svg>通報対応・postback承認/却下</li>
+          </ul>
+          <a class="open" href="wireframes/admin.html" target="_blank" rel="noopener">プロトタイプを開く<svg class="ic"><use href="#i-ext"/></svg></a>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</div>
+
+<!-- DOCS -->
+<section class="sec">
+  <div class="wrap">
+    <h2>ドキュメント</h2>
+    <div class="sub">設計の根拠となる仕様書と提案資料です。</div>
+    <div class="res">
+      <a class="resitem" href="docs/MasterGame_仕様提案_MVP分割.pptx">
+        <span class="ri"><svg class="ic" style="width:22px;height:22px"><use href="#i-deck"/></svg></span>
+        <div><h4>仕様提案・MVP分割（提案デッキ）</h4><p>サービス概要〜技術スタック〜追加機能提案までの18枚。</p>
+          <div class="files">docs/MasterGame_仕様提案_MVP分割.pptx</div></div>
+      </a>
+      <div class="resitem">
+        <span class="ri"><svg class="ic" style="width:22px;height:22px"><use href="#i-doc"/></svg></span>
+        <div><h4>機能仕様書（4本）</h4><p>オファーウォール / postback検証 / スマートナッジ / コミュニティ。</p>
+          <div class="files">docs/specs/*.md</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <h2>MVP ロードマップ</h2>
+    <div class="sub">本プロトタイプは Phase1（MVP）のコア体験を対象にしています。</div>
+    <div class="road">
+      <div class="ph"><div class="pt">MVP0 <b>基盤</b></div><div class="pd">認証・アカウント・基盤</div><div class="pw">〜2025/6</div></div>
+      <div class="ph"><div class="pt">MVP1 <b>コア</b></div><div class="pd">ミッション→ポイント→交換</div><div class="pw">2025/6–7</div></div>
+      <div class="ph"><div class="pt">MVP2 <b>コミュニティ</b></div><div class="pd">ギルド・通報・賭け質問</div><div class="pw">2025/7–8</div></div>
+      <div class="ph"><div class="pt">MVP3 <b>運用</b></div><div class="pd">分析・管理・KPI</div><div class="pw">2025/8–</div></div>
+    </div>
+    <div class="note">
+      <b>これはプロトタイプ（ワイヤーフレーム）です。</b> 画面と導線の検証を目的としており、データはダミー・処理はフロントエンドのモックです。
+      想定スタック：React Native + Expo（アプリ）／ Supabase（Auth・DB・Realtime）／ Next.js（管理画面）。運営：株式会社クリティカルヒット。
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fb"><span class="logo">MG</span>MasterGame — Prototype</div>
+    <span>© 2026 株式会社クリティカルヒット</span>
+  </div>
+</footer>
+
+</body>
+</html>

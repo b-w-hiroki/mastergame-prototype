@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# local tooling
+.claude/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# build / temp
+/tmp/
+*.tmp
+
+# QA render artifacts
+docs/render/
+docs/render2/
+docs/*/slide-*.jpg
+deck_ascii.pptx
