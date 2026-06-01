@@ -1,7 +1,6 @@
 # コミュニティ（ギルド/トピック/通報） 機能仕様書
 
 > プロジェクト: MasterGame（ポイ活 × ゲームコミュニティ）
-> 運営: 株式会社クリティカルヒット
 > 対象MVP: MVP2（コミュニティ）— 本機能はMVP2の前提（安全装置）
 > 技術前提: React Native + Expo (TypeScript) / Supabase (Postgres + RLS + Realtime + Storage) / Expo Notifications / 管理画面 Next.js
 > ステータス: Draft v1.0
