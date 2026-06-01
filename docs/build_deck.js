@@ -2,7 +2,7 @@
 const pptx = require("pptxgenjs");
 const p = new pptx();
 p.layout = "LAYOUT_WIDE";          // 13.3 x 7.5 in
-p.author = "株式会社クリティカルヒット";
+p.author = "MasterGame";
 p.title = "MasterGame 仕様提案・MVP分割";
 
 const W = 13.333, H = 7.5;
@@ -63,7 +63,7 @@ function chip(s, x, y, w, txt, fill, col){
     { text:"対象範囲：", options:{ bold:true, color:"AEB3D8" } },
     { text:"Phase1 / コアフロー（ログイン→ホーム→ミッション→ポイント交換）", options:{ color:"E7E8F2" } },
   ], { x:0.9, y:5.55, w:11, h:0.4, fontFace:F, fontSize:12 });
-  s.addText("株式会社クリティカルヒット ｜ 2026.05 ｜ 既存3資料（構想・サービス紹介・開発要件）に基づく", {
+  s.addText("2026.05 ｜ 既存3資料（構想・サービス紹介・開発要件）に基づく", {
     x:0.9, y:6.5, w:11.5, h:0.4, fontFace:F, fontSize:10.5, color:"8A90B0" });
 })();
 

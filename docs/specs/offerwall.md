@@ -1,7 +1,6 @@
 # オファーウォール / 動画リワード広告 機能仕様書
 
 - 対象プロダクト: MasterGame（ポイ活 × ゲームコミュニティ）
-- 運営: 株式会社クリティカルヒット
 - 文書バージョン: v0.1（ドラフト）
 - 想定読者: モバイル開発者、バックエンド開発者、PdM、データアナリスト
 - 関連スタック: React Native + Expo (TypeScript) / Supabase (Postgres / Auth / Realtime / Storage / Edge Functions) / Next.js（管理画面） / Expo Notifications

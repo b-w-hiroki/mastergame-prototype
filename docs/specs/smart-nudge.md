@@ -1,7 +1,6 @@
 # スマートナッジ（あと◯P） 機能仕様書
 
 - プロダクト: MasterGame（ポイ活 × ゲームコミュニティ）
-- 運営: 株式会社クリティカルヒット
 - 対象MVP: MVP1（基本ナッジ） / MVP1.5〜2（パーソナライズ・Push連携）
 - 関連技術: React Native + Expo (TS) / Supabase (Postgres, Realtime, Edge Functions) / Expo Notifications
 - ステータス: Draft

@@ -1,6 +1,6 @@
 # ミッション達成のサーバー検証(postback) 機能仕様書
 
-> 対象プロダクト: MasterGame（ポイ活 × ゲームコミュニティ、運営: 株式会社クリティカルヒット）
+> 対象プロダクト: MasterGame（ポイ活 × ゲームコミュニティ）
 > 対象MVP: MVP1（検証基盤・状態遷移）/ MVP2〜3（高度な不正検知）
 > 技術前提: Supabase（Postgres / Auth / Realtime / Storage / Edge Functions=Deno）、管理画面=Next.js、モバイル=React Native + Expo
 > ステータス: ドラフト v1.0 / 最終更新 2026-05-31
