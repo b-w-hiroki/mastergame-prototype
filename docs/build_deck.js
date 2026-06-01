@@ -175,17 +175,18 @@ function chip(s, x, y, w, txt, fill, col){
   box(9.1,2.3,3.5,1.0,C.purple); s.addText("ゲーマー（ユーザー）", {x:9.1,y:2.3,w:3.5,h:1.0,fontFace:F,fontSize:13,color:C.white,bold:true,align:"center",valign:"middle"});
   box(4.9,5.4,3.5,1.0,C.gold); s.addText("ゲーム会社（提携先）", {x:4.9,y:5.4,w:3.5,h:1.0,fontFace:F,fontSize:12.5,color:C.white,bold:true,align:"center",valign:"middle"});
   // flows (labels)
-  const flow = (x,y,w,t,col)=>s.addText(t,{x,y,w,h:0.35,fontFace:F,fontSize:10.5,color:col,bold:true,align:"center"});
-  s.addShape(p.shapes.LINE,{x:4.2,y:2.6,w:0.7,h:0,line:{color:C.muted,width:1.5,endArrowType:"triangle"}});
-  flow(3.7,2.0,1.7,"③ 広告費 ¥",C.ink);
-  s.addShape(p.shapes.LINE,{x:8.4,y:2.6,w:0.7,h:0,line:{color:C.muted,width:1.5,endArrowType:"triangle"}});
-  flow(7.9,2.0,1.7,"④ ポイント還元 P",C.accent);
-  s.addShape(p.shapes.LINE,{x:10.85,y:3.3,w:0,h:1.4,line:{color:C.muted,width:1.5,endArrowType:"triangle"}});
-  flow(9.6,3.85,2.6,"⑤ 貯めたPで交換申請",C.purple);
-  s.addShape(p.shapes.LINE,{x:6.65,y:4.3,w:0,h:1.1,line:{color:C.muted,width:1.5,beginArrowType:"triangle"}});
-  flow(6.75,4.6,3.0,"⑥ アイテム付与 ／ ⑦ コード精算 ¥",C.gold);
-  s.addShape(p.shapes.LINE,{x:3.9,y:5.9,w:1.0,h:0,line:{color:C.muted,width:1.5,beginArrowType:"triangle"}});
-  s.addText("① アイテム納品",{x:1.3,y:5.55,w:3.2,h:0.35,fontFace:F,fontSize:10.5,color:C.gold,bold:true,align:"center"});
+  const flow = (x,y,w,t,col,align)=>s.addText(t,{x,y,w,h:0.35,fontFace:F,fontSize:10.5,color:col,bold:true,align:align||"center"});
+  // ③ 企業 → MasterGame（箱の中心 y=2.8 で連結）
+  s.addShape(p.shapes.LINE,{x:4.2,y:2.8,w:0.7,h:0,line:{color:C.muted,width:1.5,endArrowType:"triangle"}});
+  flow(3.55,2.05,2.0,"③ 広告費 ¥",C.ink);
+  // ④/⑤ MasterGame ⇄ ゲーマー（双方向：還元と交換申請）
+  s.addShape(p.shapes.LINE,{x:8.4,y:2.8,w:0.7,h:0,line:{color:C.muted,width:1.5,beginArrowType:"triangle",endArrowType:"triangle"}});
+  flow(7.6,2.05,2.3,"④ ポイント還元 P",C.accent);
+  flow(7.4,3.42,2.7,"⑤ 貯めたPで交換申請",C.purple);
+  // ①/⑥⑦ MasterGame ⇄ ゲーム会社（双方向：納品と付与・精算。箱の上下端を連結）
+  s.addShape(p.shapes.LINE,{x:6.65,y:3.3,w:0,h:2.1,line:{color:C.muted,width:1.5,beginArrowType:"triangle",endArrowType:"triangle"}});
+  flow(3.35,4.2,2.9,"① アイテム納品",C.gold,"right");
+  flow(6.95,4.2,4.2,"⑥ アイテム付与 ／ ⑦ コード精算 ¥",C.gold,"left");
   // note
   s.addShape(p.shapes.ROUNDED_RECTANGLE,{x:0.7,y:6.55,w:11.9,h:0.0,line:{type:"none"},fill:{color:C.white}});
   s.addText([
