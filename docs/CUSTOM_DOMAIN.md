@@ -52,7 +52,9 @@ gh api -X PUT repos/b-w-hiroki/mastergame-prototype/pages \
 ### 4. 公開URLとメタ情報の更新
 独自ドメインに切り替えたら、以下の絶対URLも置換します：
 - `index.html` / `wireframes/landing.html` の `og:*` / `canonical`
-- `sitemap.xml` / `robots.txt`
+- `robots.txt`（社内向けのため `Disallow: /` の方針は維持）
+
+> 本ハブは社内・関係者向けのため検索エンジンには `noindex`／`Disallow` で非掲載にしています（`sitemap.xml` は廃止）。
 
 ---
 
