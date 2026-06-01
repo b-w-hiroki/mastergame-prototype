@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オフライン ｜ MasterGame</title>
+<meta name="theme-color" content="#0e1015">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;display:grid;place-items:center;padding:24px;
+    font-family:"Noto Sans JP",system-ui,sans-serif;color:#fff;
+    background:radial-gradient(80% 100% at 50% -20%,#23264d,#0e1015 70%);text-align:center}
+  .card{max-width:420px}
+  .logo{width:64px;height:64px;border-radius:18px;margin:0 auto 22px;
+    background:linear-gradient(140deg,#5563e0,#7c5cff);display:grid;place-items:center;
+    font-weight:800;font-size:24px;box-shadow:0 10px 28px rgba(80,70,220,.45)}
+  h1{font-size:22px;font-weight:800;margin-bottom:10px}
+  p{color:#aeb3c8;font-size:14px;line-height:1.8;margin-bottom:24px}
+  .btn{display:inline-block;background:linear-gradient(120deg,#5563e0,#7c5cff);color:#fff;
+    font-weight:700;font-size:14px;padding:12px 24px;border-radius:999px;border:0;cursor:pointer;
+    text-decoration:none}
+  .sub{margin-top:14px;font-size:12.5px}
+  .sub a{color:#a99bff}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">MG</div>
+    <h1>オフラインです</h1>
+    <p>インターネットに接続できませんでした。電波の良い場所で、もう一度お試しください。一度開いたページはオフラインでも表示できます。</p>
+    <button class="btn" onclick="location.reload()">再読み込み</button>
+    <div class="sub"><a href="./index.html">ホームへ戻る</a></div>
+  </div>
+</body>
+</html>

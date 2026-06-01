@@ -66,18 +66,36 @@
 | バックエンド | Supabase（Auth / Postgres / Realtime / Storage） |
 | 通知 | Expo Notifications（FCM / APNs） |
 | 管理画面 | Next.js |
+| ブラウザ展開 | **PWA**（インストール可能・オフライン対応 / Service Worker + Web App Manifest） |
 
 詳細は `docs/specs/` の機能仕様書を参照。
+
+### PWA（ブラウザ展開）
+
+このハブ＋プロトタイプは **PWA（Progressive Web App）** として動作し、ブラウザから「ホーム画面に追加 / インストール」できます。
+
+- `manifest.webmanifest` … アプリ名・アイコン・`standalone` 表示・ショートカット（アプリ/LP/運営/経済）
+- `service-worker.js` … App Shell をプリキャッシュし、一度開いたページはオフライン表示。未取得ページは `offline.html` にフォールバック
+- `assets/pwa.js` … 各ページから Service Worker を登録（`<link rel="manifest">` からルートを逆算するため、GitHub Pages のサブパス配信でもカスタムドメインでも動作）
+- アイコンは `assets/icon.svg` を元に `icon-{192,512}.png` / `icon-maskable-*.png` / `apple-touch-icon.png` を生成
+
+> キャッシュを更新したいときは `service-worker.js` の `CACHE`（`mg-pwa-v1`）のバージョンを上げてください。
+>
+> モバイルのネイティブアプリ本体（`apps/mobile/`）は React Native + Expo です。同じコードを Web/PWA へ展開する場合は Expo の `react-native-web` 経由（`expo start --web` → `expo export -p web`）が利用できます。
 
 ## リポジトリ構成
 
 ```
 .
 ├── index.html                # プロトタイプ確認ハブ（GitHub Pages の入口）
+├── manifest.webmanifest      # PWA マニフェスト
+├── service-worker.js         # PWA Service Worker（オフライン対応）
+├── offline.html              # オフライン時フォールバック
 ├── wireframes/               # 動作プロトタイプ（HTML）
 │   ├── core-flow.html        # 📱 アプリ
 │   ├── landing.html          # 🖥 集客LP
-│   └── admin.html            # ⚙️ 運営コンソール
+│   ├── admin.html            # ⚙️ 運営コンソール
+│   └── economy.html          # 📊 経済シミュレーター
 ├── supabase/                 # DB スキーマ・RPC・seed（バックエンド実装）
 │   ├── config.toml
 │   ├── migrations/           # 0001_core … 0007_admin
