@@ -1,0 +1,10 @@
+# Next.js / TypeScript build artifacts
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env*.local

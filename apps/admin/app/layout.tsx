@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import Nav from './nav';
 
 export const metadata: Metadata = {
   title: 'MasterGame 運営コンソール',
@@ -13,12 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="layout">
           <aside className="side">
             <div className="brand"><span className="logo">MG</span>MasterGame</div>
-            <nav>
-              <a className="on" href="/">ダッシュボード</a>
-              <a href="/users">ユーザー管理</a>
-              <a href="/moderation">通報・モデレーション</a>
-              <a href="/postback">postback監視</a>
-            </nav>
+            <Nav />
           </aside>
           <main className="main">{children}</main>
         </div>
