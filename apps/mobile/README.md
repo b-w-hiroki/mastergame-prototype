@@ -49,6 +49,27 @@ src/lib/
 - コミュニティ：ギルド/トピック閲覧・通報
 - マイページ：VIPランク（次ランクまでの進捗）・ジャンル編集・設定・ログアウト
 
+## Web / PWA 書き出し
+
+ネイティブ配信（App Store / Google Play）に加えて、**Web/PWA** として書き出せます
+（`react-native-web` 経由。`app.json` の `web` 設定でマニフェスト項目を定義）。
+
+```bash
+# 環境変数（EXPO_PUBLIC_SUPABASE_URL / ANON_KEY）を設定したうえで
+npm run export:web        # = expo export -p web && node scripts/inject-pwa.mjs
+# → dist/ に静的サイトを生成。HTTPS で配信すると「ホーム画面に追加 / インストール」可能
+```
+
+- `output: "single"`（SPA）で書き出し、`scripts/inject-pwa.mjs` が `dist/index.html` に
+  manifest リンク・apple メタ・Service Worker 登録を後付けします。
+- PWA 資産は `public/`（`manifest.webmanifest` / `sw.js` / `offline.html` / アイコン）に置き、
+  書き出し時に `dist/` ルートへコピーされます。
+- `metro.config.js`：`@supabase/supabase-js` が optional に参照する `@opentelemetry/api` を
+  空モジュールにフォールバック（バンドル解決のため）。
+- 実際にインストール可能になるのは **HTTPS で配信した後**です（`localhost` でも確認可）。
+
+> ネイティブ配信と Web/PWA は併存できます。Web/PWA は社外公開・即時アクセス用の補助ラインです。
+
 ## バックエンド
 
 スキーマ・RPC は `../../supabase/`。型は本番で自動生成を推奨：

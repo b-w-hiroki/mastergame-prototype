@@ -1,0 +1,11 @@
+# Expo / build artifacts
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+
+# env
+.env
+.env.local
+.env*.local

@@ -46,6 +46,15 @@ lib/supabase/
 - ✅ 通報・モデレーション（Server Actions で `moderation_actions` 記録＋`reports` 状態更新）
 - ✅ postback監視（状態別集計・承認率、検証中イベントの手動却下）
 
+### PWA（インストール可能・オフライン対応）
+
+運営コンソールは PWA としてブラウザからインストールできます。
+
+- `public/manifest.webmanifest` … アプリ名・アイコン・`display:standalone`（テーマ #12152a）
+- `public/sw.js` … **運営データは機微なため HTML はキャッシュせず** network-first＋`offline.html` フォールバック。静的アセット（`/_next/static/`・アイコン）のみ stale-while-revalidate
+- `app/pwa.tsx` … Service Worker 登録（client）。`layout.tsx` の `metadata.manifest` / `appleWebApp` / `viewport.themeColor` で各メタを付与
+- インストール可能になるのは **HTTPS デプロイ後**（`localhost` でも確認可）
+
 > サーバー操作は **Server Actions × service_role**（サーバー専用）で実装。
 > ポイント付与を伴う処理（postback の承認＝確定、交換の付与、BAN/凍結）は安全のため
 > 署名検証つきの自動パイプライン／専用 RPC に委ね、本画面は監視・記録に徹しています
