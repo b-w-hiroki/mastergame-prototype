@@ -341,34 +341,36 @@
       <span class="hint">利用者が直接アクセスする本番環境。資料／プロトタイプとは別物です</span>
     </div>
     <h2>本番アプリ</h2>
-    <div class="sub">実際の利用者向けの本番環境です。<strong>上のプロトタイプとは別枠</strong>で、URL が確定し次第ここに掲載します。</div>
+    <div class="sub">実際の利用者向けの本番環境です。<strong>上のプロトタイプとは別枠</strong>。アプリ実装は完了済みで、<strong>公開URLはデプロイ後にここへ掲載</strong>します（現在はソースを公開）。</div>
     <div class="grid">
 
       <!-- 本番アプリ（ユーザー） -->
       <article class="card">
         <div class="thumb" style="background:linear-gradient(135deg,#eef0f6,#e3e6f0)">
-          <span class="badge" style="background:var(--muted);color:#fff">準備中</span>
+          <span class="badge" style="background:var(--ok);color:#fff">実装済み</span>
           <span class="logo" style="width:46px;height:46px;border-radius:13px">MG</span>
         </div>
         <div class="cbody">
           <h3>本番アプリ（ユーザー）</h3>
           <div class="role">FOR USERS · PRODUCTION</div>
-          <p>利用者向けの本番アプリ。React Native + Expo（ネイティブ／Web・PWA）で提供予定。一般ユーザーはここから直接利用します。</p>
-          <span class="open" aria-disabled="true" style="background:var(--bg3);color:var(--muted);cursor:not-allowed;pointer-events:none">準備中 / Coming soon</span>
+          <p>利用者向けの本番アプリ。React Native + Expo で実装済み（タブ／オンボーディング／ミッション／ポイント／交換／コミュニティ／マイページ）。一般ユーザーはここから直接利用します。</p>
+          <p class="files" style="color:var(--muted);font-size:12px;margin-bottom:10px">公開URL：準備中（デプロイ前） ・ <code>apps/mobile/</code></p>
+          <a class="open" href="https://github.com/b-w-hiroki/mastergame-prototype/tree/main/apps/mobile" target="_blank" rel="noopener noreferrer">ソースを見る<svg class="ic"><use href="#i-ext"/></svg></a>
         </div>
       </article>
 
       <!-- 本番運営コンソール -->
       <article class="card">
         <div class="thumb" style="background:linear-gradient(135deg,#eef0f6,#e3e6f0)">
-          <span class="badge" style="background:var(--muted);color:#fff">準備中</span>
+          <span class="badge" style="background:var(--ok);color:#fff">実装済み</span>
           <span class="logo" style="width:46px;height:46px;border-radius:13px">MG</span>
         </div>
         <div class="cbody">
           <h3>本番運営コンソール</h3>
           <div class="role">FOR OPERATORS · PRODUCTION</div>
-          <p>運営向けの本番管理画面。Next.js + Supabase で提供予定。社内運営メンバーが利用します。</p>
-          <span class="open" aria-disabled="true" style="background:var(--bg3);color:var(--muted);cursor:not-allowed;pointer-events:none">準備中 / Coming soon</span>
+          <p>運営向けの本番管理画面。Next.js + Supabase で実装済み（ダッシュボード／ユーザー管理／ミッション・アイテム管理／通報モデレーション／postback監視）。社内運営メンバーが利用します。</p>
+          <p class="files" style="color:var(--muted);font-size:12px;margin-bottom:10px">公開URL：準備中（デプロイ前） ・ <code>apps/admin/</code></p>
+          <a class="open" href="https://github.com/b-w-hiroki/mastergame-prototype/tree/main/apps/admin" target="_blank" rel="noopener noreferrer">ソースを見る<svg class="ic"><use href="#i-ext"/></svg></a>
         </div>
       </article>
 

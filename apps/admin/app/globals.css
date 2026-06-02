@@ -31,3 +31,21 @@ th { color: var(--sub); font-weight: 800; font-size: 11px; }
 .pill.blue { background: #e6eefb; color: #2563c9; }
 .pill.mute { background: #eef0f4; color: var(--sub); }
 .note { font-size: 12px; color: var(--muted); margin-top: 14px; }
+
+/* ツールバー・アクション（マスタ管理 / モデレーション / postback） */
+.sub { font-size: 13px; color: var(--sub); margin: -8px 0 16px; }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.actions { display: inline-flex; gap: 6px; }
+.btn {
+  font-family: inherit; font-size: 11.5px; font-weight: 800; cursor: pointer;
+  padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--paper); color: var(--ink);
+}
+.btn:hover { background: #f4f6fa; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.danger { background: #fdecea; border-color: #f3c6c1; color: var(--danger); }
+.btn.warn { background: #fbf2dc; border-color: #ecd9a6; color: #b07d12; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--sub); }
+.muted { color: var(--muted); }
+.right { text-align: right; }
