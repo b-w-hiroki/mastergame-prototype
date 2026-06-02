@@ -45,6 +45,7 @@ export default function Login() {
       <Pressable style={s.oauth} onPress={() => signInOAuth('apple')}><Text style={s.oauthText}>Appleでログイン</Text></Pressable>
 
       <Link href="/signup" style={s.link}>新規アカウント作成</Link>
+      <Link href="/forgot" style={s.linkSub}>パスワードをお忘れですか？</Link>
     </SafeAreaView>
   );
 }
@@ -62,4 +63,5 @@ const s = StyleSheet.create({
   oauth: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d8dbe2', borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 10 },
   oauthText: { fontWeight: '700', color: '#1f2430' },
   link: { textAlign: 'center', color: '#4f46e5', fontWeight: '700', marginTop: 18 },
+  linkSub: { textAlign: 'center', color: '#9aa0ac', fontWeight: '600', marginTop: 12, fontSize: 13 },
 });
