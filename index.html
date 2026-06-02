@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MasterGame ｜ プロトタイプ確認ハブ</title>
-<meta name="description" content="MasterGame（ポイ活×ゲームコミュニティ）の動作プロトタイプ集。アプリ・集客LP・運営管理画面を確認できます。">
+<meta name="robots" content="noindex, nofollow">
+<title>MasterGame ｜ 開発資料ハブ（社内・関係者向け）</title>
+<meta name="description" content="MasterGame（ポイ活×ゲームコミュニティ）の社内・関係者向け資料ハブ。仕様書・提案資料・各プロトタイプへのリンク集です。一般ユーザー向けの画面ではありません。">
 <link rel="canonical" href="https://b-w-hiroki.github.io/mastergame-prototype/">
 <meta name="theme-color" content="#0e1015">
 <!-- PWA -->
@@ -240,9 +241,9 @@
 <section class="hero">
   <div class="wrap">
     <div class="hbrand"><span class="logo">MG</span>MasterGame</div>
-    <span class="htag"><span class="dot"></span>動作プロトタイプ ・ クリックで確認できます</span>
-    <h1>遊ぶほど得をする、<br><span class="em">MasterGame</span> のプロトタイプ。</h1>
-    <p>ポイ活 × ゲームコミュニティ。アプリ・集客LP・運営管理画面の3つを、ブラウザ上で実際に操作して確認できます。</p>
+    <span class="htag"><span class="dot"></span>社内・関係者向け資料ハブ ・ 一般ユーザー向けの画面ではありません</span>
+    <h1>MasterGame の<br><span class="em">開発資料</span>ハブ。</h1>
+    <p>仕様書・提案資料・各プロトタイプへのリンクをまとめた、社内・関係者向けの確認用ハブです。利用者が実際に使う<strong style="color:#fff">本番アプリは別枠</strong>（下記「本番アプリ」）で用意します。</p>
     <div class="meta">
       <div class="m"><div class="n">3</div><div class="l">プロトタイプ</div></div>
       <div class="m"><div class="n">13+</div><div class="l">アプリ画面</div></div>
@@ -255,8 +256,8 @@
 <div class="stage">
   <div class="wrap">
     <div class="lead-row">
-      <span class="eyebrow">Prototypes</span>
-      <span class="hint">各カードの「プロトタイプを開く」から操作できます</span>
+      <span class="eyebrow">Prototypes（確認用）</span>
+      <span class="hint">画面・導線の確認用です。本番アプリではありません</span>
     </div>
     <div class="grid">
 
@@ -331,6 +332,49 @@
     </div>
   </div>
 </div>
+
+<!-- PRODUCTION（本番アプリ：プロトタイプとは別枠） -->
+<section class="sec" id="production" style="padding-bottom:8px">
+  <div class="wrap">
+    <div class="lead-row">
+      <span class="eyebrow" style="color:var(--accent)">Production（本番・別枠）</span>
+      <span class="hint">利用者が直接アクセスする本番環境。資料／プロトタイプとは別物です</span>
+    </div>
+    <h2>本番アプリ</h2>
+    <div class="sub">実際の利用者向けの本番環境です。<strong>上のプロトタイプとは別枠</strong>で、URL が確定し次第ここに掲載します。</div>
+    <div class="grid">
+
+      <!-- 本番アプリ（ユーザー） -->
+      <article class="card">
+        <div class="thumb" style="background:linear-gradient(135deg,#eef0f6,#e3e6f0)">
+          <span class="badge" style="background:var(--muted);color:#fff">準備中</span>
+          <span class="logo" style="width:46px;height:46px;border-radius:13px">MG</span>
+        </div>
+        <div class="cbody">
+          <h3>本番アプリ（ユーザー）</h3>
+          <div class="role">FOR USERS · PRODUCTION</div>
+          <p>利用者向けの本番アプリ。React Native + Expo（ネイティブ／Web・PWA）で提供予定。一般ユーザーはここから直接利用します。</p>
+          <span class="open" aria-disabled="true" style="background:var(--bg3);color:var(--muted);cursor:not-allowed;pointer-events:none">準備中 / Coming soon</span>
+        </div>
+      </article>
+
+      <!-- 本番運営コンソール -->
+      <article class="card">
+        <div class="thumb" style="background:linear-gradient(135deg,#eef0f6,#e3e6f0)">
+          <span class="badge" style="background:var(--muted);color:#fff">準備中</span>
+          <span class="logo" style="width:46px;height:46px;border-radius:13px">MG</span>
+        </div>
+        <div class="cbody">
+          <h3>本番運営コンソール</h3>
+          <div class="role">FOR OPERATORS · PRODUCTION</div>
+          <p>運営向けの本番管理画面。Next.js + Supabase で提供予定。社内運営メンバーが利用します。</p>
+          <span class="open" aria-disabled="true" style="background:var(--bg3);color:var(--muted);cursor:not-allowed;pointer-events:none">準備中 / Coming soon</span>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
 
 <!-- DOCS -->
 <section class="sec">

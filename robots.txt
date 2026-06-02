@@ -1,4 +1,4 @@
+# 社内・関係者向けの資料ハブ。検索エンジンにはインデックスさせない。
+# （URL を知っている人はアクセス可能。各ページにも noindex を付与）
 User-agent: *
-Allow: /
-
-Sitemap: https://b-w-hiroki.github.io/mastergame-prototype/sitemap.xml
+Disallow: /
