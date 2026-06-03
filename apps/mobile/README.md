@@ -78,8 +78,15 @@ npm run export:web        # = expo export -p web && node scripts/inject-pwa.mjs
 supabase gen types typescript --project-id <id> > src/lib/database.types.ts
 ```
 
+## コミュニティ書き込み
+
+- トピック作成（`/topic/new`）・返信・リアクション・ベストアンサー・ポイント賭け質問に対応。
+- 書き込みはすべて SECURITY DEFINER RPC 経由（`supabase/migrations/0012_community_rpc.sql`）：
+  `create_topic` / `add_reply` / `toggle_reaction` / `set_best_answer`。
+  通報のみ `reports` へ直接 insert（RLS で許可）。
+- 賭け質問：作成時にポイントをエスクロー、ベストアンサー選定で回答者へ進呈。
+
 ## 次フェーズ（未実装）
 
-- コミュニティの**書き込み**（トピック作成・返信・リアクション・ベストアンサー/賭け質問）
-  → バックエンドの insert RLS / RPC 整備が必要
 - プッシュ通知（Expo Notifications）、交換履歴の詳細表示
+- 投稿への画像/動画添付（Storage + サムネ）
