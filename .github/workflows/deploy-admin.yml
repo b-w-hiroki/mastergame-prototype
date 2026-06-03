@@ -1,0 +1,39 @@
+name: Deploy Admin (Vercel)
+
+# 手動実行のみ（自動デプロイはしない）。実行前に下記シークレットを設定すること:
+#   VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID
+# Vercel 側プロジェクトの Root Directory は apps/admin を指定し、
+# 環境変数 NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY を登録しておく。
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: apps/admin
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Guard — secrets present
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::error::VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID が未設定です。Settings → Secrets で登録してください。"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+      - name: Pull Vercel env (production)
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Build
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+      - name: Deploy (prebuilt)
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
