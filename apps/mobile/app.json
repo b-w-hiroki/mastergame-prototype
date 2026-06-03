@@ -7,9 +7,25 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
     "splash": { "backgroundColor": "#0c0e16" },
     "ios": { "supportsTablet": true, "bundleIdentifier": "jp.criticalhit.mastergame" },
     "android": { "package": "jp.criticalhit.mastergame" },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png",
+      "name": "MasterGame",
+      "shortName": "MasterGame",
+      "lang": "ja",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/",
+      "scope": "/",
+      "themeColor": "#0c0e16",
+      "backgroundColor": "#0c0e16",
+      "description": "ポイ活 × ゲームコミュニティ。遊ぶほど得をする。"
+    },
     "plugins": ["expo-router"],
     "experiments": { "typedRoutes": true }
   }
