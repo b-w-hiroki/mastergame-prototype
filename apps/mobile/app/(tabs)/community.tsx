@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 
@@ -18,7 +18,7 @@ const KIND: Record<string, [string, string]> = {
 /**
  * コミュニティ（prototype core-flow.html のコミュニティに対応）。
  * ギルド（フォーラム）一覧と最近のトピック。タップでトピック詳細へ。
- * ※ 投稿/返信/リアクション等の書き込みは次フェーズ（バックエンド整備込み）で対応。
+ * 「＋ 投稿」で新規トピック作成（/topic/new → create_topic RPC）。
  */
 export default function Community() {
   const [forums, setForums] = useState<Forum[]>([]);
@@ -35,15 +35,22 @@ export default function Community() {
     setTopics((t as Topic[]) ?? []);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
 
-        <Text style={s.h}>コミュニティ</Text>
-        <Text style={s.lead}>ギルド（フォーラム）で助け合い。依頼・質問・雑談。</Text>
+        <View style={s.hRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.h}>コミュニティ</Text>
+            <Text style={s.lead}>ギルド（フォーラム）で助け合い。依頼・質問・雑談。</Text>
+          </View>
+          <Pressable style={s.newBtn} onPress={() => router.push('/topic/new')}>
+            <Text style={s.newBtnText}>＋ 投稿</Text>
+          </Pressable>
+        </View>
 
         <Text style={s.section}>ギルド</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
@@ -87,6 +94,9 @@ function rel(iso: string): string {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
+  hRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  newBtn: { backgroundColor: colors.accent, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 16, marginTop: 2 },
+  newBtnText: { color: '#fff', fontWeight: '800', fontSize: 13 },
   h: { fontSize: 20, fontWeight: '800', color: colors.ink },
   lead: { fontSize: 13, color: colors.sub, marginTop: 4 },
   section: { fontSize: 12, fontWeight: '800', color: colors.sub, marginTop: 22, marginBottom: 10 },
