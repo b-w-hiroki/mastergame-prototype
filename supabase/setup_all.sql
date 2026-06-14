@@ -1,9 +1,9 @@
 -- ============================================================
 -- MasterGame — 一括セットアップSQL（自動生成）
 -- Supabase Studio の SQL Editor にこの内容を全て貼り付けて Run。
--- 内容 = migrations 0001〜0012 ＋ seed.sql（この順で実行）。
+-- 内容 = migrations 全て ＋ seed.sql（この順で実行）。
 -- 新規プロジェクトで1回だけ実行してください。
--- 元ファイルを編集した場合は scripts/build-setup-sql.sh で再生成。
+-- 再生成: scripts/build-setup-sql.sh
 -- ============================================================
 
 
@@ -738,9 +738,9 @@ create or replace function public.point_yen_rate() returns int
   select (value #>> '{}')::int from public.app_config where key = 'point_yen_rate';
 $$;
 
--- ポイント→円換算ヘルパー
-create or replace function public.points_to_yen(p bigint) returns numeric
-  language sql stable as $$ select round(p::numeric / public.point_yen_rate()); $$;
+-- ポイント→円換算ヘルパー（sum(delta) は numeric を返すため引数も numeric で受ける）
+create or replace function public.points_to_yen(p numeric) returns numeric
+  language sql stable as $$ select round(p / public.point_yen_rate()); $$;
 
 -- ---------- XP をポイントから分離（活動量ベース） ----------
 alter table public.missions add column if not exists xp_reward integer not null default 50;
