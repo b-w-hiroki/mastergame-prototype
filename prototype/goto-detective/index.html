@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GO-TO 探偵団 — プロトタイプ</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root {
+    --night: #12122A;
+    --night2: #1E2A40;
+    --navy: #1C2951;
+    --red: #E63946;
+    --blue: #457B9D;
+    --green: #2D6A4F;
+    --gold: #F4A261;
+    --light: #F0F4F8;
+    --gray: #64748B;
+    --line: #2A2A45;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+    background: radial-gradient(circle at 30% 10%, #1d1d3a 0%, #0c0c1c 60%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    padding: 40px 20px;
+    color: #fff;
+    flex-wrap: wrap;
+  }
+
+  /* ── Side panel ── */
+  .pitch {
+    max-width: 360px;
+  }
+  .pitch .badge {
+    display: inline-block;
+    background: var(--red);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 20px;
+    letter-spacing: .05em;
+    margin-bottom: 18px;
+  }
+  .pitch h1 { font-size: 40px; line-height: 1.15; margin-bottom: 10px; }
+  .pitch h1 .glass { font-size: 38px; }
+  .pitch .lead { color: #A8C4D4; font-size: 15px; line-height: 1.7; margin-bottom: 24px; }
+  .pitch .feat { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start; }
+  .pitch .feat .ic {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+    background: rgba(230,57,70,.15);
+  }
+  .pitch .feat .tx b { display: block; font-size: 14px; margin-bottom: 2px; }
+  .pitch .feat .tx span { font-size: 12.5px; color: var(--gray); line-height: 1.5; }
+  .pitch .note { margin-top: 22px; font-size: 11px; color: #5a6478; line-height: 1.6; }
+
+  /* ── Phone frame ── */
+  .phone {
+    width: 390px; height: 800px;
+    background: var(--night);
+    border-radius: 44px;
+    border: 11px solid #000;
+    box-shadow: 0 40px 80px rgba(0,0,0,.55), inset 0 0 0 2px #2a2a45;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 150px; height: 28px; background: #000;
+    border-radius: 0 0 18px 18px; z-index: 50;
+  }
+  .statusbar {
+    position: absolute; top: 0; left: 0; right: 0; height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 26px; font-size: 13px; font-weight: 600; z-index: 40;
+    color: #fff;
+  }
+  .screen {
+    position: absolute; top: 44px; bottom: 78px; left: 0; right: 0;
+    overflow-y: auto; overflow-x: hidden;
+  }
+  .screen::-webkit-scrollbar { width: 0; }
+
+  /* ── Tab bar ── */
+  .tabbar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 78px;
+    background: rgba(18,18,42,.92);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    display: flex; z-index: 45; padding-bottom: 14px;
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; cursor: pointer; color: #5a6478; font-size: 10px; transition: color .15s;
+    border: none; background: none; padding-top: 10px;
+  }
+  .tab svg { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .tab.active { color: var(--red); }
+  .tab.cam {
+    position: relative;
+  }
+  .tab.cam .cambtn {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--red); display: flex; align-items: center; justify-content: center;
+    margin-top: -22px; box-shadow: 0 8px 18px rgba(230,57,70,.5);
+    border: 3px solid var(--night);
+  }
+  .tab.cam .cambtn svg { width: 26px; height: 26px; stroke: #fff; }
+
+  .view { display: none; padding: 16px 18px 24px; animation: fade .25s; }
+  .view.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+  /* ── Common cards ── */
+  .hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .hdr h2 { font-size: 22px; font-weight: 800; }
+  .hdr .sub { font-size: 12px; color: var(--gray); margin-top: 2px; }
+  .card {
+    background: var(--night2); border-radius: 16px; padding: 16px; margin-bottom: 14px;
+    border: 1px solid var(--line);
+  }
+
+  /* ── Home hero ── */
+  .hero {
+    background: linear-gradient(135deg, #E63946 0%, #b71f2b 100%);
+    border-radius: 18px; padding: 18px; margin-bottom: 14px; position: relative; overflow: hidden;
+  }
+  .hero .glasswm { position: absolute; right: -10px; top: -16px; font-size: 110px; opacity: .14; }
+  .hero .role { font-size: 12px; opacity: .85; }
+  .hero .name { font-size: 20px; font-weight: 800; margin: 2px 0 14px; }
+  .hero .ptrow { display: flex; align-items: baseline; gap: 8px; }
+  .hero .pt { font-size: 40px; font-weight: 800; line-height: 1; }
+  .hero .ptlbl { font-size: 13px; opacity: .9; }
+  .hero .lvbar { height: 7px; background: rgba(255,255,255,.25); border-radius: 5px; margin-top: 14px; overflow: hidden; }
+  .hero .lvbar i { display: block; height: 100%; width: 68%; background: #fff; border-radius: 5px; }
+  .hero .lvtx { font-size: 11px; opacity: .9; margin-top: 6px; }
+
+  .statgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .stat { background: var(--night2); border-radius: 14px; padding: 12px 8px; text-align: center; border: 1px solid var(--line); }
+  .stat b { display: block; font-size: 22px; font-weight: 800; color: var(--red); }
+  .stat span { font-size: 10px; color: var(--gray); }
+
+  .sec-title { font-size: 13px; font-weight: 700; color: #aab4c8; margin: 4px 0 10px; display: flex; align-items: center; gap: 6px; }
+
+  .mission { display: flex; align-items: center; gap: 12px; }
+  .mission .mi { width: 42px; height: 42px; border-radius: 12px; background: rgba(69,123,157,.2); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .mission .mt { flex: 1; }
+  .mission .mt b { font-size: 14px; }
+  .mission .mt span { font-size: 11px; color: var(--gray); }
+  .mission .mr { font-size: 13px; font-weight: 800; color: var(--gold); white-space: nowrap; }
+
+  .feed-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .feed-item:last-child { border: none; }
+  .feed-item .thumb { width: 48px; height: 48px; border-radius: 10px; font-size: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .feed-item .ft { flex: 1; }
+  .feed-item .ft b { font-size: 13px; }
+  .feed-item .ft span { font-size: 11px; color: var(--gray); display: block; margin-top: 1px; }
+  .chip { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+  .chip.ok { background: rgba(45,106,79,.25); color: #6ee7a8; }
+  .chip.warn { background: rgba(244,162,97,.22); color: var(--gold); }
+  .chip.ng { background: rgba(100,116,139,.25); color: #9aa6ba; }
+
+  /* ── Map ── */
+  #map { position: absolute; top: 44px; bottom: 78px; left: 0; right: 0; }
+  .map-overlay {
+    position: absolute; top: 54px; left: 12px; right: 12px; z-index: 1000;
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .map-pill {
+    background: rgba(18,18,42,.9); backdrop-filter: blur(8px);
+    border: 1px solid var(--line); border-radius: 20px; padding: 7px 13px;
+    font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;
+  }
+  .map-pill .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .map-legend {
+    position: absolute; bottom: 90px; left: 12px; z-index: 1000;
+    background: rgba(18,18,42,.92); backdrop-filter: blur(8px);
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 11px;
+  }
+  .map-legend div { display: flex; align-items: center; gap: 7px; margin: 4px 0; }
+  .map-legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .leaflet-popup-content-wrapper { background: var(--night2); color: #fff; border-radius: 12px; }
+  .leaflet-popup-tip { background: var(--night2); }
+  .leaflet-popup-content { margin: 12px 14px; font-size: 12px; }
+  .leaflet-popup-content b { font-size: 13px; }
+  .pin {
+    width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+    border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pin span { transform: rotate(45deg); font-size: 12px; }
+
+  /* ── Camera flow ── */
+  .cam-view { padding: 0 !important; }
+  .cam-stage {
+    height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 30px 24px;
+  }
+  .viewfinder {
+    width: 100%; aspect-ratio: 3/4; border-radius: 20px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #2a2a45, #16162e);
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); margin-bottom: 20px;
+  }
+  .viewfinder .corner { position: absolute; width: 28px; height: 28px; border: 3px solid rgba(255,255,255,.7); }
+  .viewfinder .c1 { top: 16px; left: 16px; border-right: none; border-bottom: none; border-radius: 8px 0 0 0; }
+  .viewfinder .c2 { top: 16px; right: 16px; border-left: none; border-bottom: none; border-radius: 0 8px 0 0; }
+  .viewfinder .c3 { bottom: 16px; left: 16px; border-right: none; border-top: none; border-radius: 0 0 0 8px; }
+  .viewfinder .c4 { bottom: 16px; right: 16px; border-left: none; border-top: none; border-radius: 0 0 8px 0; }
+  .viewfinder .target { font-size: 80px; opacity: .9; }
+  .viewfinder .scan {
+    position: absolute; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--red), transparent);
+    box-shadow: 0 0 12px var(--red); animation: scanmove 1.6s ease-in-out infinite; display: none;
+  }
+  @keyframes scanmove { 0%,100% { top: 12%; } 50% { top: 88%; } }
+  .shutter {
+    width: 74px; height: 74px; border-radius: 50%; background: #fff; border: 5px solid rgba(255,255,255,.3);
+    cursor: pointer; transition: transform .1s;
+  }
+  .shutter:active { transform: scale(.92); }
+  .cam-hint { font-size: 13px; color: #A8C4D4; margin-bottom: 18px; line-height: 1.6; }
+
+  .ai-box { width: 100%; }
+  .ai-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; opacity: .35; transition: opacity .3s; }
+  .ai-row.on { opacity: 1; }
+  .ai-row .spin {
+    width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid var(--line); border-top-color: var(--red);
+    animation: spin .7s linear infinite; flex-shrink: 0;
+  }
+  .ai-row.done .spin { border: none; background: var(--green); position: relative; animation: none; }
+  .ai-row.done .spin::after { content: "✓"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ai-row span { font-size: 13px; }
+
+  .result-card { width: 100%; text-align: center; }
+  .result-card .big { font-size: 60px; margin-bottom: 8px; }
+  .result-card h3 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .result-card .desc { font-size: 13px; color: #A8C4D4; line-height: 1.6; margin-bottom: 18px; }
+  .pt-pop {
+    background: linear-gradient(135deg, var(--gold), #e08a3c); color: #1a1a1a;
+    border-radius: 16px; padding: 16px; font-weight: 800; margin-bottom: 18px;
+  }
+  .pt-pop .n { font-size: 36px; }
+  .pt-pop .l { font-size: 12px; opacity: .8; }
+
+  .btn {
+    width: 100%; padding: 15px; border-radius: 14px; border: none; cursor: pointer;
+    font-size: 15px; font-weight: 700; font-family: inherit;
+  }
+  .btn.primary { background: var(--red); color: #fff; }
+  .btn.ghost { background: transparent; color: #A8C4D4; border: 1px solid var(--line); margin-top: 10px; }
+
+  /* ── Ranking ── */
+  .rank-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .rank-row:last-child { border: none; }
+  .rank-row .pos { width: 28px; font-size: 16px; font-weight: 800; text-align: center; color: var(--gray); }
+  .rank-row .pos.g { color: #FFD700; } .rank-row .pos.s { color: #C0C0C0; } .rank-row .pos.b { color: #CD7F32; }
+  .rank-row .av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .rank-row .rn { flex: 1; }
+  .rank-row .rn b { font-size: 14px; }
+  .rank-row .rn span { font-size: 11px; color: var(--gray); }
+  .rank-row .rp { font-weight: 800; color: var(--gold); font-size: 14px; }
+  .rank-row.me { background: rgba(230,57,70,.1); border-radius: 12px; margin: 0 -8px; padding: 12px 8px; }
+
+  .seg { display: flex; background: var(--night2); border-radius: 12px; padding: 4px; margin-bottom: 16px; border: 1px solid var(--line); }
+  .seg button { flex: 1; padding: 9px; border: none; background: none; color: var(--gray); font-size: 12px; font-weight: 700; border-radius: 9px; cursor: pointer; font-family: inherit; }
+  .seg button.active { background: var(--red); color: #fff; }
+
+  .toast {
+    position: absolute; bottom: 96px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--green); color: #fff; padding: 12px 20px; border-radius: 30px; font-size: 13px; font-weight: 700;
+    z-index: 100; opacity: 0; transition: all .3s; white-space: nowrap; box-shadow: 0 8px 20px rgba(0,0,0,.4);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 820px) { .pitch { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- ── Side pitch ── -->
+<div class="pitch">
+  <span class="badge">PROTOTYPE · 2026</span>
+  <h1><span class="glass">🔍</span> GO-TO 探偵団</h1>
+  <p class="lead">市民が「探偵」となり、街のマーキングを発見・投稿。AIが判定し、防犯マップがリアルタイムに育つ。</p>
+
+  <div class="feat">
+    <div class="ic">📸</div>
+    <div class="tx"><b>撮って投稿</b><span>通勤・通学路の不審な記号を撮影しGPS付きで投稿</span></div>
+  </div>
+  <div class="feat">
+    <div class="ic">🤖</div>
+    <div class="tx"><b>AIが自動判定</b><span>マーキングか偶然かをAIが判別しマップへ反映</span></div>
+  </div>
+  <div class="feat">
+    <div class="ic">⭐</div>
+    <div class="tx"><b>ポイント＆ランキング</b><span>貢献に応じて捜査ポイント・特典・地域ランク</span></div>
+  </div>
+
+  <p class="note">※ これは概念実証用のプロトタイプです。地図・投稿・AI判定・ポイントはすべてダミーデータで動作します。実際のタブを操作してみてください →</p>
+</div>
+
+<!-- ── Phone ── -->
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+
+  <div class="screen" id="screen">
+
+    <!-- HOME -->
+    <section class="view active" id="view-home">
+      <div class="hdr">
+        <div><h2>こんにちは、探偵</h2><div class="sub">今日も街の安全を守ろう</div></div>
+        <div style="font-size:28px">🕵️</div>
+      </div>
+
+      <div class="hero">
+        <div class="glasswm">🔍</div>
+        <div class="role">特級探偵 / Lv.7</div>
+        <div class="name">ユウキ さん</div>
+        <div class="ptrow"><span class="pt" id="home-pt">2,480</span><span class="ptlbl">捜査ポイント</span></div>
+        <div class="lvbar"><i id="lvbar"></i></div>
+        <div class="lvtx">次のランクまで あと 520 pt</div>
+      </div>
+
+      <div class="statgrid">
+        <div class="stat"><b id="stat-posts">38</b><span>投稿数</span></div>
+        <div class="stat"><b>12</b><span>解放エリア</span></div>
+        <div class="stat"><b>5</b><span>連続記録</span></div>
+      </div>
+
+      <div class="sec-title">📋 今日のミッション</div>
+      <div class="card mission">
+        <div class="mi">🔍</div>
+        <div class="mt"><b>マーキングを1件調査</b><span>通勤・通学路をチェック</span></div>
+        <div class="mr">+50pt</div>
+      </div>
+      <div class="card mission">
+        <div class="mi">🗺️</div>
+        <div class="mt"><b>新エリアを1つ解放</b><span>未踏エリアで投稿</span></div>
+        <div class="mr">+120pt</div>
+      </div>
+
+      <div class="sec-title">🕐 みんなの捜査ログ</div>
+      <div class="card" id="feed"></div>
+    </section>
+
+    <!-- MAP -->
+    <section class="view" id="view-map" style="padding:0">
+      <!-- map injected -->
+    </section>
+
+    <!-- CAMERA -->
+    <section class="view cam-view" id="view-cam">
+      <div class="cam-stage" id="cam-stage"></div>
+    </section>
+
+    <!-- RANKING -->
+    <section class="view" id="view-rank">
+      <div class="hdr"><div><h2>ランキング</h2><div class="sub">渋谷区エリア</div></div><div style="font-size:26px">🏆</div></div>
+      <div class="seg">
+        <button class="active" data-seg="week">今週</button>
+        <button data-seg="month">今月</button>
+        <button data-seg="all">総合</button>
+      </div>
+      <div class="card" id="rank-list"></div>
+    </section>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Tab bar -->
+  <nav class="tabbar">
+    <button class="tab active" data-view="home">
+      <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9v11h14V9"/></svg>ホーム
+    </button>
+    <button class="tab" data-view="map">
+      <svg viewBox="0 0 24 24"><path d="M9 3L4 5v16l5-2 6 2 5-2V3l-5 2-6-2z"/><path d="M9 3v16M15 5v16"/></svg>マップ
+    </button>
+    <button class="tab cam" data-view="cam">
+      <div class="cambtn"><svg viewBox="0 0 24 24"><path d="M3 7h4l2-2h6l2 2h4v12H3z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
+    </button>
+    <button class="tab" data-view="rank">
+      <svg viewBox="0 0 24 24"><path d="M6 9V3h12v6a6 6 0 01-12 0zM6 5H3v2a3 3 0 003 3M18 5h3v2a3 3 0 01-3 3M9 21h6M12 15v6"/></svg>ランク
+    </button>
+  </nav>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ───────────────────────────── DUMMY DATA ─────────────────────────────
+const STATE = { points: 2480, posts: 38 };
+
+const MARKINGS = [
+  { lat: 35.6595, lng: 139.7005, type: 'danger', label: 'インターホン側面の傷', mark: '⚡', user: 'タカシ', ago: '12分前', verdict: 'マーキング濃厚' },
+  { lat: 35.6580, lng: 139.7020, type: 'danger', label: '郵便受け裏の記号', mark: '✕', user: 'ミク', ago: '40分前', verdict: 'マーキング濃厚' },
+  { lat: 35.6610, lng: 139.6985, type: 'warn', label: '表札周りのシール', mark: '●', user: 'ケン', ago: '1時間前', verdict: '要確認' },
+  { lat: 35.6570, lng: 139.7040, type: 'danger', label: 'メーターボックスの矢印', mark: '→', user: 'アヤ', ago: '2時間前', verdict: 'マーキング濃厚' },
+  { lat: 35.6625, lng: 139.7015, type: 'warn', label: '玄関枠の小さな点', mark: '∴', user: 'ユウキ', ago: '3時間前', verdict: '要確認' },
+  { lat: 35.6555, lng: 139.6995, type: 'safe', label: '誤検知（落書き）', mark: '○', user: 'リナ', ago: '昨日', verdict: '偶然と判定' },
+  { lat: 35.6600, lng: 139.7055, type: 'danger', label: 'ベランダ柵のテープ', mark: 'M', user: 'ソウタ', ago: '昨日', verdict: 'マーキング濃厚' },
+  { lat: 35.6635, lng: 139.6970, type: 'warn', label: 'ガスメーターの数字', mark: '7', user: 'ハナ', ago: '昨日', verdict: '要確認' },
+];
+
+const FEED = [
+  { mark: '⚡', bg: 'rgba(230,57,70,.2)', who: 'タカシ', act: 'インターホン側面を投稿', ago: '12分前', chip: ['ok','濃厚'] },
+  { mark: '→', bg: 'rgba(230,57,70,.2)', who: 'アヤ', act: 'メーターの矢印を投稿', ago: '2時間前', chip: ['ok','濃厚'] },
+  { mark: '●', bg: 'rgba(244,162,97,.2)', who: 'ケン', act: '表札のシールを投稿', ago: '1時間前', chip: ['warn','要確認'] },
+  { mark: '○', bg: 'rgba(100,116,139,.2)', who: 'リナ', act: '落書きを投稿', ago: '昨日', chip: ['ng','偶然'] },
+];
+
+const RANKS = {
+  week: [
+    { av:'🦊', bg:'rgba(244,162,97,.25)', name:'タカシ', area:'渋谷・34件', pt:1820 },
+    { av:'🐱', bg:'rgba(69,123,157,.25)', name:'ミク', area:'渋谷・29件', pt:1640 },
+    { av:'🐼', bg:'rgba(45,106,79,.25)', name:'ソウタ', area:'渋谷・25件', pt:1390 },
+    { av:'🕵️', bg:'rgba(230,57,70,.25)', name:'ユウキ（あなた）', area:'渋谷・21件', pt:1180, me:true },
+    { av:'🐰', bg:'rgba(69,123,157,.25)', name:'アヤ', area:'渋谷・18件', pt:990 },
+    { av:'🐻', bg:'rgba(244,162,97,.25)', name:'ケン', area:'渋谷・15件', pt:870 },
+  ],
+  month: [
+    { av:'🐱', bg:'rgba(69,123,157,.25)', name:'ミク', area:'渋谷・98件', pt:5420 },
+    { av:'🦊', bg:'rgba(244,162,97,.25)', name:'タカシ', area:'渋谷・91件', pt:5110 },
+    { av:'🕵️', bg:'rgba(230,57,70,.25)', name:'ユウキ（あなた）', area:'渋谷・76件', pt:4280, me:true },
+    { av:'🐼', bg:'rgba(45,106,79,.25)', name:'ソウタ', area:'渋谷・70件', pt:3960 },
+    { av:'🐻', bg:'rgba(244,162,97,.25)', name:'ケン', area:'渋谷・55件', pt:3010 },
+  ],
+  all: [
+    { av:'🦊', bg:'rgba(244,162,97,.25)', name:'タカシ', area:'渋谷・412件', pt:24800 },
+    { av:'🐱', bg:'rgba(69,123,157,.25)', name:'ミク', area:'渋谷・389件', pt:23150 },
+    { av:'🐼', bg:'rgba(45,106,79,.25)', name:'ソウタ', area:'渋谷・340件', pt:19900 },
+    { av:'🐻', bg:'rgba(244,162,97,.25)', name:'ケン', area:'渋谷・301件', pt:17600 },
+    { av:'🕵️', bg:'rgba(230,57,70,.25)', name:'ユウキ（あなた）', area:'渋谷・38件', pt:2480, me:true },
+  ],
+};
+
+const TYPE_COLOR = { danger:'#E63946', warn:'#F4A261', safe:'#64748B' };
+
+// ───────────────────────────── RENDER ─────────────────────────────
+function fmt(n){ return n.toLocaleString('ja-JP'); }
+
+function renderHome(){
+  document.getElementById('home-pt').textContent = fmt(STATE.points);
+  document.getElementById('stat-posts').textContent = STATE.posts;
+  document.getElementById('lvbar').style.width = Math.min(100, 68 + (STATE.points-2480)/30) + '%';
+  document.getElementById('feed').innerHTML = FEED.map(f => `
+    <div class="feed-item">
+      <div class="thumb" style="background:${f.bg}">${f.mark}</div>
+      <div class="ft"><b>${f.who}</b> <span>${f.act} · ${f.ago}</span></div>
+      <span class="chip ${f.chip[0]}">${f.chip[1]}</span>
+    </div>`).join('');
+}
+
+function renderRank(seg){
+  const list = RANKS[seg];
+  document.getElementById('rank-list').innerHTML = list.map((r,i)=>{
+    const cls = i===0?'g':i===1?'s':i===2?'b':'';
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    return `<div class="rank-row ${r.me?'me':''}">
+      <div class="pos ${cls}">${medal}</div>
+      <div class="av" style="background:${r.bg}">${r.av}</div>
+      <div class="rn"><b>${r.name}</b><span>${r.area}</span></div>
+      <div class="rp">${fmt(r.pt)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Map ──
+let map = null;
+function initMap(){
+  if (map) { setTimeout(()=>map.invalidateSize(), 100); return; }
+  map = L.map('map', { zoomControl:false, attributionControl:false }).setView([35.6595, 139.7010], 16);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(map);
+  MARKINGS.forEach(m => {
+    const color = TYPE_COLOR[m.type];
+    const icon = L.divIcon({ className:'', html:`<div class="pin" style="background:${color}"><span>${m.mark}</span></div>`, iconSize:[26,26], iconAnchor:[13,26] });
+    L.marker([m.lat,m.lng], { icon }).addTo(map)
+      .bindPopup(`<b>${m.label}</b><br>判定: <span style="color:${color}">●</span> ${m.verdict}<br>投稿: ${m.user} · ${m.ago}`);
+  });
+  setTimeout(()=>map.invalidateSize(), 200);
+}
+
+// ── Camera flow ──
+function camIdle(){
+  document.getElementById('cam-stage').innerHTML = `
+    <div class="viewfinder">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="scan"></div>
+      <div class="target" id="vtarget">📮</div>
+    </div>
+    <div class="cam-hint">📍 渋谷区宇田川町付近<br>怪しい記号にカメラを向けて撮影</div>
+    <div class="shutter" id="shutter"></div>`;
+  document.getElementById('shutter').onclick = camAnalyze;
+}
+
+function camAnalyze(){
+  const stage = document.getElementById('cam-stage');
+  stage.innerHTML = `
+    <div class="viewfinder">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="scan" style="display:block"></div>
+      <div class="target">⚡</div>
+    </div>
+    <div class="ai-box">
+      <div class="ai-row" id="r1"><div class="spin"></div><span>画像をアップロード中…</span></div>
+      <div class="ai-row" id="r2"><div class="spin"></div><span>AIがマーキングを解析中…</span></div>
+      <div class="ai-row" id="r3"><div class="spin"></div><span>位置情報とマップを照合中…</span></div>
+    </div>`;
+  const steps = ['r1','r2','r3'];
+  let i = 0;
+  document.getElementById('r1').classList.add('on');
+  const tick = () => {
+    if (i < steps.length){
+      const el = document.getElementById(steps[i]);
+      el.classList.add('on');
+      setTimeout(()=>{
+        el.classList.add('done');
+        i++;
+        if (i < steps.length) document.getElementById(steps[i]).classList.add('on');
+        tick();
+      }, 850);
+    } else {
+      setTimeout(camResult, 500);
+    }
+  };
+  tick();
+}
+
+function camResult(){
+  const gained = 50;
+  document.getElementById('cam-stage').innerHTML = `
+    <div class="result-card">
+      <div class="big">⚡</div>
+      <h3 style="color:var(--red)">マーキング濃厚！</h3>
+      <div class="desc">AI信頼度 <b>92%</b><br>「侵入経路の目印」と判定されました。<br>防犯マップに追加されます。</div>
+      <div class="pt-pop"><div class="n">+${gained} pt</div><div class="l">捜査ポイント獲得！ 初回ボーナス込み</div></div>
+      <button class="btn primary" id="cam-done">マップに反映する</button>
+      <button class="btn ghost" id="cam-again">もう一度撮影</button>
+    </div>`;
+  document.getElementById('cam-done').onclick = () => {
+    STATE.points += gained; STATE.posts += 1;
+    renderHome();
+    // add a fresh marking near center
+    if (map){
+      const m = { lat:35.6595+(Math.random()-.5)*.004, lng:139.7010+(Math.random()-.5)*.004, type:'danger', mark:'⚡', verdict:'マーキング濃厚', user:'ユウキ', label:'あなたの新規投稿' };
+      MARKINGS.push(m);
+      const icon = L.divIcon({ className:'', html:`<div class="pin" style="background:${TYPE_COLOR.danger};animation:none"><span>⚡</span></div>`, iconSize:[26,26], iconAnchor:[13,26] });
+      L.marker([m.lat,m.lng],{icon}).addTo(map).bindPopup(`<b>${m.label}</b><br>判定: <span style="color:#E63946">●</span> ${m.verdict}<br>投稿: あなた · たった今`);
+    }
+    switchView('map');
+    showToast('✅ 投稿完了！+'+gained+'pt 獲得');
+    setTimeout(camIdle, 400);
+  };
+  document.getElementById('cam-again').onclick = camIdle;
+}
+
+// ── Toast ──
+let toastT;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ── Nav ──
+function switchView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelector(`.tab[data-view="${name}"]`).classList.add('active');
+  if (name==='map') initMap();
+  if (name==='cam') camIdle();
+}
+
+// inject map container into map view once
+document.getElementById('view-map').innerHTML = `
+  <div id="map"></div>
+  <div class="map-overlay">
+    <div class="map-pill"><span class="dot" style="background:#E63946"></span>危険 5</div>
+    <div class="map-pill"><span class="dot" style="background:#F4A261"></span>要確認 3</div>
+    <div class="map-pill">🔄 24h以内 6件</div>
+  </div>
+  <div class="map-legend">
+    <div><span class="dot" style="background:#E63946"></span>マーキング濃厚</div>
+    <div><span class="dot" style="background:#F4A261"></span>要確認</div>
+    <div><span class="dot" style="background:#64748B"></span>偶然・誤検知</div>
+  </div>`;
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick = () => switchView(t.dataset.view);
+});
+document.querySelectorAll('.seg button').forEach(b=>{
+  b.onclick = () => {
+    document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    renderRank(b.dataset.seg);
+  };
+});
+
+// init
+renderHome();
+renderRank('week');
+</script>
+</body>
+</html>
