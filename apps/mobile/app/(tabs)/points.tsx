@@ -36,13 +36,11 @@ export default function Points() {
   // 直近のレジャーから残高推移（古い→新しい）を復元してスパークライン化
   const spark = useMemo(() => {
     const balance = wallet?.balance ?? 0;
-    const asc = [...ledger].reverse(); // 古い順
     // 末尾（現在）= balance から逆算して各時点の残高列を作る
     let running = balance;
     const seriesDesc: number[] = [balance];
     for (const e of ledger) { running -= e.delta; seriesDesc.push(running); }
     const series = seriesDesc.reverse(); // 古い→新しい
-    void asc;
     const max = Math.max(...series, 1);
     const min = Math.min(...series, 0);
     const range = Math.max(max - min, 1);

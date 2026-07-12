@@ -46,6 +46,26 @@ from (values
 ) as v(name,gslug,cost,method,stock,sort)
 left join public.games g on g.slug = v.gslug;
 
+-- ad partners（postback 検証の相手。sandbox の署名鍵は Vault 参照名で保持）
+-- 検証には環境変数 POSTBACK_SECRET_SANDBOX を設定する（.env.example 参照）。
+insert into public.ad_partners (name, slug, signing_secret_ref, allowed_ips, attribution_window, postback_mode, status) values
+  ('Sandbox Partner','sandbox','vault:POSTBACK_SECRET_SANDBOX', null, interval '24 hours','sandbox','active');
+
+-- 検証が必要なミッション（event/offer）を sandbox パートナーへ紐づける（postback パスを E2E 可能に）
+update public.missions m
+  set partner_id = (select id from public.ad_partners where slug = 'sandbox')
+  where m.requires_verification and m.partner_id is null;
+
+-- offers（offerwall。ad_networks に紐づく）
+insert into public.offers (network_id, external_id, title, description, reward_points, event_type, status)
+select n.id, v.ext, v.title, v.descr, v.reward, v.evt, 'active'
+from (values
+  ('applovin','of-install-001','新作RPGをインストール','インストール後に起動で達成',60000,'install'),
+  ('tapjoy','of-purchase-002','ショップで初回購入','初回課金で達成',200000,'purchase'),
+  ('pollfish','of-survey-003','アンケートに回答','約5分のアンケート',12000,'survey')
+) as v(netcode,ext,title,descr,reward,evt)
+join public.ad_networks n on n.code = v.netcode;
+
 -- public forum + a couple topics (author設定はアプリ層/サインアップ後に作成想定。ここは構造例)
 insert into public.forums (slug, name, description, type) values
   ('lounge','公開ラウンジ','なんでも雑談OKの広場','public'),

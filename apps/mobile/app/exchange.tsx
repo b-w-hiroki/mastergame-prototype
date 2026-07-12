@@ -23,11 +23,10 @@ export default function Exchange() {
   useEffect(() => { load(); }, [load]);
 
   async function exchange(item: ExchangeItem) {
-    const { data, error } = await supabase.rpc('request_exchange', { p_item_id: item.id });
+    const { error } = await supabase.rpc('request_exchange', { p_item_id: item.id });
     if (error) { Alert.alert('交換できませんでした', error.message); return; }
     Alert.alert('交換を受け付けました', `「${item.name}」と交換申請しました。`);
     load();
-    void data;
   }
 
   return (
