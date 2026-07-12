@@ -535,8 +535,8 @@
           <h2>おかえりなさい</h2>
           <p>ログインしてミッションを続けよう</p>
         </div>
-        <div class="field"><label>メールアドレス</label><input value="player@example.com" inputmode="email"></div>
-        <div class="field"><label>パスワード</label><input type="password" value="********"></div>
+        <div class="field"><label for="login-email">メールアドレス</label><input id="login-email" value="player@example.com" inputmode="email" autocomplete="username"></div>
+        <div class="field"><label for="login-pw">パスワード</label><input id="login-pw" type="password" value="********" autocomplete="current-password"></div>
         <div style="padding:0 22px"><button class="btn btn-primary" onclick="go('home')">ログイン</button></div>
         <div class="divider">または</div>
         <div class="oauth">
@@ -558,10 +558,10 @@
           <h2>アカウント作成</h2>
           <p>30秒で完了。今日からポイントが貯まります</p>
         </div>
-        <div class="field"><label>ユーザー名（任意・あとで変更可）</label><input placeholder="プレイヤー名"></div>
-        <div class="field"><label>メールアドレス</label><input placeholder="you@example.com" inputmode="email"></div>
-        <div class="field"><label>パスワード</label><input type="password" placeholder="8文字以上"></div>
-        <div class="field"><label>パスワード（確認）</label><input type="password" placeholder="もう一度入力"></div>
+        <div class="field"><label for="su-name">ユーザー名（任意・あとで変更可）</label><input id="su-name" placeholder="プレイヤー名" autocomplete="nickname"></div>
+        <div class="field"><label for="su-email">メールアドレス</label><input id="su-email" placeholder="you@example.com" inputmode="email" autocomplete="email"></div>
+        <div class="field"><label for="su-pw">パスワード</label><input id="su-pw" type="password" placeholder="8文字以上" autocomplete="new-password"></div>
+        <div class="field"><label for="su-pw2">パスワード（確認）</label><input id="su-pw2" type="password" placeholder="もう一度入力" autocomplete="new-password"></div>
         <label class="checkrow"><input type="checkbox" checked><span><a>利用規約</a>・<a>プライバシーポリシー</a>に同意する</span></label>
         <div style="padding:0 22px"><button class="btn btn-primary" onclick="go('home')">アカウントを作成</button></div>
         <div class="divider">または</div>
@@ -584,7 +584,7 @@
           <h2>パスワード再設定</h2>
           <p>登録メールアドレスに再設定リンクをお送りします</p>
         </div>
-        <div class="field"><label>メールアドレス</label><input placeholder="you@example.com" inputmode="email"></div>
+        <div class="field"><label for="reset-email">メールアドレス</label><input id="reset-email" placeholder="you@example.com" inputmode="email" autocomplete="email"></div>
         <div style="padding:0 22px"><button class="btn btn-primary" onclick="resetPw()">再設定リンクを送信</button></div>
         <div class="links"><span onclick="go('login')" style="cursor:pointer">‹ ログインに戻る</span></div>
       </div>
@@ -1207,7 +1207,9 @@ function beginOffer(i){
 }
 
 /* ---------------- community / guild ---------------- */
-let curGuild=null, curTopic=null, topicFilter='all', curReplies=[];
+let curGuild=null, curTopic=null, topicFilter='all', curReplies=[], curTopicList=[];
+/* ユーザー入力を innerHTML に埋め込む前に必ずエスケープする（XSS対策） */
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderGuilds(){
   const el=document.getElementById('guildlist'); if(!el)return;
   el.innerHTML=GUILDS.map(g=>`
@@ -1229,14 +1231,15 @@ function renderTopics(){
   const filters=[['all','すべて'],['q','質問'],['recruit','募集'],['chat','雑談']];
   seg.innerHTML=filters.map(f=>`<div class="ts ${topicFilter===f[0]?'on':''}" onclick="setTopicFilter('${f[0]}')">${f[1]}</div>`).join('');
   const list=(TOPICS[curGuild]||[]).filter(t=>topicFilter==='all'||t.kind===topicFilter);
+  curTopicList=list;
   const box=document.getElementById('topiclist');
-  box.innerHTML=list.length? list.map(t=>{
+  box.innerHTML=list.length? list.map((t,i)=>{
     const k=KIND[t.kind];
-    return `<div class="topic" onclick='openTopic(${JSON.stringify(t)})'>
-      <div class="tt">${t.title}</div>
+    return `<div class="topic" onclick="openTopicIdx(${i})">
+      <div class="tt">${esc(t.title)}</div>
       <div class="meta"><span class="kind ${k[1]}">${k[0]}</span>
         ${t.bounty?`<span class="bounty">🏅 ${t.bounty}P</span>`:''}
-        <span class="who">${t.who}</span><span>· ${t.ago}</span>
+        <span class="who">${esc(t.who)}</span><span>· ${t.ago}</span>
         <span class="r">💬 ${t.replies}</span></div>
     </div>`;
   }).join('') : `<div class="stub"><div class="ic">🗒️</div><p>このカテゴリのトピックはまだありません</p></div>`;
@@ -1253,13 +1256,14 @@ function sampleReplies(){
     {who:'みう',ago:'5分前',text:'横から失礼、無課金でも上記でいけました！回復はサブ1体で十分です。',likes:5,best:false},
   ];
 }
+function openTopicIdx(i){ const t=curTopicList[i]; if(t) openTopic(t); }
 function openTopic(t){ curTopic=t; curReplies=sampleReplies(); renderTopic(); go('forumTopic'); }
 function renderTopic(){
   const t=curTopic, k=KIND[t.kind];
   document.getElementById('topicbody').innerHTML=`
     <div class="op">
-      <div class="oph"><div class="av">🙂</div><div><div class="nm">${t.who}</div><div class="tm">${t.ago}</div></div></div>
-      <div class="otitle">${t.title}</div>
+      <div class="oph"><div class="av">🙂</div><div><div class="nm">${esc(t.who)}</div><div class="tm">${t.ago}</div></div></div>
+      <div class="otitle">${esc(t.title)}</div>
       <div style="margin-bottom:10px"><span class="kind ${k[1]}">${k[0]}</span> ${t.bounty?`<span class="bounty">🏅 ${t.bounty}P 賭け</span>`:''}</div>
       <div class="obody">${topicBody(t)}</div>
     </div>
@@ -1273,11 +1277,11 @@ function renderReplies(){
     <div class="reply ${r.best?'best':''}">
       <div class="av">🙂</div>
       <div class="rb">
-        <div class="rnm">${r.who}${r.best?'<span class="bestbadge">ベストアンサー</span>':`<small>${r.ago}</small>`}</div>
-        <div class="rtext">${r.text}</div>
+        <div class="rnm">${esc(r.who)}${r.best?'<span class="bestbadge">ベストアンサー</span>':`<small>${r.ago}</small>`}</div>
+        <div class="rtext">${esc(r.text)}</div>
         <div class="ract">
           <span onclick="likeReply(${i})">👍 ${r.likes}</span>
-          <span class="flagbtn" onclick="openReport('${r.who}さんの返信')">⚑ 通報</span>
+          <span class="flagbtn" onclick="reportReply(${i})">⚑ 通報</span>
           ${(t.bounty&&!t.resolved)?`<button class="pickbest" onclick="pickBest(${i})">ベストに選ぶ</button>`:''}
         </div>
       </div>
@@ -1320,11 +1324,12 @@ function addTopic(){
 }
 /* report */
 let reportReason=null;
+function reportReply(i){ const r=curReplies[i]; if(r) openReport(r.who+'さんの返信'); }
 function openReport(target){
   reportReason=null;
   const reasons=['スパム・宣伝','不適切なコンテンツ','誹謗中傷・ハラスメント','その他'];
   document.getElementById('sheet').innerHTML=`<div class="grab"></div>
-    <h3>通報する</h3><p class="gm">${target} を運営に報告します</p>
+    <h3>通報する</h3><p class="gm">${esc(target)} を運営に報告します</p>
     ${reasons.map((r,i)=>`<div class="report-opt" id="ro${i}" onclick="selReason(${i},'${r}')"><div class="rd"></div>${r}</div>`).join('')}
     <button class="btn btn-primary" style="margin-top:8px" onclick="submitReport()">通報を送信</button>`;
   document.getElementById('overlay').classList.add('show');

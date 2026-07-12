@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const ITEMS = [
@@ -18,9 +19,9 @@ export default function Nav() {
       {ITEMS.map((it) => {
         const on = it.href === '/' ? path === '/' : path.startsWith(it.href);
         return (
-          <a key={it.href} className={on ? 'on' : undefined} href={it.href}>
+          <Link key={it.href} className={on ? 'on' : undefined} href={it.href}>
             {it.label}
-          </a>
+          </Link>
         );
       })}
     </nav>

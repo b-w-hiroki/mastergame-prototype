@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getAdminClient } from '@/lib/supabase/admin';
+import { requireAdmin, assertUuid } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +33,7 @@ const fmt = (iso: string) => {
 };
 
 const countBy = async (status: Status) => {
-  const { count } = await supabaseAdmin
+  const { count } = await getAdminClient()
     .from('postback_events')
     .select('*', { count: 'exact', head: true })
     .eq('status', status);
@@ -43,8 +44,9 @@ const countBy = async (status: Status) => {
 // 承認＝ポイント確定は Edge Function / confirm_postback の自動パイプラインが担う。
 async function reject(formData: FormData) {
   'use server';
-  const id = String(formData.get('id'));
-  await supabaseAdmin
+  await requireAdmin();
+  const id = assertUuid(formData.get('id'));
+  await getAdminClient()
     .from('postback_events')
     .update({ status: 'rejected', processed_at: new Date().toISOString() })
     .eq('id', id)
@@ -53,13 +55,14 @@ async function reject(formData: FormData) {
 }
 
 export default async function Postback() {
+  await requireAdmin();
   const [received, accepted, rejected, duplicate, reversed] = await Promise.all([
     countBy('received'), countBy('accepted'), countBy('rejected'), countBy('duplicate'), countBy('reversed'),
   ]);
   const decided = accepted + rejected;
   const rate = decided > 0 ? Math.round((accepted / decided) * 1000) / 10 : null;
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getAdminClient()
     .from('postback_events')
     .select('id,partner_id,transaction_id,user_id,mission_id,status,signature_valid,reward_points,received_at,processed_at')
     .order('received_at', { ascending: false })

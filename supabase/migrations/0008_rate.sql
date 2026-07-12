@@ -56,6 +56,6 @@ select
   (select count(*) from public.reports where status = 'open')                          as open_reports,
   (select count(*) from public.postback_events where status = 'received')              as pending_postbacks,
   public.points_to_yen((select coalesce(sum(delta),0) from public.point_ledger
-     where delta > 0 and status = 'confirmed'))                                        as distributed_yen,
+     where delta > 0 and status = 'confirmed')::bigint)                                as distributed_yen,
   public.points_to_yen((select coalesce(sum(-delta),0) from public.point_ledger
-     where delta < 0 and reason = 'exchange' and status = 'confirmed'))                as exchanged_yen;
+     where delta < 0 and reason = 'exchange' and status = 'confirmed')::bigint)        as exchanged_yen;

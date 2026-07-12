@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getAdminClient } from '@/lib/supabase/admin';
+import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,9 @@ const toIntOrNull = (v: FormDataEntryValue | null) => {
 // 作成 / 更新（マスタ。ポイント操作なし＝安全。service_role でRLSバイパス）
 async function saveItem(formData: FormData) {
   'use server';
-  const id = String(formData.get('id') ?? '').trim();
+  await requireAdmin();
+  const idRaw = String(formData.get('id') ?? '').trim();
+  const id = idRaw === '' ? '' : assertUuid(idRaw);
   const name = String(formData.get('name') ?? '').trim();
   const cost = toIntOrNull(formData.get('cost_points'));
 
@@ -43,20 +46,21 @@ async function saveItem(formData: FormData) {
 
   // 在庫：空欄 = 無制限（null）
   const stock = toIntOrNull(formData.get('stock'));
+  if (stock !== null && stock < 0) throw new Error('stock must be >= 0');
 
   const payload = {
     name,
     description: (String(formData.get('description') ?? '').trim() || null),
     cost_points: cost,
-    delivery_method: String(formData.get('delivery_method')) as Item['delivery_method'],
+    delivery_method: assertEnum(formData.get('delivery_method'), ['csv', 'code', 'api'] as const, 'delivery_method'),
     stock,
     sort: toIntOrNull(formData.get('sort')) ?? 0,
     is_active: formData.get('is_active') === 'on',
   };
 
   const res = id
-    ? await supabaseAdmin.from('exchange_items').update(payload).eq('id', id)
-    : await supabaseAdmin.from('exchange_items').insert(payload);
+    ? await getAdminClient().from('exchange_items').update(payload).eq('id', id)
+    : await getAdminClient().from('exchange_items').insert(payload);
   if (res.error) throw new Error(res.error.message);
 
   revalidatePath('/items');
@@ -64,17 +68,19 @@ async function saveItem(formData: FormData) {
 
 async function toggleItem(formData: FormData) {
   'use server';
-  const id = String(formData.get('id'));
+  await requireAdmin();
+  const id = assertUuid(formData.get('id'));
   const next = String(formData.get('next')) === 'true';
-  const { error } = await supabaseAdmin.from('exchange_items').update({ is_active: next }).eq('id', id);
+  const { error } = await getAdminClient().from('exchange_items').update({ is_active: next }).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/items');
 }
 
 async function deleteItem(formData: FormData) {
   'use server';
-  const id = String(formData.get('id'));
-  const { error } = await supabaseAdmin.from('exchange_items').delete().eq('id', id);
+  await requireAdmin();
+  const id = assertUuid(formData.get('id'));
+  const { error } = await getAdminClient().from('exchange_items').delete().eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/items');
 }
@@ -125,7 +131,8 @@ function ItemForm({ it }: { it?: Item }) {
 }
 
 export default async function Items() {
-  const { data, error } = await supabaseAdmin
+  await requireAdmin();
+  const { data, error } = await getAdminClient()
     .from('exchange_items')
     .select('id,name,description,cost_points,delivery_method,stock,is_active,sort,created_at')
     .order('sort', { ascending: true })

@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getAdminClient } from '@/lib/supabase/admin';
+import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -53,7 +54,9 @@ const toIntOrNull = (v: FormDataEntryValue | null) => {
 // 作成 / 更新（マスタ。ポイント操作なし＝安全。service_role でRLSバイパス）
 async function saveMission(formData: FormData) {
   'use server';
-  const id = String(formData.get('id') ?? '').trim();
+  await requireAdmin();
+  const idRaw = String(formData.get('id') ?? '').trim();
+  const id = idRaw === '' ? '' : assertUuid(idRaw);
   const title = String(formData.get('title') ?? '').trim();
   const reward = toIntOrNull(formData.get('reward_points'));
   const maxProgress = toIntOrNull(formData.get('max_progress')) ?? 1;
@@ -62,7 +65,7 @@ async function saveMission(formData: FormData) {
   if (reward === null || reward <= 0) throw new Error('reward_points must be > 0');
 
   const payload = {
-    type: String(formData.get('type')) as Mission['type'],
+    type: assertEnum(formData.get('type'), ['daily', 'weekly', 'achievement', 'event', 'offer'] as const, 'type'),
     title,
     description: (String(formData.get('description') ?? '').trim() || null),
     reward_points: reward,
@@ -74,8 +77,8 @@ async function saveMission(formData: FormData) {
   };
 
   const res = id
-    ? await supabaseAdmin.from('missions').update(payload).eq('id', id)
-    : await supabaseAdmin.from('missions').insert(payload);
+    ? await getAdminClient().from('missions').update(payload).eq('id', id)
+    : await getAdminClient().from('missions').insert(payload);
   if (res.error) throw new Error(res.error.message);
 
   revalidatePath('/missions');
@@ -83,17 +86,19 @@ async function saveMission(formData: FormData) {
 
 async function toggleMission(formData: FormData) {
   'use server';
-  const id = String(formData.get('id'));
+  await requireAdmin();
+  const id = assertUuid(formData.get('id'));
   const next = String(formData.get('next')) === 'true';
-  const { error } = await supabaseAdmin.from('missions').update({ is_active: next }).eq('id', id);
+  const { error } = await getAdminClient().from('missions').update({ is_active: next }).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/missions');
 }
 
 async function deleteMission(formData: FormData) {
   'use server';
-  const id = String(formData.get('id'));
-  const { error } = await supabaseAdmin.from('missions').delete().eq('id', id);
+  await requireAdmin();
+  const id = assertUuid(formData.get('id'));
+  const { error } = await getAdminClient().from('missions').delete().eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/missions');
 }
@@ -154,7 +159,8 @@ function MissionForm({ m }: { m?: Mission }) {
 }
 
 export default async function Missions() {
-  const { data, error } = await supabaseAdmin
+  await requireAdmin();
+  const { data, error } = await getAdminClient()
     .from('missions')
     .select('id,type,title,description,reward_points,max_progress,requires_verification,is_active,starts_at,ends_at,created_at')
     .order('created_at', { ascending: false })

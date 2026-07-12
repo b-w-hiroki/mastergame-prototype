@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getAdminClient } from '@/lib/supabase/admin';
+import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -32,13 +33,14 @@ const fmt = (iso: string) => {
 // 通報への運営対応：moderation_actions に記録し、reports の状態を更新する（ポイント操作なし＝安全）
 async function moderate(formData: FormData) {
   'use server';
-  const id = String(formData.get('id'));
-  const action = String(formData.get('action')) as 'delete' | 'warn' | 'dismiss';
-  const target_type = String(formData.get('target_type'));
-  const target_id = String(formData.get('target_id'));
+  await requireAdmin();
+  const id = assertUuid(formData.get('id'));
+  const action = assertEnum(formData.get('action'), ['delete', 'warn', 'dismiss'] as const, 'action');
+  const target_type = assertEnum(formData.get('target_type'), ['post', 'topic', 'user'] as const, 'target_type');
+  const target_id = assertUuid(formData.get('target_id'), 'target_id');
 
-  await supabaseAdmin.from('moderation_actions').insert({ report_id: id, action, target_type, target_id });
-  await supabaseAdmin
+  await getAdminClient().from('moderation_actions').insert({ report_id: id, action, target_type, target_id });
+  await getAdminClient()
     .from('reports')
     .update({ status: action === 'dismiss' ? 'dismissed' : 'resolved', resolved_at: new Date().toISOString() })
     .eq('id', id);
@@ -47,7 +49,8 @@ async function moderate(formData: FormData) {
 }
 
 export default async function Moderation() {
-  const { data, error } = await supabaseAdmin
+  await requireAdmin();
+  const { data, error } = await getAdminClient()
     .from('reports')
     .select('id,reporter_id,target_type,target_id,reason,detail,status,created_at,resolved_at')
     .order('status', { ascending: true }) // open を先頭に

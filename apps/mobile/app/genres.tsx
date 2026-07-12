@@ -37,12 +37,21 @@ export default function Genres() {
     setBusy(true);
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) { setBusy(false); return; }
-    // 全削除 → 選択分を再挿入（冪等）
-    await supabase.from('user_genres').delete().eq('user_id', u.user.id);
-    const rows = [...selected].map((genre) => ({ user_id: u.user!.id, genre }));
-    const { error } = await supabase.from('user_genres').insert(rows);
+    // 先に選択分を upsert → 選択外を削除。順序を保つことで「一瞬0件」になる窓を無くす
+    // （0件だとオンボーディング未完了に巻き戻るため）。
+    const uid = u.user.id;
+    const rows = [...selected].map((genre) => ({ user_id: uid, genre }));
+    const { error: upsertErr } = await supabase
+      .from('user_genres')
+      .upsert(rows, { onConflict: 'user_id,genre', ignoreDuplicates: true });
+    if (upsertErr) { setBusy(false); Alert.alert('保存できませんでした', upsertErr.message); return; }
+    const { error: delErr } = await supabase
+      .from('user_genres')
+      .delete()
+      .eq('user_id', uid)
+      .not('genre', 'in', `(${[...selected].join(',')})`);
     setBusy(false);
-    if (error) { Alert.alert('保存できませんでした', error.message); return; }
+    if (delErr) { Alert.alert('保存できませんでした', delErr.message); return; }
     router.replace('/');
   }
 
