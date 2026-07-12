@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getAdminClient } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,8 @@ const fmt = (iso: string) => {
 };
 
 export default async function Users() {
-  const { data, error } = await supabaseAdmin
+  await requireAdmin();
+  const { data, error } = await getAdminClient()
     .from('admin_user_rows').select('*')
     .order('balance', { ascending: false }).limit(100);
 
