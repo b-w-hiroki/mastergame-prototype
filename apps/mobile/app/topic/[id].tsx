@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+import { useLoader } from '@/lib/useLoader';
+import { LoadingView, ErrorBanner } from '@/components/StateViews';
 
 type Topic = { id: string; title: string; kind: string; status: string; has_bounty: boolean; author_id: string; best_answer_post_id: string | null };
 type Post = { id: string; body: string; is_op: boolean; author_id: string; created_at: string };
@@ -42,7 +44,8 @@ export default function TopicDetail() {
     }
   }, [id]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const { loading, error, reload } = useLoader(load);
+  useFocusEffect(useCallback(() => { reload().catch(() => {}); }, [reload]));
 
   const isAuthor = !!topic && !!uid && topic.author_id === uid;
   const resolved = topic?.status === 'resolved' || topic?.status === 'closed';
@@ -60,14 +63,14 @@ export default function TopicDetail() {
     setBusy(false);
     if (error) { Alert.alert('返信できませんでした', error.message); return; }
     setReply('');
-    await load();
+    await reload();
   }
 
   async function toggleLike(postId: string) {
     if (!uid) { Alert.alert('ログインが必要です'); return; }
     const { error } = await supabase.rpc('toggle_reaction', { p_post_id: postId, p_kind: 'like' });
     if (error) { Alert.alert('反応できませんでした', error.message); return; }
-    await load();
+    await reload();
   }
 
   async function pickBest(postId: string) {
@@ -80,7 +83,7 @@ export default function TopicDetail() {
         onPress: async () => {
           const { error } = await supabase.rpc('set_best_answer', { p_topic_id: id, p_post_id: postId });
           if (error) { Alert.alert('設定できませんでした', error.message); return; }
-          await load();
+          await reload();
         },
       },
     ]);
@@ -107,6 +110,8 @@ export default function TopicDetail() {
       <Stack.Screen options={{ title: 'トピック', headerShown: true }} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
+          {loading && <LoadingView />}
+          {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
           {topic && (
             <View style={s.head}>
               <Text style={s.title}>

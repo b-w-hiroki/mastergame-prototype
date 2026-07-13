@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+import { useLoader } from '@/lib/useLoader';
+import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import type { Mission, NudgeTarget, VipInfo, AppNotification } from '@/lib/types';
 
 /**
@@ -16,37 +18,27 @@ export default function Home() {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [nudge, setNudge] = useState<NudgeTarget | null>(null);
   const [news, setNews] = useState<AppNotification[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
   const [claiming, setClaiming] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    try {
-      setError(null);
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      const [{ data: wallet }, { data: ms }, { data: n }, { data: v }, { data: nt }] = await Promise.all([
-        supabase.from('point_wallets').select('balance').eq('user_id', u.user.id).single(),
-        supabase.from('missions').select('*').eq('type', 'daily').eq('is_active', true),
-        supabase.rpc('next_nudge_target'),
-        supabase.from('user_vip').select('*').eq('user_id', u.user.id).single(),
-        supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(3),
-      ]);
-      setBalance(wallet?.balance ?? 0);
-      setMissions(ms ?? []);
-      // n は RPC(jsonb) / nt.payload は jsonb 列。境界で domain 形へ変換する。
-      setNudge((n as NudgeTarget | null) ?? null);
-      setVip(v ?? null);
-      setNews((nt ?? []) as AppNotification[]);
-    } catch (e) {
-      setError('データの取得に失敗しました。通信環境を確認してください。');
-    } finally {
-      setLoading(false);
-    }
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    const [{ data: wallet }, { data: ms }, { data: n }, { data: v }, { data: nt }] = await Promise.all([
+      supabase.from('point_wallets').select('balance').eq('user_id', u.user.id).single(),
+      supabase.from('missions').select('*').eq('type', 'daily').eq('is_active', true),
+      supabase.rpc('next_nudge_target'),
+      supabase.from('user_vip').select('*').eq('user_id', u.user.id).single(),
+      supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(3),
+    ]);
+    setBalance(wallet?.balance ?? 0);
+    setMissions(ms ?? []);
+    // n は RPC(jsonb) / nt.payload は jsonb 列。境界で domain 形へ変換する。
+    setNudge((n as NudgeTarget | null) ?? null);
+    setVip(v ?? null);
+    setNews((nt ?? []) as AppNotification[]);
   }, []);
 
-  useEffect(() => { load().catch(() => {}); }, [load]);
+  const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
 
   async function claim(m: Mission) {
     setClaiming(m.id);
@@ -56,23 +48,16 @@ export default function Home() {
       Alert.alert('受け取れませんでした', claimError.message);
       return;
     }
-    load().catch(() => {});
+    reload().catch(() => {});
   }
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
 
-        {loading && (
-          <View style={s.center}><ActivityIndicator color={colors.accent} /></View>
-        )}
-        {error && (
-          <View style={s.errBox}>
-            <Text style={s.errText}>{error}</Text>
-            <Pressable onPress={() => load().catch(() => {})}><Text style={s.errRetry}>再読み込み</Text></Pressable>
-          </View>
-        )}
+        {loading && <LoadingView />}
+        {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
 
         <View style={s.head}>
           <View>
@@ -140,10 +125,6 @@ function labelOf(type: string): string {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  center: { paddingVertical: 20, alignItems: 'center' },
-  errBox: { backgroundColor: '#fde8e8', borderWidth: 1, borderColor: '#f5c2c2', borderRadius: 12, padding: 12, marginBottom: 14, flexDirection: 'row', alignItems: 'center' },
-  errText: { color: '#a12a2a', fontSize: 12, flex: 1 },
-  errRetry: { color: '#a12a2a', fontWeight: '800', fontSize: 12 },
   head: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   hello: { fontSize: 18, fontWeight: '800', color: colors.ink },
   rank: { fontSize: 12, fontWeight: '800', color: colors.gold, marginTop: 2 },

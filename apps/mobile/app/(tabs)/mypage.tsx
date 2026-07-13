@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+import { useLoader } from '@/lib/useLoader';
+import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import { GENRES } from '@/lib/types';
 import type { Profile, VipInfo, Genre } from '@/lib/types';
 
@@ -18,7 +20,6 @@ export default function MyPage() {
   const [vip, setVip] = useState<VipInfo | null>(null);
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
@@ -35,7 +36,7 @@ export default function MyPage() {
     setGenres(((g as { genre: Genre }[]) ?? []).map((x) => x.genre));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
 
   const xp = vip?.xp ?? profile?.xp ?? 0;
   const current = [...tiers].reverse().find((t) => xp >= t.min_xp) ?? tiers[0];
@@ -52,9 +53,11 @@ export default function MyPage() {
   return (
     <SafeAreaView style={s.root} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
 
         <Text style={s.h}>マイページ</Text>
+        {loading && <LoadingView />}
+        {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
 
         <View style={s.profile}>
           <View style={s.avatar}><Text style={s.avatarText}>{(profile?.username ?? 'P').slice(0, 1).toUpperCase()}</Text></View>
