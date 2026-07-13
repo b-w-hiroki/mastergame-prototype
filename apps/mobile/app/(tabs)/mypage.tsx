@@ -29,8 +29,8 @@ export default function MyPage() {
       supabase.from('vip_tiers').select('name,min_xp,sort').order('sort'),
       supabase.from('user_genres').select('genre').eq('user_id', u.user.id),
     ]);
-    setProfile((p as Profile) ?? null);
-    setVip((v as VipInfo) ?? null);
+    setProfile(p ?? null);
+    setVip(v ?? null);
     setTiers((t as Tier[]) ?? []);
     setGenres(((g as { genre: Genre }[]) ?? []).map((x) => x.genre));
   }, []);

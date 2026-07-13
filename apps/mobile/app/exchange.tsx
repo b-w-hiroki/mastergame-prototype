@@ -17,7 +17,7 @@ export default function Exchange() {
       supabase.from('exchange_items').select('*').eq('is_active', true).order('sort'),
     ]);
     setBalance(wallet?.balance ?? 0);
-    setItems((list as ExchangeItem[]) ?? []);
+    setItems(list ?? []);
   }, []);
 
   useEffect(() => { load(); }, [load]);

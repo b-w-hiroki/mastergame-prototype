@@ -32,11 +32,11 @@ export default function Missions() {
       supabase.from('mission_completions').select('*').eq('user_id', u.user.id),
       supabase.from('offers').select('*').eq('status', 'active').limit(20),
     ]);
-    setMissions((ms as Mission[]) ?? []);
+    setMissions(ms ?? []);
     const map: Record<string, MissionCompletion> = {};
-    ((cs as MissionCompletion[]) ?? []).forEach((c) => { map[c.mission_id] = c; });
+    (cs ?? []).forEach((c) => { map[c.mission_id] = c; });
     setCompletions(map);
-    setOffers((os as Offer[]) ?? []);
+    setOffers(os ?? []);
   }, []);
 
   useEffect(() => { load(); }, [load]);

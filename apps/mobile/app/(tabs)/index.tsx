@@ -34,10 +34,11 @@ export default function Home() {
         supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(3),
       ]);
       setBalance(wallet?.balance ?? 0);
-      setMissions((ms as Mission[]) ?? []);
-      setNudge((n as NudgeTarget) ?? null);
-      setVip((v as VipInfo) ?? null);
-      setNews((nt as AppNotification[]) ?? []);
+      setMissions(ms ?? []);
+      // n は RPC(jsonb) / nt.payload は jsonb 列。境界で domain 形へ変換する。
+      setNudge((n as NudgeTarget | null) ?? null);
+      setVip(v ?? null);
+      setNews((nt ?? []) as AppNotification[]);
     } catch (e) {
       setError('データの取得に失敗しました。通信環境を確認してください。');
     } finally {

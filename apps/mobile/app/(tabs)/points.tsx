@@ -25,10 +25,10 @@ export default function Points() {
       supabase.from('user_vip').select('*').eq('user_id', u.user.id).single(),
       supabase.from('staking_accruals').select('*').order('period', { ascending: false }).limit(6),
     ]);
-    setWallet((w as Wallet) ?? null);
-    setLedger((l as LedgerEntry[]) ?? []);
-    setVip((v as VipInfo) ?? null);
-    setStaking((st as StakingAccrual[]) ?? []);
+    setWallet(w ?? null);
+    setLedger(l ?? []);
+    setVip(v ?? null);
+    setStaking(st ?? []);
   }, []);
 
   useEffect(() => { load(); }, [load]);
