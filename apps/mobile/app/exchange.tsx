@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, Pressable, FlatList, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { useLoader } from '@/lib/useLoader';
+import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import type { ExchangeItem } from '@/lib/types';
 
 export default function Exchange() {
@@ -17,16 +19,16 @@ export default function Exchange() {
       supabase.from('exchange_items').select('*').eq('is_active', true).order('sort'),
     ]);
     setBalance(wallet?.balance ?? 0);
-    setItems((list as ExchangeItem[]) ?? []);
+    setItems(list ?? []);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
 
   async function exchange(item: ExchangeItem) {
-    const { error } = await supabase.rpc('request_exchange', { p_item_id: item.id });
-    if (error) { Alert.alert('交換できませんでした', error.message); return; }
+    const { error: exError } = await supabase.rpc('request_exchange', { p_item_id: item.id });
+    if (exError) { Alert.alert('交換できませんでした', exError.message); return; }
     Alert.alert('交換を受け付けました', `「${item.name}」と交換申請しました。`);
-    load();
+    reload().catch(() => {});
   }
 
   return (
@@ -39,6 +41,14 @@ export default function Exchange() {
         data={items}
         keyExtractor={(it) => it.id}
         contentContainerStyle={{ padding: 16 }}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListHeaderComponent={
+          <>
+            {loading && <LoadingView />}
+            {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
+          </>
+        }
         renderItem={({ item }) => {
           const enough = balance >= item.cost_points;
           return (

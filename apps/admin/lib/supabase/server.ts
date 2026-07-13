@@ -1,12 +1,13 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import type { Database } from '@mastergame/shared';
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 // 認証ユーザーのセッションに紐づくサーバークライアント（RLS 有効）
 export function createClient() {
   const cookieStore = cookies();
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {

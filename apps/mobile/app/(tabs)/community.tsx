@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+import { useLoader } from '@/lib/useLoader';
+import { LoadingView, ErrorBanner } from '@/components/StateViews';
 
 type Forum = { id: string; name: string; description: string | null; type: 'public' | 'game' };
 type Topic = {
@@ -23,7 +25,6 @@ const KIND: Record<string, [string, string]> = {
 export default function Community() {
   const [forums, setForums] = useState<Forum[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data: f }, { data: t }] = await Promise.all([
@@ -35,12 +36,17 @@ export default function Community() {
     setTopics((t as Topic[]) ?? []);
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
+  // 画面フォーカス時に最新化（投稿から戻ったときなど）
+  useFocusEffect(useCallback(() => { reload().catch(() => {}); }, [reload]));
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+
+        {loading && <LoadingView />}
+        {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
 
         <View style={s.hRow}>
           <View style={{ flex: 1 }}>

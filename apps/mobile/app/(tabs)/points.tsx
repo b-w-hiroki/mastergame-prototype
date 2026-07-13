@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { colors, pointsToYen } from '@/lib/theme';
+import { useLoader } from '@/lib/useLoader';
+import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import type { LedgerEntry, VipInfo, StakingAccrual, Wallet } from '@/lib/types';
 
 /**
@@ -14,7 +16,6 @@ export default function Points() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [vip, setVip] = useState<VipInfo | null>(null);
   const [staking, setStaking] = useState<StakingAccrual[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
@@ -25,13 +26,13 @@ export default function Points() {
       supabase.from('user_vip').select('*').eq('user_id', u.user.id).single(),
       supabase.from('staking_accruals').select('*').order('period', { ascending: false }).limit(6),
     ]);
-    setWallet((w as Wallet) ?? null);
-    setLedger((l as LedgerEntry[]) ?? []);
-    setVip((v as VipInfo) ?? null);
-    setStaking((st as StakingAccrual[]) ?? []);
+    setWallet(w ?? null);
+    setLedger(l ?? []);
+    setVip(v ?? null);
+    setStaking(st ?? []);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
 
   // 直近のレジャーから残高推移（古い→新しい）を復元してスパークライン化
   const spark = useMemo(() => {
@@ -52,9 +53,11 @@ export default function Points() {
   return (
     <SafeAreaView style={s.root} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
 
         <Text style={s.h}>ポイント</Text>
+        {loading && <LoadingView />}
+        {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
 
         <View style={s.balCard}>
           <Text style={s.balLabel}>保有ポイント</Text>

@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
+import { useLoader } from '@/lib/useLoader';
+import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import type { Mission, MissionType, MissionCompletion, Offer } from '@/lib/types';
 
 const TABS: { key: MissionType; label: string }[] = [
@@ -21,7 +23,6 @@ export default function Missions() {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [completions, setCompletions] = useState<Record<string, MissionCompletion>>({});
   const [offers, setOffers] = useState<Offer[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -32,23 +33,23 @@ export default function Missions() {
       supabase.from('mission_completions').select('*').eq('user_id', u.user.id),
       supabase.from('offers').select('*').eq('status', 'active').limit(20),
     ]);
-    setMissions((ms as Mission[]) ?? []);
+    setMissions(ms ?? []);
     const map: Record<string, MissionCompletion> = {};
-    ((cs as MissionCompletion[]) ?? []).forEach((c) => { map[c.mission_id] = c; });
+    (cs ?? []).forEach((c) => { map[c.mission_id] = c; });
     setCompletions(map);
-    setOffers((os as Offer[]) ?? []);
+    setOffers(os ?? []);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
 
   const list = useMemo(() => missions.filter((m) => m.type === tab), [missions, tab]);
 
   async function claim(m: Mission) {
     setBusy(m.id);
-    const { error } = await supabase.rpc('claim_mission', { p_mission_id: m.id });
+    const { error: claimError } = await supabase.rpc('claim_mission', { p_mission_id: m.id });
     setBusy(null);
-    if (error) { Alert.alert('受け取れませんでした', error.message); return; }
-    load();
+    if (claimError) { Alert.alert('受け取れませんでした', claimError.message); return; }
+    reload().catch(() => {});
   }
 
   return (
@@ -64,9 +65,12 @@ export default function Missions() {
       </ScrollView>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
 
-        {list.length === 0 && <Text style={s.empty}>このカテゴリのミッションはありません</Text>}
+        {loading && <LoadingView />}
+        {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
+
+        {!loading && list.length === 0 && <Text style={s.empty}>このカテゴリのミッションはありません</Text>}
         {list.map((m) => {
           const c = completions[m.id];
           const done = c?.status === 'confirmed';
