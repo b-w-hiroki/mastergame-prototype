@@ -10,10 +10,10 @@ permissions:
   pages: write
   id-token: write
 
-# 同時デプロイは1つに集約（途中のrunはキャンセル）
+# 同時デプロイは1つに集約（進行中の本番デプロイは中断しない）
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -28,11 +28,29 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 静的プロトタイプ（index.html / wireframes / assets / docs / sitemap）を配信
+      # 公開対象を静的サイト面のみに限定してステージング。
+      # supabase/（スキーマ・RLS・関数）、apps/（ソース）、.env.example 等の
+      # 非公開資産を GitHub Pages に載せない（Pages は robots/noindex では守れない）。
+      - name: Stage public site
+        run: |
+          set -e
+          mkdir -p _site
+          # ルートの静的ファイル
+          cp index.html offline.html robots.txt manifest.webmanifest service-worker.js .nojekyll _site/
+          # 独自ドメインを使う場合のみ（存在すれば）
+          [ -f CNAME ] && cp CNAME _site/ || true
+          # 動作プロトタイプと静的アセット
+          cp -r wireframes assets _site/
+          # index.html の openDoc が読む Markdown のみ（.pptx / build_deck.js / prompts は除外）
+          mkdir -p _site/docs/specs
+          cp docs/DEPLOY.md docs/DEVELOPMENT.md docs/ECONOMY.md _site/docs/
+          cp docs/specs/*.md _site/docs/specs/
+          echo "--- staged files ---"; find _site -type f | sort
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: '_site'
 
       - name: Deploy
         id: deployment

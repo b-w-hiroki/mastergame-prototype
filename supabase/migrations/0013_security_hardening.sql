@@ -28,7 +28,17 @@ revoke all on function public.set_best_answer(uuid, uuid)                  from 
 -- daily は日単位、weekly は ISO 週単位、それ以外は 1 回のみ。
 alter table public.mission_completions
   add column if not exists period_key text not null default 'once';
--- 既存の重複行（連打によるもの）は最初の1件を残して整理してから unique を張る
+-- 既存行は全て default 'once' になるため、claim_mission と同じ規則で created_at から
+-- period_key を復元してから dedup する。これをしないと過去の日次/週次達成が
+-- (user,mission) ごとに1行へ潰れ、正当な履歴と point_ledger が乖離する。
+update public.mission_completions mc set period_key = case m.type
+    when 'daily'  then to_char(mc.created_at at time zone 'utc', 'YYYY-MM-DD')
+    when 'weekly' then to_char(mc.created_at at time zone 'utc', 'IYYY-"W"IW')
+    else 'once'
+  end
+  from public.missions m
+  where m.id = mc.mission_id and mc.period_key = 'once';
+-- 同一 period 内の真の重複（連打バグ由来）のみ、最初の1件を残して整理する
 delete from public.mission_completions mc using public.mission_completions dup
   where mc.user_id = dup.user_id and mc.mission_id = dup.mission_id
     and mc.period_key = dup.period_key and mc.created_at > dup.created_at;
@@ -128,6 +138,7 @@ returns trigger language plpgsql as $$
 begin
   raise exception 'point_ledger is append-only; insert a reversal entry instead';
 end $$;
+drop trigger if exists ledger_immutable on public.point_ledger;
 create trigger ledger_immutable
   before update or delete on public.point_ledger
   for each row execute function public.tg_ledger_immutable();
