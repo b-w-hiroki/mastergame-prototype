@@ -7,8 +7,11 @@ import { useCallback, useEffect, useState } from 'react';
  * - refreshing / onRefresh: Pull-to-refresh 用
  * - reload: 手動再取得（エラー時の「再読み込み」ボタン等）
  * load 関数は例外を投げてよい（ここで捕捉して error に変換する）。
+ * opts.auto=false にすると初回自動ロードを行わない（useFocusEffect 等で自前に reload する画面向け。
+ * 自動ロードと useFocusEffect を併用すると初回マウントで二重フェッチになるため）。
  */
-export function useLoader(load: () => Promise<void>) {
+export function useLoader(load: () => Promise<void>, opts?: { auto?: boolean }) {
+  const auto = opts?.auto ?? true;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -30,7 +33,7 @@ export function useLoader(load: () => Promise<void>) {
     setRefreshing(false);
   }, [run]);
 
-  useEffect(() => { run().catch(() => {}); }, [run]);
+  useEffect(() => { if (auto) run().catch(() => {}); }, [run, auto]);
 
   return { loading, error, refreshing, reload: run, onRefresh };
 }

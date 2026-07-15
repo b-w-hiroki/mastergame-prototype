@@ -32,11 +32,13 @@ const fmt = (iso: string) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
-const countBy = async (status: Status) => {
-  const { count } = await getAdminClient()
+const countBy = async (status: Status): Promise<number | null> => {
+  const { count, error } = await getAdminClient()
     .from('postback_events')
     .select('*', { count: 'exact', head: true })
     .eq('status', status);
+  // 失敗時は 0 で塗り潰さず null を返し、KPI に「—」を表示して障害を隠さない
+  if (error) return null;
   return count ?? 0;
 };
 
@@ -59,8 +61,12 @@ export default async function Postback() {
   const [received, accepted, rejected, duplicate, reversed] = await Promise.all([
     countBy('received'), countBy('accepted'), countBy('rejected'), countBy('duplicate'), countBy('reversed'),
   ]);
-  const decided = accepted + rejected;
-  const rate = decided > 0 ? Math.round((accepted / decided) * 1000) / 10 : null;
+  // 取得失敗（null）は「—」で表示。0 と区別して障害を隠さない。
+  const fmtCount = (n: number | null) => (n === null ? '—' : n.toLocaleString());
+  const decided = (accepted ?? 0) + (rejected ?? 0);
+  const rate = accepted !== null && rejected !== null && decided > 0
+    ? Math.round((accepted / decided) * 1000) / 10
+    : null;
 
   const { data, error } = await getAdminClient()
     .from('postback_events')
@@ -76,10 +82,10 @@ export default async function Postback() {
       <div className="sub">提携オファーの達成サーバー検証（postback）の受信状況。承認・ポイント付与は自動パイプライン（<code>confirm_postback</code>）が処理します。</div>
 
       <div className="kpis">
-        <div className="kpi"><div className="l">検証中</div><div className="v">{received.toLocaleString()}</div></div>
-        <div className="kpi"><div className="l">確定</div><div className="v">{accepted.toLocaleString()}</div></div>
-        <div className="kpi"><div className="l">却下</div><div className="v">{rejected.toLocaleString()}</div></div>
-        <div className="kpi"><div className="l">重複</div><div className="v">{duplicate.toLocaleString()}</div></div>
+        <div className="kpi"><div className="l">検証中</div><div className="v">{fmtCount(received)}</div></div>
+        <div className="kpi"><div className="l">確定</div><div className="v">{fmtCount(accepted)}</div></div>
+        <div className="kpi"><div className="l">却下</div><div className="v">{fmtCount(rejected)}</div></div>
+        <div className="kpi"><div className="l">重複</div><div className="v">{fmtCount(duplicate)}</div></div>
         <div className="kpi"><div className="l">承認率</div><div className="v">{rate === null ? '—' : <>{rate}<small> %</small></>}</div></div>
       </div>
 

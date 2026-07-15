@@ -36,8 +36,8 @@ export default function Community() {
     setTopics((t as Topic[]) ?? []);
   }, []);
 
-  const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
-  // 画面フォーカス時に最新化（投稿から戻ったときなど）
+  // 自動ロードは無効化し、フォーカス時ロードに一本化（初回の二重フェッチを防ぐ）
+  const { loading, error, refreshing, reload, onRefresh } = useLoader(load, { auto: false });
   useFocusEffect(useCallback(() => { reload().catch(() => {}); }, [reload]));
 
   return (

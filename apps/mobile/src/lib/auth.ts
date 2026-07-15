@@ -47,5 +47,8 @@ export async function signInWithOAuth(provider: Provider): Promise<void> {
       refresh_token: params.refresh_token,
     });
     if (sErr) throw sErr;
+  } else {
+    // code も token も error も無い＝セッションを確立できない。無言成功にしない。
+    throw new Error('認証情報を取得できませんでした。もう一度お試しください。');
   }
 }

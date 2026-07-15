@@ -11,8 +11,12 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
 
   async function signIn() {
+    if (email.trim() === '' || password === '') {
+      Alert.alert('メールアドレスとパスワードを入力してください');
+      return;
+    }
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) Alert.alert('ログインに失敗しました', error.message);
   }

@@ -44,7 +44,8 @@ export default function TopicDetail() {
     }
   }, [id]);
 
-  const { loading, error, reload } = useLoader(load);
+  // 自動ロードは無効化し、フォーカス時ロードに一本化（初回の二重フェッチを防ぐ）
+  const { loading, error, reload } = useLoader(load, { auto: false });
   useFocusEffect(useCallback(() => { reload().catch(() => {}); }, [reload]));
 
   const isAuthor = !!topic && !!uid && topic.author_id === uid;

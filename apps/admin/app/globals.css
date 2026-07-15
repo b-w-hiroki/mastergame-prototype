@@ -14,6 +14,8 @@ a { color: inherit; text-decoration: none; }
 .side .logo { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(140deg,#5563e0,#7c5cff); display: grid; place-items: center; font-size: 13px; }
 .side a { display: block; padding: 10px 12px; border-radius: 9px; color: #c4c8e0; font-size: 13.5px; font-weight: 600; }
 .side a.on, .side a:hover { background: rgba(255,255,255,.08); color: #fff; }
+.side .navlogout { display: block; width: 100%; text-align: left; margin-top: 18px; padding: 10px 12px; border: 0; border-radius: 9px; background: transparent; color: #9aa0c0; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.side .navlogout:hover { background: rgba(255,255,255,.08); color: #fff; }
 .main { flex: 1; padding: 26px; }
 h1 { font-size: 20px; font-weight: 800; margin-bottom: 18px; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 14px; margin-bottom: 22px; }

@@ -85,7 +85,10 @@ Deno.serve(async (req: Request) => {
       .select("status, allowed_ips")
       .eq("slug", partner)
       .maybeSingle();
-    if (pErr) return json({ status: "error", reason: pErr.message }, 500);
+    if (pErr) {
+      console.error("[postback] partner lookup failed:", pErr.message);
+      return json({ status: "error", reason: "internal_error" }, 500);
+    }
     if (!partnerRow) return json({ status: "rejected", reason: "unknown_partner" }, 401);
     if (partnerRow.status !== "active") {
       return json({ status: "rejected", reason: "partner_suspended" }, 403);
@@ -109,10 +112,15 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    if (error) return json({ status: "error", reason: error.message }, 500);
+    if (error) {
+      console.error("[postback] confirm_postback failed:", error.message);
+      return json({ status: "error", reason: "internal_error" }, 500);
+    }
     // accepted / duplicate / rejected はいずれも 200（ネットワークの再送制御のため）
     return json(data, 200);
   } catch (e) {
-    return json({ status: "error", reason: String(e) }, 500);
+    // 内部エラーの詳細はログにのみ残し、レスポンスには汎用理由を返す
+    console.error("[postback] unhandled error:", e);
+    return json({ status: "error", reason: "internal_error" }, 500);
   }
 });

@@ -39,11 +39,17 @@ async function moderate(formData: FormData) {
   const target_type = assertEnum(formData.get('target_type'), ['post', 'topic', 'user'] as const, 'target_type');
   const target_id = assertUuid(formData.get('target_id'), 'target_id');
 
-  await getAdminClient().from('moderation_actions').insert({ report_id: id, action, target_type, target_id });
-  await getAdminClient()
+  // 監査記録の insert が失敗したら report を閉じない（記録なしで対応済みにしない）
+  const { error: insErr } = await getAdminClient()
+    .from('moderation_actions')
+    .insert({ report_id: id, action, target_type, target_id });
+  if (insErr) throw new Error(`moderation_actions insert failed: ${insErr.message}`);
+
+  const { error: updErr } = await getAdminClient()
     .from('reports')
     .update({ status: action === 'dismiss' ? 'dismissed' : 'resolved', resolved_at: new Date().toISOString() })
     .eq('id', id);
+  if (updErr) throw new Error(`reports update failed: ${updErr.message}`);
 
   revalidatePath('/moderation');
 }
