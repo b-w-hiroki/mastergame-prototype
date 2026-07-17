@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 const ITEMS = [
   { href: '/', label: 'ダッシュボード' },
@@ -14,6 +15,14 @@ const ITEMS = [
 
 export default function Nav() {
   const path = usePathname();
+  const router = useRouter();
+
+  async function logout() {
+    await createClient().auth.signOut();
+    router.replace('/login');
+    router.refresh();
+  }
+
   return (
     <nav>
       {ITEMS.map((it) => {
@@ -24,6 +33,7 @@ export default function Nav() {
           </Link>
         );
       })}
+      <button type="button" className="navlogout" onClick={logout}>ログアウト</button>
     </nav>
   );
 }

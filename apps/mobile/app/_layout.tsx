@@ -22,19 +22,31 @@ export default function RootLayout() {
   // ジャンル選択の有無で初回オンボーディング要否を判定
   async function refreshOnboarded(s: Session | null) {
     if (!s) { setOnboarded(null); return; }
-    const { count } = await supabase
-      .from('user_genres')
-      .select('genre', { count: 'exact', head: true })
-      .eq('user_id', s.user.id);
-    setOnboarded((count ?? 0) > 0);
+    try {
+      const { count, error } = await supabase
+        .from('user_genres')
+        .select('genre', { count: 'exact', head: true })
+        .eq('user_id', s.user.id);
+      if (error) throw error;
+      setOnboarded((count ?? 0) > 0);
+    } catch {
+      // 判定不能（オフライン等）は、オンボーディングに閉じ込めず通す。
+      // ジャンルは後からマイページで設定できる。
+      setOnboarded(true);
+    }
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      await refreshOnboarded(data.session);
-      setReady(true);
-    });
+    // getSession/refresh が失敗しても必ず ready にし、永久ブランク＋未処理 rejection を防ぐ
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+        await refreshOnboarded(data.session);
+      } finally {
+        setReady(true);
+      }
+    })();
     const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
       setSession(s);
       await refreshOnboarded(s);

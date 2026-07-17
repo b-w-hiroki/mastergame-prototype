@@ -4,21 +4,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function SignUp() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function signUp() {
+    if (!EMAIL_RE.test(email.trim())) {
+      Alert.alert('メールアドレスの形式が正しくありません');
+      return;
+    }
     if (password.length < 8) {
       Alert.alert('パスワードは8文字以上にしてください');
+      return;
+    }
+    if (password !== password2) {
+      Alert.alert('パスワードが一致しません');
       return;
     }
     setBusy(true);
     // profiles / point_wallets は handle_new_user トリガで自動作成（0001_core.sql）
     const { error } = await supabase.auth.signUp({
-      email,
+      email: email.trim(),
       password,
       options: { data: { username: username || 'Player' } },
     });
@@ -37,6 +48,8 @@ export default function SignUp() {
         keyboardType="email-address" value={email} onChangeText={setEmail} />
       <TextInput style={s.input} placeholder="パスワード（8文字以上）" secureTextEntry
         value={password} onChangeText={setPassword} />
+      <TextInput style={s.input} placeholder="パスワード（確認）" secureTextEntry
+        value={password2} onChangeText={setPassword2} />
 
       <Pressable style={[s.btn, busy && { opacity: 0.6 }]} onPress={signUp} disabled={busy}>
         <Text style={s.btnText}>{busy ? '...' : 'アカウントを作成'}</Text>
