@@ -74,3 +74,31 @@ npm run dev   # http://localhost:3000
 | admin ダッシュボード | `apps/admin/app/page.tsx` → `admin_overview` ビュー |
 
 > ステータス：実装は **足場（scaffold）**。主要フローを動く形で用意し、残りは同じパターンで拡張します。
+
+## 経済オペレーション（0017 で追加した service_role RPC）
+
+いずれも `service_role`（Edge Function / 運営コンソール / スケジュール実行）から呼びます。付与はすべて冪等キー付き `apply_points` を通ります。
+
+| 用途 | 呼び出し |
+|---|---|
+| ステーキング月次付与 | `select accrue_staking(date_trunc('month', now())::date);`（`(user,period)` で冪等） |
+| 交換の確定（コード付与） | `select fulfill_exchange('<request_id>', '<code>');`（運営コンソール「交換申請」からも操作可） |
+| 交換の取消（返金＋在庫戻し） | `select cancel_exchange('<request_id>', 'reason');` |
+| オファーウォール確定 | Edge Function `offer-postback` → `confirm_offer(...)`（日次上限 `app_config.daily_offer_cap`、既定20） |
+| 通知の既読化（ユーザー） | `select mark_notification_read('<id>');`（`authenticated`） |
+
+### ステーキングの定期実行（pg_cron 例）
+
+```sql
+create extension if not exists pg_cron;
+-- 毎月1日 00:10 UTC に当月分を付与
+select cron.schedule('accrue-staking-monthly', '10 0 1 * *',
+  $$select public.accrue_staking(date_trunc('month', now())::date)$$);
+```
+
+### Edge Function シークレット
+
+- ミッション postback：`POSTBACK_SECRET_<PARTNER>`（署名 `partner:txn:click_id:reward:timestamp`）
+- オファー postback：`OFFER_SECRET_<NETWORK>`（署名 `network:network_txn_id:user_id:reward:timestamp`）
+
+いずれも `X-Timestamp` ±300s のリプレイ対策付き。`.env.example` を参照。

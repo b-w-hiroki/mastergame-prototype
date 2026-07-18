@@ -9,6 +9,7 @@ const ITEMS = [
   { href: '/users', label: 'ユーザー管理' },
   { href: '/missions', label: 'ミッション管理' },
   { href: '/items', label: '交換アイテム管理' },
+  { href: '/exchanges', label: '交換申請' },
   { href: '/moderation', label: '通報・モデレーション' },
   { href: '/postback', label: 'postback監視' },
 ];
