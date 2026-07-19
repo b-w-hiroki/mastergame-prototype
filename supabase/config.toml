@@ -18,6 +18,11 @@ major_version = 15
 enabled = true
 port = 54323
 
+# NOTE: この config.toml は supabase CLI の **ローカル開発専用**。
+# 本番（ホスト型プロジェクト）の Auth 設定は Supabase ダッシュボードで行う。
+# 本番では最低限:
+#   - site_url / additional_redirect_urls を本番ドメイン・アプリスキームに設定
+#   - [auth.email] enable_confirmations = true（メール確認必須。複数アカウント不正の抑止）
 [auth]
 enabled = true
 site_url = "http://localhost:8081"
@@ -27,6 +32,7 @@ enable_signup = true
 
 [auth.email]
 enable_signup = true
+# ローカルは確認オフで検証しやすく。本番はダッシュボードで必ずオンにする。
 enable_confirmations = false
 
 # OAuth providers (set secrets via env; see .env.example)

@@ -229,6 +229,19 @@ Supabase Realtime で `point_ledger` / `postback_events` の状態変化を購�
 - `INDEX(status, risk_score DESC)`（監査ビュー用）, `INDEX(user_id)`, `INDEX(received_at)`
 
 ### 5.5 `point_ledger` — 追記専用ポイント台帳（残高の真実）
+
+> **実装との対応（`supabase/migrations/0001,0013,0015`）**：実装の `point_ledger` は
+> `delta`（±ポイント）/ `reason`（'mission'|'postback'|'offer'|'staking'|'exchange'|'exchange_refund'|
+> 'bounty_escrow'|'bounty_award'|'postback_reversal' 等）/ `ref_type` / `ref_id` の列構成です。
+> 下表の `entry_type`/`points`/`postback_event_id`/`reverses_entry_id` は初期設計案で、実装では採用していません。
+> - 二重付与防止キーは `idempotency_key text UNIQUE`（0015）。生成規則は付与種別ごとに
+>   `'postback:{partner_id}:{transaction_id}'` / `'offer:{network_id}:{txn}'` /
+>   `'mission:{user}:{mission}:{period}'` / `'staking:{user}:{period}'` /
+>   `'exchange_refund:{request_id}'` / `'bounty_award:{topic}'` 等。
+> - UPDATE/DELETE 禁止はトリガ `ledger_immutable`（0013）で強制。訂正は反対符号の追記
+>   （例: `reverse_postback` RPC が `reason='postback_reversal'` の負エントリを追加）。
+> - 残高キャッシュは `point_wallets`（`apply_points` が台帳追記と同時に整合更新）。
+
 | カラム | 型 | 制約 | 説明 |
 |---|---|---|---|
 | id | uuid | PK | |

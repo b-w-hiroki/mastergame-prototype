@@ -470,6 +470,32 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['moderation_actions']['Insert']>;
         Relationships: [];
       };
+      exchange_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          item_id: string;
+          cost_points: number;
+          status: string;
+          code: string | null;
+          ledger_id: string | null;
+          requested_at: Timestamptz;
+          fulfilled_at: Timestamptz | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          item_id: string;
+          cost_points: number;
+          status?: string;
+          code?: string | null;
+          ledger_id?: string | null;
+          requested_at?: Timestamptz;
+          fulfilled_at?: Timestamptz | null;
+        };
+        Update: Partial<Database['public']['Tables']['exchange_requests']['Insert']>;
+        Relationships: [];
+      };
       postback_events: {
         Row: {
           id: string;
@@ -554,6 +580,15 @@ export interface Database {
       add_reply: { Args: { p_topic_id: string; p_body: string }; Returns: Json };
       toggle_reaction: { Args: { p_post_id: string; p_kind?: string }; Returns: Json };
       set_best_answer: { Args: { p_topic_id: string; p_post_id: string }; Returns: Json };
+      // 0017 economy paths
+      fulfill_exchange: { Args: { p_request_id: string; p_code?: string | null }; Returns: Json };
+      cancel_exchange: { Args: { p_request_id: string; p_reason?: string }; Returns: Json };
+      mark_notification_read: { Args: { p_id: string }; Returns: Json };
+      accrue_staking: { Args: { p_period: string }; Returns: Json };
+      confirm_offer: {
+        Args: { p_network_code: string; p_network_txn_id: string; p_user: string; p_offer_external_id?: string | null; p_reward_override?: number | null };
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
