@@ -238,6 +238,14 @@ MasterGame のコアループは「ミッションでポイントを貯める �
 
 ### 5.4 `offer_completions`（オファー/動画の完了・報酬トランザクション）
 ユーザーへのポイント付与の **真実の源（source of truth）**。postbackで状態遷移する。
+
+> **実装との対応（`supabase/migrations/0003,0017`）**：実装の `offer_completions` の冪等キーは
+> 独立列 `idempotency_key` ではなく **`UNIQUE(network_id, network_txn_id)`** です。付与の
+> 台帳参照は `ledger_id`、状態は `('pending','confirmed','rejected','reversed')`。確定処理は
+> `confirm_offer` RPC（Edge Function `offer-postback` から service_role で呼ぶ）で、台帳側の
+> 冪等キーは `'offer:{network_id}:{network_txn_id}'`。日次上限は `user_daily_offer_counts` ＋
+> `app_config.daily_offer_cap`（既定20）で強制。
+
 | カラム | 型 | 制約 | 説明 |
 | --- | --- | --- | --- |
 | id | uuid | PK | |
