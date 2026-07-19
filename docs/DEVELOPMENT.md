@@ -102,3 +102,16 @@ select cron.schedule('accrue-staking-monthly', '10 0 1 * *',
 - オファー postback：`OFFER_SECRET_<NETWORK>`（署名 `network:network_txn_id:user_id:reward:timestamp`）
 
 いずれも `X-Timestamp` ±300s のリプレイ対策付き。`.env.example` を参照。
+
+## マイグレーション方針
+
+- **前進のみ（forward-only）**。down/ロールバックスクリプトは用意しない。誤りは新しい番号の
+  マイグレーションで訂正する（`point_ledger` は追記専用＝0013 のトリガで UPDATE/DELETE 禁止）。
+- ローカル検証は `supabase db reset`（全マイグレーション再適用）で行う。
+- 破壊的操作を含むマイグレーション（例: 0013 の権限剥奪、0015 の `apply_points` 置換）を
+  本番適用する前に、`apply_points` を service_role 以外から直接呼ぶバッチが無いことを確認する。
+
+> **仕様書との差分**：`docs/specs/*.md` は初期設計時の想定スキーマ（例: `point_ledger` の
+> `entry_type`/`reverses_entry_id`、`offer_completions.idempotency_key`）を含み、実装
+> （`delta`/`reason`/`ref_type`/`ref_id` ＋ 0015 の `idempotency_key`）とは一部一致しません。
+> 正となるのは **`supabase/migrations/`（実装）** です。

@@ -17,7 +17,7 @@ jobs:
         run: |
           set -e
           fail=0
-          for f in index.html wireframes/core-flow.html wireframes/landing.html wireframes/admin.html; do
+          for f in index.html offline.html wireframes/core-flow.html wireframes/landing.html wireframes/admin.html wireframes/economy.html; do
             echo "→ $f"
             test -s "$f" || { echo "  ✗ missing or empty"; fail=1; continue; }
             grep -q "<title>" "$f" || { echo "  ✗ no <title>"; fail=1; }

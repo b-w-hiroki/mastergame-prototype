@@ -1,7 +1,8 @@
 /* MasterGame プロトタイプ — Service Worker
    App-shell プリキャッシュ + オフラインフォールバック。
    キャッシュを更新したいときは CACHE のバージョン文字列を上げる。 */
-const CACHE = 'mg-pwa-v1';
+/* リリースごとにこの版を上げる（app-shell の再プリキャッシュが走る） */
+const CACHE = 'mg-pwa-v2';
 
 /* SW の置き場所からの相対パスで解決される（GitHub Pages のサブパスでも動く） */
 const PRECACHE = [
@@ -11,6 +12,9 @@ const PRECACHE = [
   './manifest.webmanifest',
   './assets/icon-192.png',
   './assets/icon-512.png',
+  './assets/icon.svg',
+  './assets/icon-maskable-192.png',
+  './assets/icon-maskable-512.png',
   './assets/apple-touch-icon.png',
   './wireframes/core-flow.html',
   './wireframes/landing.html',
@@ -50,8 +54,11 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          // 成功応答のみキャッシュ（404/500 の HTML を後でオフライン時に返さない）
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
           return res;
         })
         .catch(() => caches.match(req).then((r) => r || caches.match('./offline.html')))
@@ -84,8 +91,10 @@ self.addEventListener('fetch', (event) => {
       cached ||
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
           return res;
         })
         .catch(() => cached)

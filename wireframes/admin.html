@@ -16,7 +16,7 @@
 <script src="../assets/pwa.js" defer></script>
 <style>
   :root{
-    --navy:#12152a; --navy2:#1b1f3a; --ink:#1f2430; --sub:#6b7280; --muted:#9aa0ac;
+    --navy:#12152a; --navy2:#1b1f3a; --ink:#1f2430; --sub:#6b7280; --muted:#6b7280;
     --indigo:#3b4cca; --indigo-soft:#e9ebfb; --bg:#f4f6fa; --paper:#fff; --line:#e6e9ef;
     --ok:#1f9d57; --ok-soft:#e6f4ec; --warn:#c98a16; --warn-soft:#fbf2dc;
     --danger:#c0392b; --danger-soft:#fdecea; --blue:#2563c9; --blue-soft:#e6eefb; --purple:#7a4fd0;
@@ -168,10 +168,10 @@
 <!-- MAIN -->
 <div class="main">
   <div class="topbar">
-    <button class="hamb" onclick="document.getElementById('side').classList.toggle('open')">☰</button>
+    <button class="hamb" aria-label="メニューを開閉" onclick="document.getElementById('side').classList.toggle('open')">☰</button>
     <h1 id="ptitle">ダッシュボード</h1>
     <div class="search">🔍 <input placeholder="ユーザー・ミッションを検索…"></div>
-    <button class="bell" onclick="toast('通知：未対応の通報が3件')">🔔</button>
+    <button class="bell" aria-label="通知" onclick="toast('通知：未対応の通報が3件')">🔔</button>
   </div>
   <div class="content">
 
