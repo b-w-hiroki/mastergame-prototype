@@ -103,6 +103,22 @@ select cron.schedule('accrue-staking-monthly', '10 0 1 * *',
 
 いずれも `X-Timestamp` ±300s のリプレイ対策付き。`.env.example` を参照。
 
+## テスト（DB 不変条件）
+
+セキュリティ・経済ロジックの不変条件を、使い捨てDBに全マイグレーション＋seedを適用して検証します（CI の `db-tests` ジョブで自動実行）。
+
+```bash
+# 素の Postgres（ローカル or CI service）に対して実行
+PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres \
+  bash supabase/tests/run.sh
+```
+
+- `supabase/tests/00_harness.sql` … auth shim（素のPGでも動く）＋ アサーションヘルパ（`test.ok/eq/raises`）
+- `supabase/tests/10_security_test.sql` … 権限剥奪・claim冪等・在庫アトミック・台帳不変
+- `supabase/tests/20_economy_test.sql` … postback冪等/取消・staking・offer冪等/日次上限・fulfill/cancel・bounty二重付与防止
+
+各テストは `begin; … rollback;` で隔離。アサーション失敗（`RAISE EXCEPTION`）で非0終了します。
+
 ## マイグレーション方針
 
 - **前進のみ（forward-only）**。down/ロールバックスクリプトは用意しない。誤りは新しい番号の
