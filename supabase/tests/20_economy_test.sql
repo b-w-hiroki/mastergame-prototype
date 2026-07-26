@@ -58,6 +58,14 @@ select public.cancel_exchange(:'rid2','t');
 select test.eq((select status from exchange_requests where id=:'rid2'), 'cancelled', 'cancelled');
 select test.eq((select stock from exchange_items where id='22222222-0000-0000-0000-0000000000b2'), 2::int, 'stock restored on cancel');
 
+-- ===== record_ad_impression（クリック計測＋日次残数） =====
+select test.new_user('22222222-0000-0000-0000-000000000004');
+select test.set_uid('22222222-0000-0000-0000-000000000004');
+update app_config set value='20'::jsonb where key='daily_offer_cap';
+select test.eq((select (public.record_ad_impression('offerwall','offerwall',null)->>'remaining'))::int, 20, 'offerwall click: remaining=20 before any confirm');
+select test.eq((select count(*)::int from ad_impressions where user_id='22222222-0000-0000-0000-000000000004'), 1, 'ad_impression recorded');
+select test.raises($$ select public.record_ad_impression('x','bogus',null) $$, 'invalid ad_type rejected');
+
 -- ===== bounty ベストアンサー二重付与防止 =====
 select test.new_user('22222222-0000-0000-0000-000000000003');  -- answerer
 insert into forums(id,slug,name,type,visibility,is_open)

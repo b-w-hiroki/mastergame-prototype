@@ -290,6 +290,7 @@ export interface Database {
           min_os: string | null;
           status: string;
           created_at: Timestamptz;
+          offer_url: string | null;
         };
         Insert: {
           id?: string;
@@ -298,6 +299,7 @@ export interface Database {
           title: string;
           description?: string | null;
           icon_url?: string | null;
+          offer_url?: string | null;
           reward_points: number;
           event_type?: string | null;
           countries?: string[] | null;
@@ -470,6 +472,34 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['moderation_actions']['Insert']>;
         Relationships: [];
       };
+      offer_completions: {
+        Row: {
+          id: string;
+          user_id: string;
+          offer_id: string | null;
+          network_id: string;
+          network_txn_id: string;
+          status: string;
+          reward_points: number;
+          ledger_id: string | null;
+          created_at: Timestamptz;
+          confirmed_at: Timestamptz | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          offer_id?: string | null;
+          network_id: string;
+          network_txn_id: string;
+          status?: string;
+          reward_points: number;
+          ledger_id?: string | null;
+          created_at?: Timestamptz;
+          confirmed_at?: Timestamptz | null;
+        };
+        Update: Partial<Database['public']['Tables']['offer_completions']['Insert']>;
+        Relationships: [];
+      };
       exchange_requests: {
         Row: {
           id: string;
@@ -584,6 +614,8 @@ export interface Database {
       fulfill_exchange: { Args: { p_request_id: string; p_code?: string | null }; Returns: Json };
       cancel_exchange: { Args: { p_request_id: string; p_reason?: string }; Returns: Json };
       mark_notification_read: { Args: { p_id: string }; Returns: Json };
+      record_ad_impression: { Args: { p_placement: string; p_ad_type: string; p_network_id?: string | null }; Returns: Json };
+      track_click: { Args: { p_mission_id: string; p_device_fp?: string | null; p_ip?: string | null; p_ua?: string | null }; Returns: string };
       accrue_staking: { Args: { p_period: string }; Returns: Json };
       confirm_offer: {
         Args: { p_network_code: string; p_network_txn_id: string; p_user: string; p_offer_external_id?: string | null; p_reward_override?: number | null };
