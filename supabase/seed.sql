@@ -56,14 +56,14 @@ update public.missions m
   set partner_id = (select id from public.ad_partners where slug = 'sandbox')
   where m.requires_verification and m.partner_id is null;
 
--- offers（offerwall。ad_networks に紐づく）
-insert into public.offers (network_id, external_id, title, description, reward_points, event_type, status)
-select n.id, v.ext, v.title, v.descr, v.reward, v.evt, 'active'
+-- offers（offerwall。ad_networks に紐づく）。offer_url は本番でネットワーク SDK/API が払い出す。
+insert into public.offers (network_id, external_id, title, description, reward_points, event_type, status, offer_url)
+select n.id, v.ext, v.title, v.descr, v.reward, v.evt, 'active', v.url
 from (values
-  ('applovin','of-install-001','新作RPGをインストール','インストール後に起動で達成',60000,'install'),
-  ('tapjoy','of-purchase-002','ショップで初回購入','初回課金で達成',200000,'purchase'),
-  ('pollfish','of-survey-003','アンケートに回答','約5分のアンケート',12000,'survey')
-) as v(netcode,ext,title,descr,reward,evt)
+  ('applovin','of-install-001','新作RPGをインストール','インストール後に起動で達成',60000,'install','https://example.com/offer/of-install-001'),
+  ('tapjoy','of-purchase-002','ショップで初回購入','初回課金で達成',200000,'purchase','https://example.com/offer/of-purchase-002'),
+  ('pollfish','of-survey-003','アンケートに回答','約5分のアンケート',12000,'survey','https://example.com/offer/of-survey-003')
+) as v(netcode,ext,title,descr,reward,evt,url)
 join public.ad_networks n on n.code = v.netcode;
 
 -- public forum + a couple topics (author設定はアプリ層/サインアップ後に作成想定。ここは構造例)
