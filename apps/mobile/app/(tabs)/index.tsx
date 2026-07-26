@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
+import { useReward } from '@/components/RewardToast';
 import type { Mission, NudgeTarget, VipInfo, AppNotification } from '@/lib/types';
 
 /**
@@ -39,6 +40,7 @@ export default function Home() {
   }, []);
 
   const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
+  const reward = useReward();
 
   async function claim(m: Mission) {
     setClaiming(m.id);
@@ -48,11 +50,21 @@ export default function Home() {
       Alert.alert('受け取れませんでした', claimError.message);
       return;
     }
+    reward.show(m.reward_points, m.title);
     reload().catch(() => {});
+  }
+
+  // お知らせタップで既読化（未読のみ）。0017 の mark_notification_read RPC。
+  async function openNews(n: AppNotification) {
+    if (!n.read_at) {
+      await supabase.rpc('mark_notification_read', { p_id: n.id });
+      reload().catch(() => {});
+    }
   }
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
+      {reward.node}
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
 
@@ -89,10 +101,13 @@ export default function Home() {
           <>
             <Text style={s.section}>お知らせ</Text>
             {news.map((n) => (
-              <View key={n.id} style={s.newsItem}>
-                <Text style={s.newsType}>{labelOf(n.type)}</Text>
+              <Pressable key={n.id} style={s.newsItem} onPress={() => openNews(n).catch(() => {})}>
+                <View style={s.newsHead}>
+                  {!n.read_at && <View style={s.unread} />}
+                  <Text style={s.newsType}>{labelOf(n.type)}</Text>
+                </View>
                 <Text style={s.newsBody} numberOfLines={2}>{String(n.payload?.message ?? n.payload?.title ?? '通知があります')}</Text>
-              </View>
+              </Pressable>
             ))}
           </>
         )}
@@ -140,6 +155,8 @@ const s = StyleSheet.create({
   section: { fontSize: 12, fontWeight: '800', color: colors.sub, marginTop: 20, marginBottom: 10 },
   empty: { color: colors.muted, fontSize: 13 },
   newsItem: { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, borderRadius: 12, padding: 12, marginBottom: 8 },
+  newsHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  unread: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.danger },
   newsType: { fontSize: 10, fontWeight: '800', color: colors.accent },
   newsBody: { fontSize: 13, color: colors.ink, marginTop: 2 },
   mission: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 13, marginBottom: 10 },

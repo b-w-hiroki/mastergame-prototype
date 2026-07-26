@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
+import { useReward } from '@/components/RewardToast';
 import type { Mission, MissionType, MissionCompletion, Offer } from '@/lib/types';
 
 const TABS: { key: MissionType; label: string }[] = [
@@ -41,6 +42,7 @@ export default function Missions() {
   }, []);
 
   const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
+  const reward = useReward();
 
   const list = useMemo(() => missions.filter((m) => m.type === tab), [missions, tab]);
 
@@ -49,11 +51,13 @@ export default function Missions() {
     const { error: claimError } = await supabase.rpc('claim_mission', { p_mission_id: m.id });
     setBusy(null);
     if (claimError) { Alert.alert('受け取れませんでした', claimError.message); return; }
+    reward.show(m.reward_points, m.title);
     reload().catch(() => {});
   }
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
+      {reward.node}
       <Text style={s.h}>ミッション</Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabsWrap} contentContainerStyle={s.tabs}>
@@ -81,6 +85,14 @@ export default function Missions() {
                 <Text style={s.title}>{m.icon ? `${m.icon} ` : ''}{m.title}</Text>
                 {m.description && <Text style={s.desc} numberOfLines={2}>{m.description}</Text>}
                 <Text style={s.reward}>＋{m.reward_points} P{m.requires_verification ? ' ・ 検証あり' : ''}</Text>
+                {m.max_progress > 1 && !done && (
+                  <View style={s.progressWrap}>
+                    <View style={s.progressTrack}>
+                      <View style={[s.progressFill, { width: `${Math.min(100, ((c?.progress ?? 0) / m.max_progress) * 100)}%` }]} />
+                    </View>
+                    <Text style={s.progressText}>{c?.progress ?? 0} / {m.max_progress}</Text>
+                  </View>
+                )}
               </View>
               {done ? (
                 <View style={[s.badge, s.badgeOk]}><Text style={s.badgeOkText}>✓ 完了</Text></View>
@@ -130,6 +142,10 @@ const s = StyleSheet.create({
   title: { fontSize: 13, fontWeight: '700', color: colors.ink },
   desc: { fontSize: 12, color: colors.sub, marginTop: 3 },
   reward: { fontSize: 11, color: colors.gold, fontWeight: '800', marginTop: 5 },
+  progressWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 7 },
+  progressTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: colors.line, overflow: 'hidden' },
+  progressFill: { height: 6, borderRadius: 3, backgroundColor: colors.accent },
+  progressText: { fontSize: 10, color: colors.muted, fontWeight: '700' },
   btn: { backgroundColor: colors.accent, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 14 },
   btnText: { color: '#fff', fontWeight: '800', fontSize: 12 },
   badge: { borderRadius: 999, paddingVertical: 6, paddingHorizontal: 11 },
