@@ -36,7 +36,12 @@ supabase secrets set POSTBACK_SECRET_SANDBOX=<secret>       # seed の sandbox �
 supabase secrets set OFFER_SECRET_APPLOVIN=<secret>
 supabase functions deploy postback       --no-verify-jwt
 supabase functions deploy offer-postback --no-verify-jwt
+supabase functions deploy send-push      --no-verify-jwt   # プッシュ配信（service_role 認可）
 ```
+
+> **プッシュ通知（Expo）**：モバイルは起動時に `register_push_token` で Expo push token を保存します。
+> 実配信には Expo プロジェクト（`app.json` の `extra.eas.projectId`）と、iOS は APNs 鍵 / Android は FCM 設定が必要です。
+> 配信は `send-push` Edge Function（`Authorization: Bearer <service_role>`）に `{user_id,title,body}` を POST。
 
 適用後の検証（マイグレーション/権限/seed が入ったか。セキュリティ不変条件も REST 越しに再確認）：
 

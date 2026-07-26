@@ -86,6 +86,8 @@ npm run dev   # http://localhost:3000
 | 交換の取消（返金＋在庫戻し） | `select cancel_exchange('<request_id>', 'reason');` |
 | オファーウォール確定 | Edge Function `offer-postback` → `confirm_offer(...)`（日次上限 `app_config.daily_offer_cap`、既定20） |
 | 通知の既読化（ユーザー） | `select mark_notification_read('<id>');`（`authenticated`） |
+| プッシュ通知トークン登録 | `select register_push_token('<expo_token>', 'ios');`（`authenticated`。アプリ起動時に自動） |
+| プッシュ配信 | Edge Function `send-push`（service_role）に `{user_id,title,body,data?}` を POST → `push_tokens` を引いて Expo Push API へ |
 
 ### ステーキングの定期実行（pg_cron 例）
 
