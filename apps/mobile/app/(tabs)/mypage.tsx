@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
+import { tierProgress } from '@/lib/vip';
 import { GENRES } from '@/lib/types';
 import type { Profile, VipInfo, Genre } from '@/lib/types';
 
@@ -39,9 +40,7 @@ export default function MyPage() {
   const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
 
   const xp = vip?.xp ?? profile?.xp ?? 0;
-  const current = [...tiers].reverse().find((t) => xp >= t.min_xp) ?? tiers[0];
-  const next = tiers.find((t) => t.min_xp > xp);
-  const progress = next && current ? Math.min(1, (xp - current.min_xp) / (next.min_xp - current.min_xp)) : 1;
+  const { current, next, ratio: progress } = tierProgress(xp, tiers);
 
   async function logout() {
     Alert.alert('ログアウト', 'ログアウトしますか？', [
