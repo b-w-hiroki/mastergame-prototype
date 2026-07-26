@@ -615,6 +615,8 @@ export interface Database {
       cancel_exchange: { Args: { p_request_id: string; p_reason?: string }; Returns: Json };
       mark_notification_read: { Args: { p_id: string }; Returns: Json };
       record_ad_impression: { Args: { p_placement: string; p_ad_type: string; p_network_id?: string | null }; Returns: Json };
+      register_push_token: { Args: { p_token: string; p_platform: string }; Returns: undefined };
+      remove_push_token: { Args: { p_token: string }; Returns: undefined };
       track_click: { Args: { p_mission_id: string; p_device_fp?: string | null; p_ip?: string | null; p_ua?: string | null }; Returns: string };
       accrue_staking: { Args: { p_period: string }; Returns: Json };
       confirm_offer: {

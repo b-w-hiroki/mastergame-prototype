@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { registerPushToken } from '@/lib/push';
 
 /**
  * 認証＋オンボーディングのゲート。
@@ -53,6 +54,11 @@ export default function RootLayout() {
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // ログイン後にプッシュ通知トークンを登録（失敗しても致命的でないため握りつぶす）
+  useEffect(() => {
+    if (session) registerPushToken().catch(() => {});
+  }, [session]);
 
   useEffect(() => {
     if (!ready) return;
