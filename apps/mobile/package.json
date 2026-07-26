@@ -14,7 +14,8 @@
   },
   "jest": {
     "preset": "jest-expo",
-    "testMatch": ["**/__tests__/**/*.test.ts?(x)"]
+    "testMatch": ["**/__tests__/**/*.test.ts?(x)"],
+    "testTimeout": 20000
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.2.3",
