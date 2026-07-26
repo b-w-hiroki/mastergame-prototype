@@ -26,21 +26,58 @@ npm i -g supabase            # もしくは npx supabase ...
 supabase login
 supabase link --project-ref <PROJECT_REF>
 
-# スキーマ適用（0001〜0011）＋ seed
+# スキーマ適用（0001〜0018）＋ seed
 supabase db push
 supabase db execute --file supabase/seed.sql    # もしくは Studio で seed.sql 実行
 
-# Edge Function（postback）
-supabase secrets set POSTBACK_SECRET_APPLOVIN=<secret>
-supabase functions deploy postback --no-verify-jwt
+# Edge Functions（ミッション postback / オファーウォール postback）
+# パートナー/ネットワークごとに secret を設定（共通鍵フォールバックは無し）
+supabase secrets set POSTBACK_SECRET_SANDBOX=<secret>       # seed の sandbox パートナー
+supabase secrets set OFFER_SECRET_APPLOVIN=<secret>
+supabase functions deploy postback       --no-verify-jwt
+supabase functions deploy offer-postback --no-verify-jwt
 ```
+
+適用後の検証（マイグレーション/権限/seed が入ったか。セキュリティ不変条件も REST 越しに再確認）：
+
+```bash
+SUPABASE_URL=https://<ref>.supabase.co \
+SUPABASE_ANON_KEY=<anon> \
+SUPABASE_SERVICE_ROLE_KEY=<service_role> \
+  npm run check:supabase
+```
+
+運用（定期実行）：
+
+```sql
+-- ステーキング月次付与（Supabase の Scheduled Functions / pg_cron 等で）
+select cron.schedule('accrue-staking-monthly', '10 0 1 * *',
+  $$select public.accrue_staking(date_trunc('month', now())::date)$$);
+```
+
+管理者権限：運営コンソールに入れるのは `app_metadata.role='admin'` のユーザー、または
+`ADMIN_EMAILS`（管理画面の env、カンマ区切り）に含まれるメールのみ。
 
 控えておく値（ダッシュボード → Project Settings → API）：
 - `Project URL` → `SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_URL`
 - `anon public` → `*_ANON_KEY`
 - `service_role`（**秘匿**）→ 管理画面・Function のみ
 
-> ローカル検証（Docker 必要）：`supabase start` → `supabase db reset`（migrations+seed 適用）→ `supabase functions serve postback`
+> ローカル検証（Docker 必要）：`supabase start` → `supabase db reset`（migrations+seed 適用）→ `supabase functions serve postback` / `offer-postback`
+> DB の不変条件テストは Docker 不要：`PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres bash supabase/tests/run.sh`
+
+### ステージング環境（推奨構成）
+
+本番と同じ手順で **もう1つの Supabase プロジェクト**を作り、そこへ同じ migrations/seed を適用します。
+アプリ側は環境ごとに env を切り替えるだけ（コード変更不要）。
+
+| 対象 | 本番 | ステージング |
+|---|---|---|
+| Supabase | 本番プロジェクト | 別プロジェクト（`supabase link --project-ref <staging_ref>` → `db push`） |
+| 運営コンソール (Vercel) | Production 環境変数 | Preview 環境変数（`NEXT_PUBLIC_SUPABASE_*` をステージング値に） |
+| モバイル (Expo) | 本番 `.env` | `EXPO_PUBLIC_SUPABASE_*` をステージング値にした別ビルド/チャンネル |
+
+各プロジェクト適用後に `npm run check:supabase`（上記）で設定を検証してから配信します。
 
 ### OAuth プロバイダ（Supabase → Authentication → Providers）
 - 各プロバイダの Client ID / Secret を設定

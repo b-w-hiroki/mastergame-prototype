@@ -98,7 +98,7 @@
 │   └── economy.html          # 📊 経済シミュレーター
 ├── supabase/                 # DB スキーマ・RPC・seed（バックエンド実装）
 │   ├── config.toml
-│   ├── migrations/           # 0001_core … 0007_admin
+│   ├── migrations/           # 0001_core … 0018（core/postback/offerwall/community/economy/security/tests）
 │   └── seed.sql
 ├── apps/
 │   ├── mobile/               # React Native + Expo（ユーザーアプリ実装足場）
