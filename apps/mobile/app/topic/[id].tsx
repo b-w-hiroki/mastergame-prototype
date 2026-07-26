@@ -90,19 +90,22 @@ export default function TopicDetail() {
     ]);
   }
 
-  async function report(targetType: 'topic' | 'post', targetId: string) {
+  async function submitReport(targetType: 'topic' | 'post', targetId: string, reason: 'spam' | 'inappropriate' | 'harassment' | 'other') {
     if (!uid) return;
-    Alert.alert('通報する', 'この内容を運営に通報しますか？', [
+    const { error: repErr } = await supabase.from('reports').insert({
+      reporter_id: uid, target_type: targetType, target_id: targetId, reason,
+    });
+    Alert.alert(repErr ? '通報できませんでした' : '通報を受け付けました', repErr?.message ?? '運営が確認します。');
+  }
+
+  function report(targetType: 'topic' | 'post', targetId: string) {
+    if (!uid) { Alert.alert('ログインが必要です'); return; }
+    // 通報理由を選択（reports.reason の enum に一致）
+    Alert.alert('通報の理由を選択', 'この内容を運営に報告します。', [
+      { text: 'スパム・宣伝', onPress: () => { submitReport(targetType, targetId, 'spam').catch(() => {}); } },
+      { text: '不適切なコンテンツ', onPress: () => { submitReport(targetType, targetId, 'inappropriate').catch(() => {}); } },
+      { text: '誹謗中傷・ハラスメント', onPress: () => { submitReport(targetType, targetId, 'harassment').catch(() => {}); } },
       { text: 'キャンセル', style: 'cancel' },
-      {
-        text: '通報', style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase.from('reports').insert({
-            reporter_id: uid, target_type: targetType, target_id: targetId, reason: 'inappropriate',
-          });
-          Alert.alert(error ? '通報できませんでした' : '通報を受け付けました', error?.message ?? '運営が確認します。');
-        },
-      },
     ]);
   }
 
