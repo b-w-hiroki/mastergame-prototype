@@ -1,0 +1,17 @@
+# MasterGame モバイル E2E（Maestro）— ログインフロー
+# 実行には端末/エミュレータと `maestro` CLI が必要（この環境では実行不可のため flow のみ）。
+#   maestro test apps/mobile/.maestro/login.yaml
+appId: com.mastergame.app
+---
+- launchApp:
+    clearState: true
+# 未ログインはログイン画面に着地する
+- assertVisible: "おかえりなさい"
+- tapOn:
+    id: "email"          # 未設定なら placeholder "メールアドレス" に変更
+- inputText: "player@example.com"
+- tapOn: "パスワード"
+- inputText: "password123"
+- tapOn: "ログイン"
+# ログイン成功でホーム（残高チップ）へ
+- assertVisible: "こんにちは 👋"

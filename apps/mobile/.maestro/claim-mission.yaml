@@ -1,0 +1,13 @@
+# MasterGame モバイル E2E（Maestro）— デイリーミッション達成 → 獲得演出
+# 前提: ログイン済み（login.yaml を先に実行するか、runFlow で連結）。
+appId: com.mastergame.app
+---
+- launchApp
+- assertVisible: "デイリーミッション"
+# 最初の「受け取る」を押す
+- tapOn: "受け取る"
+# 獲得演出（RewardToast）が出る
+- assertVisible: "＋"
+# 残高チップが表示されている（金額の増加は環境依存のため存在のみ確認）
+- assertVisible:
+    text: ".*P"
