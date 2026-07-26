@@ -1,24 +1,11 @@
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from './supabase';
+import { parseParams } from './parseCallback';
 
 WebBrowser.maybeCompleteAuthSession();
 
 type Provider = 'google' | 'apple' | 'facebook';
-
-// URL の query / hash 両方からパラメータを取り出す
-function parseParams(url: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  const collect = (qs: string) => {
-    new URLSearchParams(qs).forEach((v, k) => (out[k] = v));
-  };
-  const [, afterQ = ''] = url.split('?');
-  const [beforeHash, afterHash = ''] = afterQ.split('#');
-  collect(beforeHash);
-  collect(afterHash);
-  if (url.includes('#') && !afterQ.includes('#')) collect(url.split('#')[1] ?? '');
-  return out;
-}
 
 /**
  * OAuth ログイン（ディープリンク mastergame://auth-callback）。
