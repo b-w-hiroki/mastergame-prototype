@@ -28,6 +28,7 @@ export interface Database {
           avatar_url: string | null;
           bio: string | null;
           xp: number;
+          referral_code: string | null; // 0023
           created_at: Timestamptz;
           updated_at: Timestamptz;
         };
@@ -38,6 +39,7 @@ export interface Database {
           avatar_url?: string | null;
           bio?: string | null;
           xp?: number;
+          referral_code?: string | null;
           created_at?: Timestamptz;
           updated_at?: Timestamptz;
         };
@@ -602,6 +604,33 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['user_moderation_state']['Insert']>;
         Relationships: [];
       };
+      // 0023 招待・リファラル
+      referrals: {
+        Row: {
+          id: string;
+          referrer_id: string;
+          referee_id: string;
+          code: string;
+          status: string;
+          referee_ledger_id: string | null;
+          referrer_ledger_id: string | null;
+          created_at: Timestamptz;
+          confirmed_at: Timestamptz | null;
+        };
+        Insert: {
+          id?: string;
+          referrer_id: string;
+          referee_id: string;
+          code: string;
+          status?: string;
+          referee_ledger_id?: string | null;
+          referrer_ledger_id?: string | null;
+          created_at?: Timestamptz;
+          confirmed_at?: Timestamptz | null;
+        };
+        Update: Partial<Database['public']['Tables']['referrals']['Insert']>;
+        Relationships: [];
+      };
       // 0021 不正検知
       user_devices: {
         Row: {
@@ -724,6 +753,24 @@ export interface Database {
         };
         Relationships: [];
       };
+      // 0023 招待のレビュー用
+      admin_referral_rows: {
+        Row: {
+          id: string | null;
+          status: string | null;
+          code: string | null;
+          created_at: Timestamptz | null;
+          confirmed_at: Timestamptz | null;
+          referrer_id: string | null;
+          referrer_handle: string | null;
+          referee_id: string | null;
+          referee_handle: string | null;
+          referrer_state: string | null;
+          referee_state: string | null;
+          referrer_linked_accounts: number | null;
+        };
+        Relationships: [];
+      };
       // 0021 不正検知のレビュー用
       admin_fraud_rows: {
         Row: {
@@ -759,6 +806,9 @@ export interface Database {
       cancel_exchange: { Args: { p_request_id: string; p_reason?: string }; Returns: Json };
       mark_notification_read: { Args: { p_id: string }; Returns: Json };
       record_ad_impression: { Args: { p_placement: string; p_ad_type: string; p_network_id?: string | null }; Returns: Json };
+      // 0023 招待・リファラル
+      my_referral_status: { Args: Record<string, never>; Returns: Json };
+      redeem_referral_code: { Args: { p_code: string }; Returns: Json };
       register_push_token: { Args: { p_token: string; p_platform: string }; Returns: undefined };
       remove_push_token: { Args: { p_token: string }; Returns: undefined };
       // 0021 不正検知

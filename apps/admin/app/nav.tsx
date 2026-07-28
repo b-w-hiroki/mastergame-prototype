@@ -12,6 +12,7 @@ const ITEMS = [
   { href: '/items', label: '交換アイテム管理' },
   { href: '/exchanges', label: '交換申請' },
   { href: '/moderation', label: '通報・モデレーション' },
+  { href: '/referrals', label: '招待' },
   { href: '/fraud', label: '不正検知' },
   { href: '/postback', label: 'postback監視' },
 ];
