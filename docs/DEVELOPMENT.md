@@ -120,8 +120,29 @@ PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres \
 - `supabase/tests/20_economy_test.sql` … postback冪等/取消・staking・offer冪等/日次上限・fulfill/cancel・bounty二重付与防止
 - `supabase/tests/30_push_test.sql` … push トークンの upsert/付け替え/本人限定削除・RPC権限
 - `supabase/tests/40_fraud_test.sql` … 端末登録・多重アカウント/エミュレータ/速度検知・重複起票抑制・凍結/BAN・権限
+- `supabase/tests/50_analytics_test.sql` … 日次集計の欠測日埋め・経路別内訳・未交換残高・交換率/ゼロ除算・権限
 
 各テストは `begin; … rollback;` で隔離。アサーション失敗（`RAISE EXCEPTION`）で非0終了します。
+
+## ポイント経済の可視化（0022）
+
+`admin_overview` は累計しか持たず、日次の推移も発行に対する交換の比率も、
+**未交換残高（＝将来の支払債務）** も見えませんでした。ポイ活は配布過多が即赤字になるため、
+運営コンソールの **ポイント経済** 画面（`/economy`）で常時監視します。
+
+| ビュー | 内容 |
+|---|---|
+| `economy_daily` | 日次の発行/消費/交換/参加者（直近60日）。取引ゼロの日も 0 行で埋めてグラフが歪まないようにする |
+| `economy_by_reason` | 経路別の内訳（直近30日）。想定外の経路の急伸＝設定ミスか不正の入口 |
+| `economy_liability` | **未交換残高**（額面 / 円 / 実コスト見込み / 保有者数） |
+| `admin_economy_summary` | 上記＋交換率・1人あたり発行額・実効原価率・還元率を1行に |
+
+- 実コストは 0010 の交換先ミックス（`face_to_real_cost`）を通した「実際に出ていく金額」。額面ではありません。
+- 直近7日の発行ペースが30日実績を2割以上上回ると画面上で警告を出します。
+- 全ビューは `security_invoker` + クライアントロールから `revoke`（service_role 専用）。
+
+> **未交換残高は法務の論点でもあります。** ポイントが資金決済法の前払式支払手段に該当する場合、
+> 基準日の未使用残高に応じて供託等の義務が生じ得ます（要法務確認）。KPIとして常時見えるようにしてあります。
 
 ## 不正検知（0021）
 

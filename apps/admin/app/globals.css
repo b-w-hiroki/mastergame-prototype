@@ -72,3 +72,22 @@ th { color: var(--sub); font-weight: 800; font-size: 11px; }
 .field.check { flex-direction: row; align-items: center; gap: 8px; }
 .field.check label { font-weight: 700; font-size: 12.5px; color: var(--ink); }
 .form-foot { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
+
+/* ポイント経済ダッシュボード（グラフ / 債務サマリ） */
+.chartwrap { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 14px 14px 8px; }
+.chart { width: 100%; height: auto; display: block; }
+.legend { display: flex; gap: 16px; padding: 6px 2px 4px; font-size: 11.5px; color: var(--sub); font-weight: 700; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+/* 未交換残高＝将来債務。見落とされやすいので独立して強調する */
+.liability {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px;
+  background: #fbf2dc; border: 1px solid #e6d5a8; border-radius: 14px; padding: 16px; margin-bottom: 4px;
+}
+.liability .l { font-size: 11.5px; color: #8a6d1f; font-weight: 800; }
+.liability .v { font-size: 24px; font-weight: 900; margin-top: 6px; color: #6b5316; }
+.liability .v small { font-size: 13px; color: #a98f45; }
+
+/* 警告つき note（発行ペース異常など） */
+.note.alert { border: 1px solid #f3c6c1; background: #fdecea; color: var(--danger); padding: 11px 13px; border-radius: 10px; }

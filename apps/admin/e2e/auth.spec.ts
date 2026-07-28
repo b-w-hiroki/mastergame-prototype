@@ -13,6 +13,15 @@ test.describe('admin auth gate', () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
+  // 運営専用データを扱う新しい画面もゲートされていること
+  // （/economy は未交換残高＝債務、/fraud はユーザーの不正判定を表示するため漏洩の影響が大きい）
+  for (const path of ['/economy', '/fraud']) {
+    test(`protected route (${path}) redirects to /login`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page).toHaveURL(/\/login$/);
+    });
+  }
+
   test('/login renders email & password fields', async ({ page }) => {
     await page.goto('/login');
     await expect(page.locator('#login-email')).toBeVisible();
