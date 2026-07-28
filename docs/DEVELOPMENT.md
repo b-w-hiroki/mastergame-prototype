@@ -118,8 +118,34 @@ PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres \
 - `supabase/tests/00_harness.sql` … auth shim（素のPGでも動く）＋ アサーションヘルパ（`test.ok/eq/raises`）
 - `supabase/tests/10_security_test.sql` … 権限剥奪・claim冪等・在庫アトミック・台帳不変
 - `supabase/tests/20_economy_test.sql` … postback冪等/取消・staking・offer冪等/日次上限・fulfill/cancel・bounty二重付与防止
+- `supabase/tests/30_push_test.sql` … push トークンの upsert/付け替え/本人限定削除・RPC権限
+- `supabase/tests/40_fraud_test.sql` … 端末登録・多重アカウント/エミュレータ/速度検知・重複起票抑制・凍結/BAN・権限
 
 各テストは `begin; … rollback;` で隔離。アサーション失敗（`RAISE EXCEPTION`）で非0終了します。
+
+## 不正検知（0021）
+
+ポイ活の収益源は広告主の CPA 報酬なので、不正ユーザーの混入は「広告主に切られる＝事業が止まる」
+直接のリスクになります。API の穴（無限鋳造・連打・在庫レース）は 0013 で塞いだため、
+0021 が対象にするのは **正規 API を正しく叩く不正ユーザー** です。
+
+| 検知 | 仕組み | 起票 |
+|---|---|---|
+| `multi_account` | `user_devices` に端末↔アカウントを記録し、同一 `device_id` のアカウント数を数える | 閾値超で `fraud_flags`、さらに上位閾値で `moderation_state='marked'` |
+| `velocity` | `apply_points`（全付与が通る唯一の隘路）から直近1時間の獲得回数/ポイントを検査 | 回数超過=medium / ポイント超過=high |
+| `emulator` | アプリが `expo-device` の `isDevice=false` を申告 | medium |
+
+- **閾値は `fraud_settings` テーブルで調整**（マイグレーション不要）。
+  `multi_account_warn` / `multi_account_mark` / `velocity_count_1h` / `velocity_points_1h` / `flag_cooldown_minutes`。
+- 同一ユーザー・同一種別の未解決フラグは `flag_cooldown_minutes`（既定24h）内は再起票しない＝レビューキューが溢れない。
+- 検知は **絶対に付与を壊さない**：`apply_points` 内の検知呼び出しは例外を握りつぶす（監視が落ちても経済は回る）。
+- 自動処分は `marked`（レビュー目印。獲得はブロックしない）まで。**凍結/BAN は運営判断**＝
+  運営コンソールの「不正検知」画面から `resolve_fraud_flag(flag_id, 'dismiss'|'freeze'|'ban')`。
+  `frozen`/`banned` は `confirm_postback` / `confirm_offer` の両方で付与がブロックされます。
+
+> **限界**: `device_id` はクライアント申告値であり「シグナル」であって証拠ではありません（再インストールでリセット）。
+> それでも「同じ端末でアカウントを作り直して初回ボーナスを取り直す」という最頻の不正パターンには有効です。
+> 端末の真正性を厳密に取るには DeviceCheck(iOS) / Play Integrity(Android) のアテステーション導入が必要です（次段の強化）。
 
 ## マイグレーション方針
 

@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { registerPushToken } from '@/lib/push';
+import { registerDevice } from '@/lib/device';
 
 /**
  * 認証＋オンボーディングのゲート。
@@ -55,9 +56,12 @@ export default function RootLayout() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // ログイン後にプッシュ通知トークンを登録（失敗しても致命的でないため握りつぶす）
+  // ログイン後にプッシュ通知トークンと端末を登録
+  // （どちらも失敗してもアプリの利用は続行できるため握りつぶす）
   useEffect(() => {
-    if (session) registerPushToken().catch(() => {});
+    if (!session) return;
+    registerPushToken().catch(() => {});
+    registerDevice().catch(() => {});
   }, [session]);
 
   useEffect(() => {

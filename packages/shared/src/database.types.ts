@@ -560,6 +560,79 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['postback_events']['Insert']>;
         Relationships: [];
       };
+      fraud_flags: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          flag_type: string;
+          severity: string;
+          detail: Json | null;
+          created_at: Timestamptz;
+          resolved_at: Timestamptz | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          flag_type: string;
+          severity?: string;
+          detail?: Json | null;
+          created_at?: Timestamptz;
+          resolved_at?: Timestamptz | null;
+        };
+        Update: Partial<Database['public']['Tables']['fraud_flags']['Insert']>;
+        Relationships: [];
+      };
+      user_moderation_state: {
+        Row: {
+          user_id: string;
+          state: string;
+          reason: string | null;
+          expires_at: Timestamptz | null;
+          set_by: string | null;
+          updated_at: Timestamptz;
+        };
+        Insert: {
+          user_id: string;
+          state?: string;
+          reason?: string | null;
+          expires_at?: Timestamptz | null;
+          set_by?: string | null;
+          updated_at?: Timestamptz;
+        };
+        Update: Partial<Database['public']['Tables']['user_moderation_state']['Insert']>;
+        Relationships: [];
+      };
+      // 0021 不正検知
+      user_devices: {
+        Row: {
+          user_id: string;
+          device_id: string;
+          platform: string | null;
+          model: string | null;
+          os_version: string | null;
+          is_emulator: boolean;
+          first_seen: Timestamptz;
+          last_seen: Timestamptz;
+        };
+        Insert: {
+          user_id: string;
+          device_id: string;
+          platform?: string | null;
+          model?: string | null;
+          os_version?: string | null;
+          is_emulator?: boolean;
+          first_seen?: Timestamptz;
+          last_seen?: Timestamptz;
+        };
+        Update: Partial<Database['public']['Tables']['user_devices']['Insert']>;
+        Relationships: [];
+      };
+      fraud_settings: {
+        Row: { key: string; value: number; note: string | null; updated_at: Timestamptz };
+        Insert: { key: string; value: number; note?: string | null; updated_at?: Timestamptz };
+        Update: Partial<Database['public']['Tables']['fraud_settings']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: {
       user_vip: {
@@ -598,6 +671,24 @@ export interface Database {
         };
         Relationships: [];
       };
+      // 0021 不正検知のレビュー用
+      admin_fraud_rows: {
+        Row: {
+          id: string | null;
+          user_id: string | null;
+          flag_type: string | null;
+          severity: string | null;
+          detail: Json | null;
+          created_at: Timestamptz | null;
+          resolved_at: Timestamptz | null;
+          handle: string | null;
+          username: string | null;
+          moderation_state: string | null;
+          balance: number | null;
+          linked_accounts: number | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       claim_mission: { Args: { p_mission_id: string }; Returns: Json };
@@ -617,6 +708,18 @@ export interface Database {
       record_ad_impression: { Args: { p_placement: string; p_ad_type: string; p_network_id?: string | null }; Returns: Json };
       register_push_token: { Args: { p_token: string; p_platform: string }; Returns: undefined };
       remove_push_token: { Args: { p_token: string }; Returns: undefined };
+      // 0021 不正検知
+      register_device: {
+        Args: {
+          p_device_id: string;
+          p_platform?: string | null;
+          p_model?: string | null;
+          p_os_version?: string | null;
+          p_is_emulator?: boolean;
+        };
+        Returns: Json;
+      };
+      resolve_fraud_flag: { Args: { p_flag_id: string; p_action: string; p_note?: string | null }; Returns: Json };
       track_click: { Args: { p_mission_id: string; p_device_fp?: string | null; p_ip?: string | null; p_ua?: string | null }; Returns: string };
       accrue_staking: { Args: { p_period: string }; Returns: Json };
       confirm_offer: {
