@@ -671,6 +671,59 @@ export interface Database {
         };
         Relationships: [];
       };
+      // 0022 ポイント経済の可視化
+      economy_daily: {
+        Row: {
+          day: string | null;
+          issued_points: number | null;
+          spent_points: number | null;
+          exchanged_points: number | null;
+          earning_users: number | null;
+          earn_events: number | null;
+        };
+        Relationships: [];
+      };
+      economy_by_reason: {
+        Row: {
+          reason: string | null;
+          issued_points: number | null;
+          spent_points: number | null;
+          events: number | null;
+          users: number | null;
+        };
+        Relationships: [];
+      };
+      economy_liability: {
+        Row: {
+          outstanding_points: number | null;
+          outstanding_yen: number | null;
+          outstanding_real_cost_yen: number | null;
+          holders: number | null;
+          max_balance: number | null;
+        };
+        Relationships: [];
+      };
+      admin_economy_summary: {
+        Row: {
+          issued_30d: number | null;
+          spent_30d: number | null;
+          exchanged_30d: number | null;
+          earning_users_30d: number | null;
+          issued_7d: number | null;
+          issued_yen_30d: number | null;
+          exchanged_yen_30d: number | null;
+          real_cost_yen_30d: number | null;
+          redemption_rate_pct: number | null;
+          issued_yen_per_user_30d: number | null;
+          outstanding_points: number | null;
+          outstanding_yen: number | null;
+          outstanding_real_cost_yen: number | null;
+          holders: number | null;
+          effective_cost_rate_pct: number | null;
+          payout_ratio_pct: number | null;
+        };
+        Relationships: [];
+      };
       // 0021 不正検知のレビュー用
       admin_fraud_rows: {
         Row: {
