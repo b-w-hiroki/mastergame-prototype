@@ -16,12 +16,14 @@ insert into public.ad_networks (code, name, priority) values
   ('ironsource','ironSource',30),('pollfish','PollFish',40);
 
 -- games (genre-based)
-insert into public.games (slug, name, genre) values
-  ('eldia','エルディア戦記','rpg'),
-  ('monster','モンスターアリーナ','strategy'),
-  ('starfall','スターフォール','shooter'),
-  ('puzzle-kingdom','パズルキングダム','puzzle'),
-  ('sengoku','戦国アリーナ','strategy');
+-- games（タイトル別掲示板は insert 時に自動生成される＝0025 の trg_game_forum）
+-- 実在タイトルではなくプロトタイプ用の作例。運営が管理画面から差し替える前提。
+insert into public.games (slug, name, genre, description, platforms, is_featured) values
+  ('eldia','エルディア戦記','rpg','王道ファンタジーRPG。パーティ編成と属性相性が肝。', array['ios','android'], true),
+  ('monster','モンスターアリーナ','strategy','モンスターを育てて競う対戦ストラテジー。', array['ios','android','pc'], true),
+  ('starfall','スターフォール','shooter','爽快な弾幕シューティング。週替りのランキング戦。', array['ios','android'], false),
+  ('puzzle-kingdom','パズルキングダム','puzzle','連鎖を繋ぐパズル。デイリーの詰めパズルが人気。', array['ios','android'], false),
+  ('sengoku','戦国アリーナ','strategy','戦国武将を集めて領地を広げるシミュレーション。', array['ios','android','pc'], false);
 
 -- missions （reward_points は 1,000P=1円 換算。xp_reward は活動量ベースで独立）
 insert into public.missions (type, title, reward_points, xp_reward, icon, max_progress, requires_verification) values
@@ -66,7 +68,8 @@ from (values
 ) as v(netcode,ext,title,descr,reward,evt,url)
 join public.ad_networks n on n.code = v.netcode;
 
--- public forum + a couple topics (author設定はアプリ層/サインアップ後に作成想定。ここは構造例)
+-- public forum（author設定はアプリ層/サインアップ後に作成想定。ここは構造例）
+-- ゲームタイトル別の掲示板は games への insert で自動生成される（0025 の trg_game_forum）ため、
+-- ここでは作らない。手で作ると1タイトル2掲示板になってしまう。
 insert into public.forums (slug, name, description, type) values
-  ('lounge','公開ラウンジ','なんでも雑談OKの広場','public'),
-  ('eldia-guild','エルディア戦記 ギルド','攻略・パーティ募集・質問','game');
+  ('lounge','公開ラウンジ','なんでも雑談OKの広場','public');

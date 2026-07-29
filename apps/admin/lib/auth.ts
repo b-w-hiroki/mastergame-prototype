@@ -5,7 +5,7 @@ import { isAdminUser } from '@/lib/admin-check';
 
 export { isAdminUser };
 // バリデータは Next 非依存の純粋モジュールへ切り出し（単体テスト対象）。後方互換で re-export。
-export { assertUuid, assertEnum } from '@/lib/validate';
+export { assertUuid, assertEnum, assertSlug } from '@/lib/validate';
 
 // ページ / server action の先頭で呼ぶ。管理者でなければ /login へ。
 // middleware が一次ゲートだが、action 単体で叩かれた場合の二次防御として必ず併用する。

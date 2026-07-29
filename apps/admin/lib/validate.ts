@@ -13,3 +13,15 @@ export function assertEnum<T extends string>(v: unknown, allowed: readonly T[], 
   if (!(allowed as readonly string[]).includes(s)) throw new Error(`invalid ${field}`);
   return s as T;
 }
+
+// URL やフォーラムの slug（game-<slug>）に埋め込まれるため、形式を厳しく固定する。
+// 英小文字・数字・ハイフンのみ、先頭末尾は英数字、3〜50文字。
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
+
+export function assertSlug(v: unknown, field = 'slug'): string {
+  const s = typeof v === 'string' ? v.trim().toLowerCase() : '';
+  if (!SLUG_RE.test(s)) throw new Error(`invalid ${field}`);
+  // 連続ハイフンは見た目・可読性が悪く、意図しない衝突も生みやすいので弾く
+  if (s.includes('--')) throw new Error(`invalid ${field}`);
+  return s;
+}
