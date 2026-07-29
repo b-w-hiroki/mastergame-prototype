@@ -2,7 +2,7 @@
 # ============================================================
 # MasterGame — DB テストランナー
 #   使い捨てDBに 全マイグレーション + seed + ハーネス を適用し、
-#   supabase/tests/[0-9]*_test.sql を順に実行する。
+#   supabase/tests/*_test.sql を順に実行する。
 #   いずれかのアサーションが失敗（RAISE EXCEPTION）したら非0で終了。
 #
 # 環境変数:
@@ -41,7 +41,11 @@ run "$SEED"
 
 echo "→ tests"
 fail=0
-for f in "$TESTS"/[0-9]*_test.sql; do
+# 命名規則から外れたテストが黙ってスキップされないよう、*_test.sql を広く拾う
+shopt -s nullglob
+TEST_FILES=("$TESTS"/*_test.sql)
+if [ ${#TEST_FILES[@]} -eq 0 ]; then echo "no test files found in $TESTS"; exit 1; fi
+for f in "${TEST_FILES[@]}"; do
   echo "== $(basename "$f") =="
   # ON_ERROR_STOP により、アサーション失敗（RAISE EXCEPTION）で psql が非0を返す。
   # NOTICE("ok - ...") を表示しつつ exit code で合否判定する。

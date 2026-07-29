@@ -621,6 +621,72 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['user_moderation_state']['Insert']>;
         Relationships: [];
       };
+      // 0027 問い合わせ・CS
+      inquiries: {
+        Row: {
+          id: string;
+          user_id: string;
+          category: string;
+          subject: string;
+          status: string;
+          last_message_at: Timestamptz;
+          created_at: Timestamptz;
+          resolved_at: Timestamptz | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          category: string;
+          subject: string;
+          status?: string;
+          last_message_at?: Timestamptz;
+          created_at?: Timestamptz;
+          resolved_at?: Timestamptz | null;
+        };
+        Update: Partial<Database['public']['Tables']['inquiries']['Insert']>;
+        Relationships: [];
+      };
+      inquiry_messages: {
+        Row: {
+          id: string;
+          inquiry_id: string;
+          author_id: string | null;
+          is_staff: boolean;
+          body: string;
+          created_at: Timestamptz;
+        };
+        Insert: {
+          id?: string;
+          inquiry_id: string;
+          author_id?: string | null;
+          is_staff?: boolean;
+          body: string;
+          created_at?: Timestamptz;
+        };
+        Update: Partial<Database['public']['Tables']['inquiry_messages']['Insert']>;
+        Relationships: [];
+      };
+      // 0026 アカウント削除（退会）
+      account_deletions: {
+        Row: {
+          user_id: string;
+          status: string;
+          reason: string | null;
+          requested_at: Timestamptz;
+          scheduled_at: Timestamptz;
+          completed_at: Timestamptz | null;
+        };
+        Insert: {
+          user_id: string;
+          status?: string;
+          reason?: string | null;
+          requested_at?: Timestamptz;
+          scheduled_at: Timestamptz;
+          completed_at?: Timestamptz | null;
+        };
+        Update: Partial<Database['public']['Tables']['account_deletions']['Insert']>;
+        Relationships: [];
+      };
       // 0025 タイトルのフォロー
       user_games: {
         Row: { user_id: string; game_id: string; followed_at: Timestamptz };
@@ -777,6 +843,65 @@ export interface Database {
         };
         Relationships: [];
       };
+      // 0028 計測の集計
+      analytics_daily: {
+        Row: { day: string | null; active_users: number | null; events: number | null; sessions: number | null };
+        Relationships: [];
+      };
+      event_funnel: {
+        Row: { name: string | null; events: number | null; users: number | null; last_seen: Timestamptz | null };
+        Relationships: [];
+      };
+      mission_funnel: {
+        Row: {
+          viewed: number | null; tapped: number | null; claimed: number | null;
+          view_to_tap_pct: number | null; tap_to_claim_pct: number | null; overall_pct: number | null;
+        };
+        Relationships: [];
+      };
+      retention_cohorts: {
+        Row: {
+          cohort_date: string | null; cohort_size: number | null;
+          d1: number | null; d7: number | null; d30: number | null;
+          d1_pct: number | null; d7_pct: number | null;
+        };
+        Relationships: [];
+      };
+      // 0027 問い合わせのレビュー用
+      admin_inquiry_rows: {
+        Row: {
+          id: string | null;
+          user_id: string | null;
+          category: string | null;
+          subject: string | null;
+          status: string | null;
+          created_at: Timestamptz | null;
+          last_message_at: Timestamptz | null;
+          resolved_at: Timestamptz | null;
+          handle: string | null;
+          username: string | null;
+          balance: number | null;
+          message_count: number | null;
+          last_message: string | null;
+          last_from_staff: boolean | null;
+        };
+        Relationships: [];
+      };
+      // 0026 退会のレビュー用
+      admin_deletion_rows: {
+        Row: {
+          user_id: string | null;
+          status: string | null;
+          reason: string | null;
+          requested_at: Timestamptz | null;
+          scheduled_at: Timestamptz | null;
+          completed_at: Timestamptz | null;
+          handle: string | null;
+          username: string | null;
+          balance: number | null;
+        };
+        Relationships: [];
+      };
       // 0025 ゲームハブ一覧
       game_hub_rows: {
         Row: {
@@ -873,6 +998,19 @@ export interface Database {
       cancel_exchange: { Args: { p_request_id: string; p_reason?: string }; Returns: Json };
       mark_notification_read: { Args: { p_id: string }; Returns: Json };
       record_ad_impression: { Args: { p_placement: string; p_ad_type: string; p_network_id?: string | null }; Returns: Json };
+      // 0028 行動イベント計測
+      record_events: { Args: { p_events: Json }; Returns: Json };
+      purge_app_events: { Args: { p_dry_run?: boolean }; Returns: Json };
+      // 0027 問い合わせ・CS
+      create_inquiry: { Args: { p_category: string; p_subject: string; p_body: string }; Returns: Json };
+      reply_to_inquiry: { Args: { p_inquiry_id: string; p_body: string }; Returns: Json };
+      answer_inquiry: { Args: { p_inquiry_id: string; p_body: string; p_resolve?: boolean }; Returns: Json };
+      close_inquiry: { Args: { p_inquiry_id: string }; Returns: Json };
+      support_user_context: { Args: { p_user: string }; Returns: Json };
+      // 0026 アカウント削除（退会）
+      request_account_deletion: { Args: { p_reason?: string | null }; Returns: Json };
+      cancel_account_deletion: { Args: Record<string, never>; Returns: Json };
+      my_account_deletion: { Args: Record<string, never>; Returns: Json };
       // 0025 ゲームハブ
       my_game_feed: {
         Args: { p_limit?: number };

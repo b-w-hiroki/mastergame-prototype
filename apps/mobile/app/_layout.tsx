@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -6,6 +7,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { registerPushToken } from '@/lib/push';
 import { registerDevice } from '@/lib/device';
+import { track, flushEvents, EVENTS } from '@/lib/analytics';
 
 /**
  * 認証＋オンボーディングのゲート。
@@ -62,7 +64,16 @@ export default function RootLayout() {
     if (!session) return;
     registerPushToken().catch(() => {});
     registerDevice().catch(() => {});
+    track(EVENTS.appOpen);
   }, [session]);
+
+  // バックグラウンド移行時に未送信のイベントを送り切る（次回起動まで滞留させない）
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') void flushEvents();
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (!ready) return;

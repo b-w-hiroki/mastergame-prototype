@@ -7,14 +7,17 @@ import { createClient } from '@/lib/supabase/client';
 const ITEMS = [
   { href: '/', label: 'ダッシュボード' },
   { href: '/economy', label: 'ポイント経済' },
+  { href: '/analytics', label: '行動分析' },
   { href: '/users', label: 'ユーザー管理' },
   { href: '/missions', label: 'ミッション管理' },
   { href: '/games', label: 'ゲームタイトル' },
   { href: '/items', label: '交換アイテム管理' },
   { href: '/exchanges', label: '交換申請' },
+  { href: '/support', label: 'お問い合わせ' },
   { href: '/moderation', label: '通報・モデレーション' },
   { href: '/referrals', label: '招待' },
   { href: '/fraud', label: '不正検知' },
+  { href: '/deletions', label: '退会' },
   { href: '/postback', label: 'postback監視' },
 ];
 
