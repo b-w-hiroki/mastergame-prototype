@@ -621,6 +621,27 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['user_moderation_state']['Insert']>;
         Relationships: [];
       };
+      // 0026 アカウント削除（退会）
+      account_deletions: {
+        Row: {
+          user_id: string;
+          status: string;
+          reason: string | null;
+          requested_at: Timestamptz;
+          scheduled_at: Timestamptz;
+          completed_at: Timestamptz | null;
+        };
+        Insert: {
+          user_id: string;
+          status?: string;
+          reason?: string | null;
+          requested_at?: Timestamptz;
+          scheduled_at: Timestamptz;
+          completed_at?: Timestamptz | null;
+        };
+        Update: Partial<Database['public']['Tables']['account_deletions']['Insert']>;
+        Relationships: [];
+      };
       // 0025 タイトルのフォロー
       user_games: {
         Row: { user_id: string; game_id: string; followed_at: Timestamptz };
@@ -777,6 +798,21 @@ export interface Database {
         };
         Relationships: [];
       };
+      // 0026 退会のレビュー用
+      admin_deletion_rows: {
+        Row: {
+          user_id: string | null;
+          status: string | null;
+          reason: string | null;
+          requested_at: Timestamptz | null;
+          scheduled_at: Timestamptz | null;
+          completed_at: Timestamptz | null;
+          handle: string | null;
+          username: string | null;
+          balance: number | null;
+        };
+        Relationships: [];
+      };
       // 0025 ゲームハブ一覧
       game_hub_rows: {
         Row: {
@@ -873,6 +909,10 @@ export interface Database {
       cancel_exchange: { Args: { p_request_id: string; p_reason?: string }; Returns: Json };
       mark_notification_read: { Args: { p_id: string }; Returns: Json };
       record_ad_impression: { Args: { p_placement: string; p_ad_type: string; p_network_id?: string | null }; Returns: Json };
+      // 0026 アカウント削除（退会）
+      request_account_deletion: { Args: { p_reason?: string | null }; Returns: Json };
+      cancel_account_deletion: { Args: Record<string, never>; Returns: Json };
+      my_account_deletion: { Args: Record<string, never>; Returns: Json };
       // 0025 ゲームハブ
       my_game_feed: {
         Args: { p_limit?: number };

@@ -104,6 +104,10 @@ export default function MyPage() {
           <Pressable style={s.setRow} onPress={() => router.push('/legal/tokushoho')}><Text style={s.setText}>特定商取引法に基づく表記</Text><Text style={s.chevron}>›</Text></Pressable>
         </View>
 
+        <Pressable style={s.setRow} onPress={() => router.push('/account/delete')}>
+          <Text style={s.deleteRowText}>退会（アカウント削除）</Text><Text style={s.chevron}>›</Text>
+        </Pressable>
+
         <Pressable style={s.logout} onPress={logout}>
           <Text style={s.logoutText}>ログアウト</Text>
         </Pressable>
@@ -138,6 +142,7 @@ const s = StyleSheet.create({
   setText: { fontSize: 13, fontWeight: '600', color: colors.ink },
   chevron: { fontSize: 18, color: colors.muted },
   sep: { height: 1, backgroundColor: colors.line },
+  deleteRowText: { flex: 1, fontSize: 13, color: '#c0392b', fontWeight: '700' },
   logout: { marginTop: 24, alignItems: 'center', paddingVertical: 12 },
   logoutText: { color: colors.danger, fontWeight: '800' },
   empty: { color: colors.muted, fontSize: 13 },

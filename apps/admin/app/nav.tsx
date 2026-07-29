@@ -15,6 +15,7 @@ const ITEMS = [
   { href: '/moderation', label: '通報・モデレーション' },
   { href: '/referrals', label: '招待' },
   { href: '/fraud', label: '不正検知' },
+  { href: '/deletions', label: '退会' },
   { href: '/postback', label: 'postback監視' },
 ];
 
