@@ -32,6 +32,22 @@ jobs:
           ls supabase/migrations/0001_core.sql supabase/migrations/0006_functions.sql
           echo "migrations present"
 
+      # setup_all.sql は migrations + seed の生成物。マイグレーションを追加したのに
+      # 再生成を忘れると、ブラウザの SQL Editor でセットアップした人だけ
+      # スキーマが欠けた状態になる（黙って古くなるのを防ぐ）。
+      - name: Check setup_all.sql is up to date
+        run: |
+          set -e
+          cp supabase/setup_all.sql /tmp/setup_all.committed.sql
+          bash scripts/build-setup-sql.sh
+          if ! diff -q /tmp/setup_all.committed.sql supabase/setup_all.sql; then
+            echo "✗ supabase/setup_all.sql が最新ではありません。"
+            echo "  bash scripts/build-setup-sql.sh を実行してコミットしてください。"
+            diff /tmp/setup_all.committed.sql supabase/setup_all.sql | head -40
+            exit 1
+          fi
+          echo "setup_all.sql is up to date"
+
   admin-app:
     runs-on: ubuntu-latest
     defaults:
