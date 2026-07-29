@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 const ITEMS = [
   { href: '/', label: 'ダッシュボード' },
   { href: '/economy', label: 'ポイント経済' },
+  { href: '/analytics', label: '行動分析' },
   { href: '/users', label: 'ユーザー管理' },
   { href: '/missions', label: 'ミッション管理' },
   { href: '/games', label: 'ゲームタイトル' },

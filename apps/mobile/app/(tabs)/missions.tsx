@@ -7,6 +7,7 @@ import { useLoader } from '@/lib/useLoader';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import { useReward } from '@/components/RewardToast';
 import type { Mission, MissionType, MissionCompletion, Offer } from '@/lib/types';
+import { track, EVENTS } from '@/lib/analytics';
 
 type OfferCompletion = { offer_id: string | null; status: string };
 
@@ -46,6 +47,7 @@ export default function Missions() {
     const om: Record<string, string> = {};
     ((ocs as OfferCompletion[]) ?? []).forEach((o) => { if (o.offer_id) om[o.offer_id] = o.status; });
     setOfferStatus(om);
+    track(EVENTS.missionListView, { count: (ms ?? []).length });
   }, []);
 
   const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
@@ -54,10 +56,12 @@ export default function Missions() {
   const list = useMemo(() => missions.filter((m) => m.type === tab), [missions, tab]);
 
   async function claim(m: Mission) {
+    track(EVENTS.missionClaimTap, { mission_id: m.id, type: m.type });
     setBusy(m.id);
     const { error: claimError } = await supabase.rpc('claim_mission', { p_mission_id: m.id });
     setBusy(null);
     if (claimError) { Alert.alert('受け取れませんでした', claimError.message); return; }
+    track(EVENTS.missionClaimed, { mission_id: m.id, reward: m.reward_points });
     reward.show(m.reward_points, m.title);
     reload().catch(() => {});
   }
@@ -65,6 +69,7 @@ export default function Missions() {
   // オファー挑戦：クリックを記録（日次上限を確認）→ 外部へ遷移。
   // 達成 → ネットワークの postback → confirm_offer で確定付与される（アプリ内では「確認中」表示）。
   async function openOffer(o: Offer) {
+    track(EVENTS.offerTap, { offer_id: o.id });
     const { data, error: recErr } = await supabase.rpc('record_ad_impression', {
       p_placement: 'offerwall', p_ad_type: 'offerwall', p_network_id: o.network_id,
     });

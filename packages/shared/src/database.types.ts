@@ -843,6 +843,30 @@ export interface Database {
         };
         Relationships: [];
       };
+      // 0028 計測の集計
+      analytics_daily: {
+        Row: { day: string | null; active_users: number | null; events: number | null; sessions: number | null };
+        Relationships: [];
+      };
+      event_funnel: {
+        Row: { name: string | null; events: number | null; users: number | null; last_seen: Timestamptz | null };
+        Relationships: [];
+      };
+      mission_funnel: {
+        Row: {
+          viewed: number | null; tapped: number | null; claimed: number | null;
+          view_to_tap_pct: number | null; tap_to_claim_pct: number | null; overall_pct: number | null;
+        };
+        Relationships: [];
+      };
+      retention_cohorts: {
+        Row: {
+          cohort_date: string | null; cohort_size: number | null;
+          d1: number | null; d7: number | null; d30: number | null;
+          d1_pct: number | null; d7_pct: number | null;
+        };
+        Relationships: [];
+      };
       // 0027 問い合わせのレビュー用
       admin_inquiry_rows: {
         Row: {
@@ -974,6 +998,9 @@ export interface Database {
       cancel_exchange: { Args: { p_request_id: string; p_reason?: string }; Returns: Json };
       mark_notification_read: { Args: { p_id: string }; Returns: Json };
       record_ad_impression: { Args: { p_placement: string; p_ad_type: string; p_network_id?: string | null }; Returns: Json };
+      // 0028 行動イベント計測
+      record_events: { Args: { p_events: Json }; Returns: Json };
+      purge_app_events: { Args: { p_dry_run?: boolean }; Returns: Json };
       // 0027 問い合わせ・CS
       create_inquiry: { Args: { p_category: string; p_subject: string; p_body: string }; Returns: Json };
       reply_to_inquiry: { Args: { p_inquiry_id: string; p_body: string }; Returns: Json };
