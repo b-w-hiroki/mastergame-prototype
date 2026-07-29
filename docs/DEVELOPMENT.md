@@ -121,8 +121,31 @@ PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres \
 - `supabase/tests/30_push_test.sql` … push トークンの upsert/付け替え/本人限定削除・RPC権限
 - `supabase/tests/40_fraud_test.sql` … 端末登録・多重アカウント/エミュレータ/速度検知・重複起票抑制・凍結/BAN・権限
 - `supabase/tests/50_analytics_test.sql` … 日次集計の欠測日埋め・経路別内訳・未交換残高・交換率/ゼロ除算・権限
+- `supabase/tests/60_referral_test.sql` … 自己招待/二重利用/同一端末/古アカ/BAN の拒否・マイルストーン確定・日次上限・権限
 
 各テストは `begin; … rollback;` で隔離。アサーション失敗（`RAISE EXCEPTION`）で非0終了します。
+
+## 招待・リファラル（0023）
+
+招待はポイ活の主要な成長エンジンですが、**同時に最も荒らされやすい導線**でもあります。
+自己招待・捨てアカウント量産・端末を変えないままの多重取得が典型で、対策の無い招待機能は
+不正の入口そのものになります。そのため 0021 の不正検知と連動させ、多層で守っています。
+
+| 対策 | 実装 |
+|---|---|
+| 自己招待の禁止 | RPC で拒否＋ `referrals` の CHECK 制約（DBレベルでも不可） |
+| 1アカウント1回だけ被招待 | `referee_id` を UNIQUE。競合時も `unique_violation` を捕まえて二重付与しない |
+| **同一端末の招待を拒否** | `user_devices`（0021）を突き合わせ、共有端末なら拒否＋`fraud_flags` に high で起票 |
+| 既存アカウントの刈り取り防止 | 登録から `referral_max_age_days`（既定7日）以内のみ被招待可 |
+| 大量ファーミングの抑制 | 招待者の日次上限 `referral_referrer_daily_cap`（既定10） |
+| **捨てアカウント対策** | 招待者への報酬は被招待者が `referral_milestone_points` を稼いでから確定 |
+| BAN/凍結 | 申込時・確定時の両方で再確認（保留中に処分された場合は払わない） |
+
+- 報酬額・閾値はすべて `app_config` で調整（マイグレーション不要）。
+- 確定判定は `claim_mission` の成功時に走ります。「ミッションを達成した＝実際にアプリを使った」を
+  条件にし、**最も荒らされやすい postback / offer 経路はあえて確定トリガーに使いません**。
+- 運営コンソールの **招待**（`/referrals`）で一覧と「招待数が多いユーザー」を確認できます。
+  自動で止まらない「多数の端末を使い分けた組織的ファーミング」はここで人が見ます。
 
 ## ポイント経済の可視化（0022）
 
