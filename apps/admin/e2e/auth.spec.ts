@@ -15,7 +15,7 @@ test.describe('admin auth gate', () => {
 
   // 運営専用データを扱う新しい画面もゲートされていること
   // （/economy は未交換残高＝債務、/fraud はユーザーの不正判定を表示するため漏洩の影響が大きい）
-  for (const path of ['/economy', '/fraud', '/referrals', '/games', '/deletions']) {
+  for (const path of ['/economy', '/fraud', '/referrals', '/games', '/deletions', '/support']) {
     test(`protected route (${path}) redirects to /login`, async ({ page }) => {
       await page.goto(path);
       await expect(page).toHaveURL(/\/login$/);

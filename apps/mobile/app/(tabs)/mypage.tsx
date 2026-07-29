@@ -97,6 +97,8 @@ export default function MyPage() {
           <View style={s.sep} />
           <Pressable style={s.setRow} onPress={() => Alert.alert('プッシュ通知', '本番では端末の通知設定と連動します。')}><Text style={s.setText}>プッシュ通知</Text><Text style={s.chevron}>›</Text></Pressable>
           <View style={s.sep} />
+          <Pressable style={s.setRow} onPress={() => router.push('/support')}><Text style={s.setText}>お問い合わせ</Text><Text style={s.chevron}>›</Text></Pressable>
+          <View style={s.sep} />
           <Pressable style={s.setRow} onPress={() => router.push('/legal/terms')}><Text style={s.setText}>利用規約</Text><Text style={s.chevron}>›</Text></Pressable>
           <View style={s.sep} />
           <Pressable style={s.setRow} onPress={() => router.push('/legal/privacy')}><Text style={s.setText}>プライバシーポリシー</Text><Text style={s.chevron}>›</Text></Pressable>

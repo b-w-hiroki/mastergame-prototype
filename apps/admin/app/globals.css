@@ -91,3 +91,11 @@ th { color: var(--sub); font-weight: 800; font-size: 11px; }
 
 /* 警告つき note（発行ペース異常など） */
 .note.alert { border: 1px solid #f3c6c1; background: #fdecea; color: var(--danger); padding: 11px 13px; border-radius: 10px; }
+
+/* 問い合わせスレッド */
+.ctx { background: #fafbfd; border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.msg { border-radius: 12px; padding: 13px 15px; margin-bottom: 9px; max-width: 760px; }
+.msg.user { background: var(--paper); border: 1px solid var(--line); }
+.msg.staff { background: #eef0ff; border: 1px solid #d9ddfb; margin-left: 28px; }
+.msg-who { font-size: 11px; font-weight: 800; color: var(--sub); margin-bottom: 5px; }
+.msg-body { font-size: 13.5px; color: var(--ink); line-height: 20px; white-space: pre-wrap; }
