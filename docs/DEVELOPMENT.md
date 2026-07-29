@@ -122,8 +122,51 @@ PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres \
 - `supabase/tests/40_fraud_test.sql` … 端末登録・多重アカウント/エミュレータ/速度検知・重複起票抑制・凍結/BAN・権限
 - `supabase/tests/50_analytics_test.sql` … 日次集計の欠測日埋め・経路別内訳・未交換残高・交換率/ゼロ除算・権限
 - `supabase/tests/60_referral_test.sql` … 自己招待/二重利用/同一端末/古アカ/BAN の拒否・マイルストーン確定・日次上限・権限
+- `supabase/tests/70_legal_test.sql` … 規約の版管理と再同意・年齢確認（最低年齢/1度だけ/未成年）・ポイント失効と予告通知
 
 各テストは `begin; … rollback;` で隔離。アサーション失敗（`RAISE EXCEPTION`）で非0終了します。
+
+## 法務・ストア審査対応（0024）
+
+> ⚠ **公開前に必ず弁護士の確認を受けてください。** 0024 が用意するのは**仕組みと雛形**であり、
+> 条文は `〔 〕` のプレースホルダを含む下書きです。運営者名・住所・連絡先・管轄裁判所を
+> 実際の値に置き換え、ポイントが**資金決済法の前払式支払手段**に該当するか、景品表示法上の
+> 表示が適切かは個別に判断が必要です。
+
+### 規約の版管理と同意
+
+- `legal_documents`（slug: `terms` / `privacy` / `tokushoho`）に**本文をDBで保持**。
+  規約は改定されるものなので、アプリを再配布せず差し替えられるようにしてあります。
+- `legal_acceptances` に「誰が・どの文書の・**どの版に**・いつ」同意したかを記録。
+  改定時に `pending_legal_consents()` が未同意として返すため、再同意を求められます。
+- 特商法表記は `requires_consent = false`（掲示のみで同意対象ではない）。
+- 規約類は**未ログインでも読める**必要があるため、RLS ポリシーに加えて
+  `anon` への `SELECT` GRANT も付けています（ポリシーだけでは権限不足で読めません）。
+
+### 年齢確認
+
+- `profiles.date_of_birth` は `set_date_of_birth()` で**1度だけ**設定可能
+  （後から書き換えて年齢制限を回避させない）。
+- `min_age`（既定13）未満は拒否し、**生年月日を保存しません**。
+- `adult_age`（既定18）未満は `is_minor` を返し、アプリ側で保護者向けの案内を表示します。
+- アプリ側の `src/lib/age.ts` でも同じ判定を先出しします（登録してから弾かれるのを避けるため）。
+  「2月31日」のような存在しない日付は `Date` が繰り上げるので、生成後に一致を確認して弾いています。
+
+### ポイント有効期限
+
+- 最終ポイント利用（`point_wallets.updated_at`）から `point_expiry_months`（既定12ヶ月）で失効。
+- `notify_expiring_points()` … `point_expiry_notice_days`（既定30日）前に予告通知。同一失効日には重複通知しない。
+- `expire_points(p_dry_run)` … **既定は dry run**。本番投入前に対象件数とポイント数を確認できます。
+  失効も台帳に**負の確定エントリ**として記録され（追記専用を維持）、冪等キーに失効月を含めて二重計上を防ぎます。
+- どちらも service_role 専用。pg_cron 等で日次実行してください。
+
+### ストア審査（app.json）
+
+- **`NSUserTrackingUsageDescription`** … オファーウォールの成果照合で IDFA を使う場合、
+  ATT の説明文が無いと iOS の審査で弾かれます。
+- `usesNonExemptEncryption: false` … 提出のたびに輸出コンプライアンスを聞かれるのを防ぎます。
+- Android は `AD_ID` / `POST_NOTIFICATIONS` を明示し、位置情報・録音は `blockedPermissions` で
+  ライブラリが勝手に追加するのを止めています（不要な権限はストア審査とインストール率の両方に響きます）。
 
 ## 招待・リファラル（0023）
 

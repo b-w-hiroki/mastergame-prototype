@@ -28,7 +28,9 @@ export interface Database {
           avatar_url: string | null;
           bio: string | null;
           xp: number;
-          referral_code: string | null; // 0023
+          referral_code: string | null;   // 0023
+          date_of_birth: string | null;   // 0024（年齢確認。1度だけ設定可）
+          age_verified_at: Timestamptz | null;
           created_at: Timestamptz;
           updated_at: Timestamptz;
         };
@@ -40,6 +42,8 @@ export interface Database {
           bio?: string | null;
           xp?: number;
           referral_code?: string | null;
+          date_of_birth?: string | null;
+          age_verified_at?: Timestamptz | null;
           created_at?: Timestamptz;
           updated_at?: Timestamptz;
         };
@@ -753,6 +757,28 @@ export interface Database {
         };
         Relationships: [];
       };
+      // 0024 法務文書の最新版（未ログインでも参照可）
+      current_legal_documents: {
+        Row: {
+          slug: string | null;
+          id: string | null;
+          version: string | null;
+          title: string | null;
+          body: string | null;
+          requires_consent: boolean | null;
+          published_at: Timestamptz | null;
+        };
+        Relationships: [];
+      };
+      wallet_expiry: {
+        Row: {
+          user_id: string | null;
+          balance: number | null;
+          last_activity_at: Timestamptz | null;
+          expires_on: string | null;
+        };
+        Relationships: [];
+      };
       // 0023 招待のレビュー用
       admin_referral_rows: {
         Row: {
@@ -806,6 +832,10 @@ export interface Database {
       cancel_exchange: { Args: { p_request_id: string; p_reason?: string }; Returns: Json };
       mark_notification_read: { Args: { p_id: string }; Returns: Json };
       record_ad_impression: { Args: { p_placement: string; p_ad_type: string; p_network_id?: string | null }; Returns: Json };
+      // 0024 法務・年齢確認・有効期限
+      accept_legal: { Args: { p_slug: string; p_version: string }; Returns: Json };
+      pending_legal_consents: { Args: Record<string, never>; Returns: Json };
+      set_date_of_birth: { Args: { p_dob: string }; Returns: Json };
       // 0023 招待・リファラル
       my_referral_status: { Args: Record<string, never>; Returns: Json };
       redeem_referral_code: { Args: { p_code: string }; Returns: Json };

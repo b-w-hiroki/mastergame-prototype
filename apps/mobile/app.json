@@ -9,8 +9,29 @@
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
     "splash": { "backgroundColor": "#0c0e16" },
-    "ios": { "supportsTablet": true, "bundleIdentifier": "jp.criticalhit.mastergame" },
-    "android": { "package": "jp.criticalhit.mastergame" },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "jp.criticalhit.mastergame",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "提携先で達成したミッションを正しくあなたのアカウントに反映し、ポイントをお渡しするために使用します。",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "jp.criticalhit.mastergame",
+      "permissions": [
+        "com.google.android.gms.permission.AD_ID",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
     "web": {
       "bundler": "metro",
       "output": "single",
@@ -26,7 +47,10 @@
       "backgroundColor": "#0c0e16",
       "description": "ポイ活 × ゲームコミュニティ。遊ぶほど得をする。"
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      ["expo-notifications", { "color": "#4f46e5" }]
+    ],
     "experiments": { "typedRoutes": true }
   }
 }
