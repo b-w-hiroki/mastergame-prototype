@@ -60,6 +60,13 @@ export interface Database {
           partner_id: string | null;
           is_active: boolean;
           created_at: Timestamptz;
+          // 0025 ゲームハブ
+          description: string | null;
+          cover_url: string | null;
+          publisher: string | null;
+          platforms: string[];
+          released_on: string | null;
+          is_featured: boolean;
         };
         Insert: {
           id?: string;
@@ -70,6 +77,12 @@ export interface Database {
           partner_id?: string | null;
           is_active?: boolean;
           created_at?: Timestamptz;
+          description?: string | null;
+          cover_url?: string | null;
+          publisher?: string | null;
+          platforms?: string[];
+          released_on?: string | null;
+          is_featured?: boolean;
         };
         Update: Partial<Database['public']['Tables']['games']['Insert']>;
         Relationships: [];
@@ -608,6 +621,13 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['user_moderation_state']['Insert']>;
         Relationships: [];
       };
+      // 0025 タイトルのフォロー
+      user_games: {
+        Row: { user_id: string; game_id: string; followed_at: Timestamptz };
+        Insert: { user_id: string; game_id: string; followed_at?: Timestamptz };
+        Update: Partial<Database['public']['Tables']['user_games']['Insert']>;
+        Relationships: [];
+      };
       // 0023 招待・リファラル
       referrals: {
         Row: {
@@ -757,6 +777,27 @@ export interface Database {
         };
         Relationships: [];
       };
+      // 0025 ゲームハブ一覧
+      game_hub_rows: {
+        Row: {
+          id: string | null;
+          slug: string | null;
+          name: string | null;
+          genre: string | null;
+          description: string | null;
+          icon_url: string | null;
+          cover_url: string | null;
+          publisher: string | null;
+          platforms: string[] | null;
+          released_on: string | null;
+          is_featured: boolean | null;
+          forum_id: string | null;
+          followers: number | null;
+          topic_count: number | null;
+          last_activity_at: Timestamptz | null;
+        };
+        Relationships: [];
+      };
       // 0024 法務文書の最新版（未ログインでも参照可）
       current_legal_documents: {
         Row: {
@@ -832,6 +873,21 @@ export interface Database {
       cancel_exchange: { Args: { p_request_id: string; p_reason?: string }; Returns: Json };
       mark_notification_read: { Args: { p_id: string }; Returns: Json };
       record_ad_impression: { Args: { p_placement: string; p_ad_type: string; p_network_id?: string | null }; Returns: Json };
+      // 0025 ゲームハブ
+      my_game_feed: {
+        Args: { p_limit?: number };
+        Returns: {
+          topic_id: string;
+          forum_id: string;
+          game_id: string;
+          game_name: string;
+          kind: string;
+          title: string;
+          reply_count: number;
+          has_bounty: boolean;
+          last_activity_at: Timestamptz;
+        }[];
+      };
       // 0024 法務・年齢確認・有効期限
       accept_legal: { Args: { p_slug: string; p_version: string }; Returns: Json };
       pending_legal_consents: { Args: Record<string, never>; Returns: Json };
