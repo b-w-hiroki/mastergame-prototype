@@ -9,6 +9,11 @@ type Funnel = {
   view_to_tap_pct: number; tap_to_claim_pct: number; overall_pct: number;
 };
 type EventRow = { name: string; events: number; users: number; last_seen: string };
+type Streak = {
+  users_with_streak: number; streak_3plus: number; streak_7plus: number;
+  claimed_today: number; claimed_yesterday: number;
+  avg_current_streak: number; best_streak: number;
+};
 type Cohort = {
   cohort_date: string; cohort_size: number;
   d1: number; d7: number; d30: number; d1_pct: number; d7_pct: number;
@@ -64,11 +69,12 @@ function DauChart({ rows }: { rows: Daily[] }) {
 export default async function Analytics() {
   await requireAdmin();
   const db = getAdminClient();
-  const [dailyRes, funnelRes, eventsRes, cohortRes] = await Promise.all([
+  const [dailyRes, funnelRes, eventsRes, cohortRes, streakRes] = await Promise.all([
     db.from('analytics_daily').select('*').order('day', { ascending: true }),
     db.from('mission_funnel').select('*').single(),
     db.from('event_funnel').select('*').order('events', { ascending: false }).limit(30),
     db.from('retention_cohorts').select('*').order('cohort_date', { ascending: false }).limit(14),
+    db.from('admin_streak_summary').select('*').single(),
   ]);
 
   if (dailyRes.error) {
@@ -87,6 +93,7 @@ export default async function Analytics() {
   const funnel = (funnelRes.data as unknown as Funnel) ?? null;
   const events = (eventsRes.data as unknown as EventRow[]) ?? [];
   const cohorts = (cohortRes.data as unknown as Cohort[]) ?? [];
+  const streak = (streakRes.data as unknown as Streak) ?? null;
 
   const today = daily.at(-1);
   const totalEvents = daily.reduce((a, r) => a + Number(r.events ?? 0), 0);
@@ -148,6 +155,24 @@ export default async function Analytics() {
           ⚠ タップしたのに達成が確定しないユーザーが {100 - funnel.tap_to_claim_pct}% います。
           エラー（重複達成・期限切れ・検証待ち）が多い可能性があります。
         </p>
+      )}
+
+      <h2 style={{ fontSize: 15, marginTop: 26 }}>連続ログイン（ストリーク）</h2>
+      <div className="sub">
+        リテンション施策の効果は、上のコホート（D1/D7）と合わせて判断してください。
+        「昨日受け取ったが今日はまだ」の差が大きい日は、通知のタイミングを見直す材料になります。
+      </div>
+      {streak ? (
+        <div className="kpis">
+          <div className="kpi"><div className="l">今日受け取った</div><div className="v">{jp(streak.claimed_today)}<small> 人</small></div></div>
+          <div className="kpi"><div className="l">昨日受け取った</div><div className="v">{jp(streak.claimed_yesterday)}<small> 人</small></div></div>
+          <div className="kpi"><div className="l">3日以上継続</div><div className="v">{jp(streak.streak_3plus)}<small> 人</small></div></div>
+          <div className="kpi"><div className="l">7日到達</div><div className="v">{jp(streak.streak_7plus)}<small> 人</small></div></div>
+          <div className="kpi"><div className="l">平均継続日数</div><div className="v">{streak.avg_current_streak}<small> 日</small></div></div>
+          <div className="kpi"><div className="l">最長記録</div><div className="v">{jp(streak.best_streak)}<small> 日</small></div></div>
+        </div>
+      ) : (
+        <p className="note">まだストリークのデータがありません。</p>
       )}
 
       <h2 style={{ fontSize: 15, marginTop: 26 }}>リテンション（登録日コホート）</h2>

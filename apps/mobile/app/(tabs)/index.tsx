@@ -7,6 +7,8 @@ import { colors } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import { useReward } from '@/components/RewardToast';
+import { StreakCard, type StreakState } from '@/components/StreakCard';
+import { track, EVENTS } from '@/lib/analytics';
 import type { Mission, NudgeTarget, VipInfo, AppNotification } from '@/lib/types';
 
 /**
@@ -20,6 +22,8 @@ export default function Home() {
   const [nudge, setNudge] = useState<NudgeTarget | null>(null);
   const [news, setNews] = useState<AppNotification[]>([]);
   const [claiming, setClaiming] = useState<string | null>(null);
+  const [streak, setStreak] = useState<StreakState | null>(null);
+  const [streakBusy, setStreakBusy] = useState(false);
 
   const load = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
@@ -31,6 +35,8 @@ export default function Home() {
       supabase.from('user_vip').select('*').eq('user_id', u.user.id).single(),
       supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(3),
     ]);
+    const { data: st } = await supabase.rpc('my_streak');
+    setStreak((st as unknown as StreakState) ?? null);
     setBalance(wallet?.balance ?? 0);
     setMissions(ms ?? []);
     // n は RPC(jsonb) / nt.payload は jsonb 列。境界で domain 形へ変換する。
@@ -51,6 +57,25 @@ export default function Home() {
       return;
     }
     reward.show(m.reward_points, m.title);
+    reload().catch(() => {});
+  }
+
+  // 連続ログインボーナスの受け取り。日付判定はサーバ側（端末の時計は信用しない）。
+  async function claimStreak() {
+    track(EVENTS.streakClaimTap, { day: streak?.next_day_index });
+    setStreakBusy(true);
+    const { data, error: sErr } = await supabase.rpc('claim_daily_streak');
+    setStreakBusy(false);
+    if (sErr) { Alert.alert('受け取れませんでした', sErr.message); return; }
+
+    const res = data as unknown as { status: string; reward?: number; streak?: number };
+    if (res.status !== 'ok') {
+      // duplicate（既に受け取り済み）は表示を最新化するだけでよい
+      reload().catch(() => {});
+      return;
+    }
+    track(EVENTS.streakClaimed, { day: res.streak, reward: res.reward });
+    reward.show(res.reward ?? 0, `連続${res.streak}日目`);
     reload().catch(() => {});
   }
 
@@ -78,6 +103,11 @@ export default function Home() {
           </View>
           <View style={s.chip}><Text style={s.chipText}>🪙 {balance.toLocaleString()} P</Text></View>
         </View>
+
+        {/* 連続ログインは毎日開く動機そのものなので、ナッジより上（最初に目に入る位置）に置く */}
+        {streak && (
+          <StreakCard state={streak} busy={streakBusy} onClaim={() => { void claimStreak(); }} />
+        )}
 
         {nudge?.gap != null && nudge.gap > 0 && (
           <View style={s.nudge}>
