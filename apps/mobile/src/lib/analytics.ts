@@ -106,4 +106,6 @@ export const EVENTS = {
   offerTap: 'offer_tap',
   exchangeRequested: 'exchange_requested',
   inviteShared: 'invite_shared',
+  streakClaimTap: 'streak_claim_tap',
+  streakClaimed: 'streak_claimed',
 } as const;

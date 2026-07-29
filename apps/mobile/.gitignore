@@ -9,3 +9,9 @@ web-build/
 .env
 .env.local
 .env*.local
+
+# ストア提出用の資格情報（絶対にコミットしない）
+google-play-service-account.json
+*.p8
+*.p12
+*.mobileprovision

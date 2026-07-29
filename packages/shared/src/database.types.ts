@@ -621,6 +621,25 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['user_moderation_state']['Insert']>;
         Relationships: [];
       };
+      // 0029 連続ログイン（ストリーク）
+      user_streaks: {
+        Row: {
+          user_id: string; current_streak: number; longest_streak: number;
+          last_claim_on: string | null; total_claims: number; updated_at: Timestamptz;
+        };
+        Insert: {
+          user_id: string; current_streak?: number; longest_streak?: number;
+          last_claim_on?: string | null; total_claims?: number; updated_at?: Timestamptz;
+        };
+        Update: Partial<Database['public']['Tables']['user_streaks']['Insert']>;
+        Relationships: [];
+      };
+      streak_rewards: {
+        Row: { day_index: number; reward_points: number; label: string | null };
+        Insert: { day_index: number; reward_points: number; label?: string | null };
+        Update: Partial<Database['public']['Tables']['streak_rewards']['Insert']>;
+        Relationships: [];
+      };
       // 0027 問い合わせ・CS
       inquiries: {
         Row: {
@@ -843,6 +862,15 @@ export interface Database {
         };
         Relationships: [];
       };
+      // 0029 ストリークの集計
+      admin_streak_summary: {
+        Row: {
+          users_with_streak: number | null; streak_3plus: number | null; streak_7plus: number | null;
+          claimed_today: number | null; claimed_yesterday: number | null;
+          avg_current_streak: number | null; best_streak: number | null;
+        };
+        Relationships: [];
+      };
       // 0028 計測の集計
       analytics_daily: {
         Row: { day: string | null; active_users: number | null; events: number | null; sessions: number | null };
@@ -998,6 +1026,10 @@ export interface Database {
       cancel_exchange: { Args: { p_request_id: string; p_reason?: string }; Returns: Json };
       mark_notification_read: { Args: { p_id: string }; Returns: Json };
       record_ad_impression: { Args: { p_placement: string; p_ad_type: string; p_network_id?: string | null }; Returns: Json };
+      // 0029 連続ログイン（ストリーク）
+      claim_daily_streak: { Args: Record<string, never>; Returns: Json };
+      my_streak: { Args: Record<string, never>; Returns: Json };
+      service_today: { Args: Record<string, never>; Returns: string };
       // 0028 行動イベント計測
       record_events: { Args: { p_events: Json }; Returns: Json };
       purge_app_events: { Args: { p_dry_run?: boolean }; Returns: Json };
