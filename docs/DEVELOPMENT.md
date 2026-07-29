@@ -47,6 +47,10 @@ supabase gen types typescript --local > apps/mobile/src/lib/database.types.ts
 
 **本番化**：手順は **[docs/PRODUCTION.md](PRODUCTION.md)**（Supabase作成→push→functions→OAuth→アプリ/管理デプロイ→広告連携）。
 
+**リリース（ストア提出）**：**[docs/RELEASE.md](RELEASE.md)** に EAS のビルド/提出手順と
+**ストア審査チェックリスト**（実装済みの項目／法務確認など人の作業が残っている項目の区別）、
+プライバシー申告の対応表、定期実行ジョブをまとめています。
+
 すべて RLS 有効。ポイント残高・台帳の書き込みは SECURITY DEFINER の RPC 経由のみ。
 
 ## 2. モバイルアプリ（Expo）
