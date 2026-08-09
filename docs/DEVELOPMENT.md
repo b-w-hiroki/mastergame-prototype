@@ -132,11 +132,50 @@ PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres \
 - `supabase/tests/95_support_test.sql` … 問い合わせの作成/返信・日次上限・他人への返信拒否・運営回答と通知・対応コンテキスト
 - `supabase/tests/96_analytics_events_test.sql` … バッチ送信/件数上限/イベント名検証・ファネル（連打で歪まない）・D1リテンション・保持期間
 - `supabase/tests/97_streak_test.sql` … 連続日数の加算/一巡/リセット・同日二重付与の防止（**行を改竄しても増えない**）・BAN/凍結/退会の除外
+- `supabase/tests/98_rls_test.sql` … **RLS の実効性**。`set role authenticated / anon` に切り替え、他人の行が見えないこと・直接書き込めないこと・運用設定が漏れないことを本番と同じロールで検証
 
 > ランナーは `*_test.sql` を広く拾います（以前は `[0-9]*_test.sql` だったため、命名が
 > 数字で始まらないテストが**黙ってスキップ**されていました）。0件なら失敗させます。
 
 各テストは `begin; … rollback;` で隔離。アサーション失敗（`RAISE EXCEPTION`）で非0終了します。
+
+## RLS の実効性とテストハーネスの忠実性（0030）
+
+### 何が問題だったか
+
+Supabase は `public` スキーマのテーブルに対し `anon` / `authenticated` へ**既定で全権限を付与**します
+（だから RLS が必須になる）。ところが**テストハーネスがこれを再現していませんでした**。その結果:
+
+1. **RLS ポリシーが一度も実効テストされていなかった** — 他のテストは superuser で走るため
+   RLS を完全にバイパスします。「ポリシーが実際に行を絞れているか」は未検証でした。
+2. **`revoke ... from anon, authenticated` が検証できていなかった** — 元から権限が無いので
+   剥奪は素通りし、`has_table_privilege(...) = false` のアサーションは**空振り**していました。
+
+### 直したこと
+
+- ハーネスが Supabase の既定権限を再現するように（`alter default privileges` ＋ `auth` スキーマの usage）。
+  これで既存の権限アサーションが**初めて意味を持つ**ようになりました。
+- `98_rls_test.sql` を追加。`set role authenticated / anon` に切り替えて**本番と同じロール**で検証します。
+- `0030_grant_hardening.sql` で不要な既定権限を明示的に剥奪。
+
+### 監査結果
+
+**RLS が無効なテーブルはゼロ＝実データの漏洩はありませんでした。** ただし以下は塞いでいます:
+
+- `app_config` … ポリシーが `using (true)` で**誰でも読めた**。中身は `payout_ratio_bps` /
+  `redemption_mix_*`（**粗利構造**）と `daily_offer_cap` / `referral_referrer_daily_cap`
+  （**不正対策の閾値**）。アプリからは一切読んでいないため完全に閉じました。
+- `revenue_benchmarks` … アクション別の**収益単価（円）**。同上。
+- `ad_partners`（署名鍵の参照）/ `fraud_flags` / `fraud_settings` / `app_events` / `user_roles` …
+  RLS で全拒否されてはいたが、権限も剥奪（将来ポリシーを1つ足した瞬間に露出するため）。
+- `user_devices` / `legal_acceptances` / `account_deletions` / `referrals` / `push_tokens` …
+  「自分の行を読む」ポリシーがあるのに GRANT が無く**到達不能**だったため、SELECT を付与。
+
+### 知っておくべき挙動
+
+**RLS は UPDATE / DELETE では例外を投げず、対象行を0件に絞ります**（例外を投げるのは INSERT）。
+そのため書き込み拒否のテストは「エラーになること」ではなく
+**「データが変わらないこと」**で検証しないと空振りします。
 
 ## 連続ログイン（ストリーク）（0029）
 
