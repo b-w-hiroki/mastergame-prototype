@@ -84,6 +84,34 @@ select cron.schedule('accrue-staking-monthly', '10 0 1 * *',
 
 各プロジェクト適用後に `npm run check:supabase`（上記）で設定を検証してから配信します。
 
+### スモークチェックが見ているもの
+
+`scripts/check-supabase.mjs` は**実プロジェクトに対して REST 越しに**以下を確認します。
+ローカルのDBテストとは別物で、「PostgREST 経由で本当にその通り動くか」を見る唯一の手段です。
+
+| 分類 | 内容 |
+|---|---|
+| 公開カタログ | `missions` / `exchange_items` / `vip_tiers` が anon で読める |
+| **登録前に見せる面** | `game_hub_rows` / `current_legal_documents` / `games` が anon で読める |
+| **漏れてはいけないもの** | `app_config`（粗利構造・各種上限）/ `fraud_settings` / `revenue_benchmarks` / `ad_partners` / `app_events` / `fraud_flags` / `user_roles` が anon から読めない |
+| 内部RPC | `apply_points` / `process_account_deletions` / `expire_points` / `support_user_context` / `resolve_fraud_flag` 等が anon から実行できない |
+| 認証必須RPC | `claim_daily_streak` / `create_inquiry` / `record_events` / `register_device` 等が未ログインで通らない |
+| マイグレーション適用 | 0021〜0029 の各テーブル/ビューが存在する（**ブラウザ経由で古い `setup_all.sql` を流した場合ここで落ちる**） |
+| **法務文書の下書き検出** | 公開中の規約類に `〔` が残っていないか（差し替え漏れのままリリースするのを防ぐ） |
+
+> `game_hub_rows` は権限剥孤の副作用で一度壊した実績があるため、**実環境での確認を必ず通してください**。
+
+### ステージングで通しで確認する手順
+
+1. Supabase でステージング用プロジェクトを作成
+2. `supabase link --project-ref <staging_ref>` → `supabase db push`
+   （ブラウザだけで済ませたい場合は `supabase/setup_all.sql` を SQL Editor に貼って実行）
+3. `SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/check-supabase.mjs`
+4. Edge Function をデプロイ（`postback` / `offer-postback` / `send-push`）
+5. アプリの env をステージング値にして、実アカウントで
+   **サインアップ → ミッション達成 → 連続ログイン → 交換申請 → 問い合わせ → 退会** を一周する
+6. 運営コンソールを同じ値に向け、`/economy` `/analytics` `/fraud` `/support` が表示できることを確認
+
 ### OAuth プロバイダ（Supabase → Authentication → Providers）
 - 各プロバイダの Client ID / Secret を設定
 - Redirect URL に `https://<ref>.supabase.co/auth/v1/callback` を登録

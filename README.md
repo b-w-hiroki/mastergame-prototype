@@ -106,6 +106,7 @@
 ├── docs/
 │   ├── DEVELOPMENT.md        # 開発ガイド（セットアップ・スキーマ概要）
 │   ├── RELEASE.md            # リリース手順・ストア審査チェックリスト
+│   ├── LEGAL_REVIEW.md       # 法務レビュー依頼シート（論点整理）
 │   ├── MasterGame_仕様提案_MVP分割.pptx   # 提案デッキ（18枚）
 │   ├── build_deck.js                       # デッキ生成スクリプト（pptxgenjs）
 │   └── specs/                              # 機能仕様書（Markdown × 4）
@@ -123,6 +124,8 @@
 **本番化の手順 → [docs/PRODUCTION.md](docs/PRODUCTION.md)**（Supabase 作成 → `db push` → functions deploy → OAuth 設定 → アプリ/管理デプロイ → 広告連携）。
 
 **ストア提出 → [docs/RELEASE.md](docs/RELEASE.md)**（EAS ビルド/提出、審査チェックリスト、プライバシー申告の対応表、定期実行ジョブ）。
+
+**法務レビュー → [docs/LEGAL_REVIEW.md](docs/LEGAL_REVIEW.md)**（弁護士へそのまま渡せる論点整理。資金決済法・景表法・未成年・個人情報）。
 
 ## ローカルで動かす
 
