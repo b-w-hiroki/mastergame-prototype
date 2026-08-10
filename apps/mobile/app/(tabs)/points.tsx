@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { colors, pointsToYen } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
+import { formatDate } from '@/lib/notifications';
 import type { LedgerEntry, VipInfo, StakingAccrual, Wallet } from '@/lib/types';
 
 /**
@@ -16,20 +17,23 @@ export default function Points() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [vip, setVip] = useState<VipInfo | null>(null);
   const [staking, setStaking] = useState<StakingAccrual[]>([]);
+  const [expiresOn, setExpiresOn] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    const [{ data: w }, { data: l }, { data: v }, { data: st }] = await Promise.all([
+    const [{ data: w }, { data: l }, { data: v }, { data: st }, { data: ex }] = await Promise.all([
       supabase.from('point_wallets').select('*').eq('user_id', u.user.id).single(),
       supabase.from('point_ledger').select('*').order('created_at', { ascending: false }).limit(40),
       supabase.from('user_vip').select('*').eq('user_id', u.user.id).single(),
       supabase.from('staking_accruals').select('*').order('period', { ascending: false }).limit(6),
+      supabase.from('wallet_expiry').select('expires_on').eq('user_id', u.user.id).single(),
     ]);
     setWallet(w ?? null);
     setLedger(l ?? []);
     setVip(v ?? null);
     setStaking(st ?? []);
+    setExpiresOn((ex as { expires_on: string | null } | null)?.expires_on ?? null);
   }, []);
 
   const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
@@ -67,6 +71,11 @@ export default function Points() {
             <View><Text style={s.miniLabel}>累計獲得</Text><Text style={s.miniVal}>{(wallet?.lifetime_earned ?? 0).toLocaleString()} P</Text></View>
             <View><Text style={s.miniLabel}>累計使用</Text><Text style={s.miniVal}>{(wallet?.lifetime_spent ?? 0).toLocaleString()} P</Text></View>
           </View>
+          {expiresOn != null && (wallet?.balance ?? 0) > 0 && (
+            <Text style={s.expiry}>
+              有効期限: {formatDate(expiresOn)}（ポイントを獲得・使用すると延長されます）
+            </Text>
+          )}
         </View>
 
         <Text style={s.section}>ポイント推移</Text>
@@ -134,6 +143,7 @@ const s = StyleSheet.create({
   balNum: { color: '#fff', fontSize: 34, fontWeight: '900', marginTop: 4 },
   p: { fontSize: 18 },
   balYen: { color: '#aeb3c8', fontSize: 12, marginTop: 4 },
+  expiry: { fontSize: 11, color: colors.warn, fontWeight: '700', marginTop: 10 },
   balRow: { flexDirection: 'row', gap: 28, marginTop: 16 },
   miniLabel: { color: '#9aa0c0', fontSize: 11, fontWeight: '700' },
   miniVal: { color: '#fff', fontSize: 14, fontWeight: '800', marginTop: 2 },

@@ -8,6 +8,7 @@ import { useLoader } from '@/lib/useLoader';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import { useReward } from '@/components/RewardToast';
 import { StreakCard, type StreakState } from '@/components/StreakCard';
+import { resolveNotification } from '@/lib/notifications';
 import { track, EVENTS } from '@/lib/analytics';
 import type { Mission, NudgeTarget, VipInfo, AppNotification } from '@/lib/types';
 
@@ -79,12 +80,16 @@ export default function Home() {
     reload().catch(() => {});
   }
 
-  // お知らせタップで既読化（未読のみ）。0017 の mark_notification_read RPC。
+  // お知らせタップで既読化し、種別ごとの画面へ遷移（解決ロジックは lib/notifications）。
   async function openNews(n: AppNotification) {
+    const view = resolveNotification(n);
     if (!n.read_at) {
-      await supabase.rpc('mark_notification_read', { p_id: n.id });
-      reload().catch(() => {});
+      // PostgREST のビルダーは thenable（.catch を持たない）なので Promise に包む
+      Promise.resolve(supabase.rpc('mark_notification_read', { p_id: n.id }))
+        .then(() => reload())
+        .catch(() => {});
     }
+    if (view.href) router.push(view.href as never);
   }
 
   return (
@@ -129,16 +134,24 @@ export default function Home() {
 
         {news.length > 0 && (
           <>
-            <Text style={s.section}>お知らせ</Text>
-            {news.map((n) => (
-              <Pressable key={n.id} style={s.newsItem} onPress={() => openNews(n).catch(() => {})}>
-                <View style={s.newsHead}>
-                  {!n.read_at && <View style={s.unread} />}
-                  <Text style={s.newsType}>{labelOf(n.type)}</Text>
-                </View>
-                <Text style={s.newsBody} numberOfLines={2}>{String(n.payload?.message ?? n.payload?.title ?? '通知があります')}</Text>
+            <View style={s.sectionRow}>
+              <Text style={s.section}>お知らせ</Text>
+              <Pressable onPress={() => router.push('/notifications')} accessibilityRole="button">
+                <Text style={s.moreLink}>すべて見る ›</Text>
               </Pressable>
-            ))}
+            </View>
+            {news.map((n) => {
+              const v = resolveNotification(n);
+              return (
+                <Pressable key={n.id} style={s.newsItem} onPress={() => openNews(n).catch(() => {})}>
+                  <View style={s.newsHead}>
+                    {!n.read_at && <View style={s.unread} />}
+                    <Text style={s.newsType}>{v.icon} {v.title}</Text>
+                  </View>
+                  {v.body && <Text style={s.newsBody} numberOfLines={2}>{v.body}</Text>}
+                </Pressable>
+              );
+            })}
           </>
         )}
 
@@ -160,13 +173,6 @@ export default function Home() {
   );
 }
 
-function labelOf(type: string): string {
-  const m: Record<string, string> = {
-    reply: '返信', best_answer: 'ベストアンサー', reaction: 'リアクション',
-    report_result: '通報結果', system: 'お知らせ',
-  };
-  return m[type] ?? 'お知らせ';
-}
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
@@ -184,6 +190,8 @@ const s = StyleSheet.create({
   actionText: { color: colors.accent, fontWeight: '800', fontSize: 12, marginTop: 4 },
   section: { fontSize: 12, fontWeight: '800', color: colors.sub, marginTop: 20, marginBottom: 10 },
   empty: { color: colors.muted, fontSize: 13 },
+  sectionRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  moreLink: { fontSize: 12, fontWeight: '800', color: colors.accent },
   newsItem: { backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, borderRadius: 12, padding: 12, marginBottom: 8 },
   newsHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   unread: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.danger },
