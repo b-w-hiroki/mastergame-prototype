@@ -34,10 +34,11 @@ export default function Notifications() {
     const view = resolveNotification(n);
     // 既読化は遷移を待たせない（失敗しても一覧の再取得で回復する）
     if (!n.read_at) {
+      const readAt = new Date().toISOString();
+      setList((current) => current.map((row) => row.id === n.id ? { ...row, read_at: readAt } : row));
       // PostgREST のビルダーは thenable（.catch を持たない）なので Promise に包む
       Promise.resolve(supabase.rpc('mark_notification_read', { p_id: n.id }))
-        .then(() => reload())
-        .catch(() => {});
+        .catch(() => { reload().catch(() => {}); });
     }
     if (view.href) router.push(view.href as never);
   }
@@ -50,8 +51,9 @@ export default function Notifications() {
     for (const n of unread) {
       try { await supabase.rpc('mark_notification_read', { p_id: n.id }); } catch { /* 個別失敗は無視 */ }
     }
+    const readAt = new Date().toISOString();
+    setList((current) => current.map((n) => n.read_at ? n : { ...n, read_at: readAt }));
     setBusy(false);
-    reload().catch(() => {});
   }
 
   const unreadCount = list.filter((n) => !n.read_at).length;

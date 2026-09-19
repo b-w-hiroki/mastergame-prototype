@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 
 const mockRpc = jest.fn();
 let mockRows: unknown[] = [];
@@ -70,7 +70,10 @@ describe('Notifications screen', () => {
     mockRows = [notif()];
     render(<Notifications />);
     await waitFor(() => expect(screen.getByText('お問い合わせに回答があります')).toBeTruthy());
-    fireEvent.press(screen.getByText('お問い合わせに回答があります'));
+    await act(async () => {
+      fireEvent.press(screen.getByText('お問い合わせに回答があります'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     await waitFor(() =>
       expect(mockRpc).toHaveBeenCalledWith('mark_notification_read', { p_id: 'n1' }),
     );
@@ -98,7 +101,10 @@ describe('Notifications screen', () => {
     mockRows = [notif(), notif({ id: 'n2' }), notif({ id: 'n3', read_at: '2026-08-01T00:00:00Z' })];
     render(<Notifications />);
     await waitFor(() => expect(screen.getByText('未読 2 件')).toBeTruthy());
-    fireEvent.press(screen.getByText('すべて既読にする'));
+    await act(async () => {
+      fireEvent.press(screen.getByText('すべて既読にする'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2));
     expect(mockRpc).toHaveBeenCalledWith('mark_notification_read', { p_id: 'n1' });
     expect(mockRpc).toHaveBeenCalledWith('mark_notification_read', { p_id: 'n2' });
