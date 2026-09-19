@@ -13,7 +13,15 @@ insert into public.vip_tiers (name, min_xp, staking_rate_bps, point_boost_bps, s
 -- ad networks
 insert into public.ad_networks (code, name, priority) values
   ('applovin','AppLovin',10),('tapjoy','Tapjoy',20),
-  ('ironsource','ironSource',30),('pollfish','PollFish',40);
+  ('ironsource','ironSource',30),('pollfish','PollFish',40),
+  ('mastergame-test','MasterGame Test',1);
+
+-- Local/closed-test postback partner. The actual secret is never stored in SQL;
+-- configure POSTBACK_SECRET_TEST_PARTNER in the Edge Function environment.
+insert into public.ad_partners
+  (name, slug, signing_secret_ref, attribution_window, postback_mode)
+values
+  ('MasterGame Test Partner','test-partner','env:POSTBACK_SECRET_TEST_PARTNER',interval '24 hours','sandbox');
 
 -- games (genre-based)
 insert into public.games (slug, name, genre) values
@@ -32,6 +40,28 @@ insert into public.missions (type, title, reward_points, xp_reward, icon, max_pr
   ('achievement','累計1,000,000P獲得',50000,500,'crown',1000000,false),
   ('event','『エルディア戦記』事前登録',50000,500,'sword',1,true),    -- 要postback検証
   ('offer','『パズルキングダム』をインストール',80000,300,'game',1,true);
+
+-- Verification missions need a partner before track_click can create attribution.
+update public.missions
+set partner_id = (select id from public.ad_partners where slug = 'test-partner')
+where requires_verification = true and partner_id is null;
+
+-- One offer is enough for the first end-to-end MVP loop. target_url remains null
+-- locally, so the mobile app opens its built-in test offer page.
+insert into public.offers
+  (network_id, external_id, mission_id, title, description, reward_points, event_type, status)
+select
+  n.id,
+  'mvp-install-001',
+  m.id,
+  '検証用ゲームをインストール',
+  'テストページ完了後、署名付きpostbackでポイントを確定します',
+  m.reward_points,
+  'install',
+  'active'
+from public.ad_networks n
+join public.missions m on m.title = '『パズルキングダム』をインストール'
+where n.code = 'mastergame-test';
 
 -- exchange items
 insert into public.exchange_items (name, game_id, cost_points, delivery_method, stock, sort)

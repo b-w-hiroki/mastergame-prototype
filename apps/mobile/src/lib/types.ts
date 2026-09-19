@@ -1,21 +1,28 @@
-// MasterGame ドメイン型（supabase/migrations と対応）。
-// 本番では `supabase gen types typescript` で自動生成に置換してください。
+// Domain types aligned with the Supabase schema under /supabase/migrations.
+// In production this file can be replaced by generated Supabase types.
 
 export type MissionType = 'daily' | 'weekly' | 'achievement' | 'event' | 'offer';
 export type CompletionStatus = 'pending' | 'confirmed' | 'rejected' | 'reversed';
 
 export type Genre =
-  | 'rpg' | 'action' | 'puzzle' | 'shooter' | 'strategy' | 'sports' | 'sim' | 'casual';
+  | 'rpg'
+  | 'action'
+  | 'puzzle'
+  | 'shooter'
+  | 'strategy'
+  | 'sports'
+  | 'sim'
+  | 'casual';
 
 export const GENRES: { key: Genre; label: string; emoji: string }[] = [
   { key: 'rpg', label: 'RPG', emoji: '⚔️' },
-  { key: 'action', label: 'アクション', emoji: '💥' },
+  { key: 'action', label: 'アクション', emoji: '🔥' },
   { key: 'puzzle', label: 'パズル', emoji: '🧩' },
-  { key: 'shooter', label: 'シューター', emoji: '🔫' },
+  { key: 'shooter', label: 'シューター', emoji: '🎯' },
   { key: 'strategy', label: 'ストラテジー', emoji: '♟️' },
-  { key: 'sports', label: 'スポーツ', emoji: '⚽' },
+  { key: 'sports', label: 'スポーツ', emoji: '🏆' },
   { key: 'sim', label: 'シミュレーション', emoji: '🏙️' },
-  { key: 'casual', label: 'カジュアル', emoji: '🎲' },
+  { key: 'casual', label: 'カジュアル', emoji: '🎮' },
 ];
 
 export interface Profile {
@@ -57,9 +64,11 @@ export interface MissionCompletion {
 
 export interface Offer {
   id: string;
+  mission_id: string | null;
   title: string;
   description: string | null;
   icon_url: string | null;
+  target_url: string | null;
   reward_points: number;
   event_type: string | null;
   status: 'active' | 'paused' | 'expired';
@@ -72,6 +81,16 @@ export interface ExchangeItem {
   delivery_method: 'csv' | 'code' | 'api';
   stock: number | null;
   game_id: string | null;
+}
+
+export interface ExchangeRequest {
+  id: string;
+  cost_points: number;
+  status: 'processing' | 'fulfilled' | 'cancelled';
+  code: string | null;
+  requested_at: string;
+  fulfilled_at: string | null;
+  exchange_items: { name: string; delivery_method: 'csv' | 'code' | 'api' } | null;
 }
 
 export interface LedgerEntry {

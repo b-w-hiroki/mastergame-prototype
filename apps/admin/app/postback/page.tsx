@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,7 @@ const fmt = (iso: string) => {
 };
 
 const countBy = async (status: Status) => {
+  const supabaseAdmin = getSupabaseAdmin();
   const { count } = await supabaseAdmin
     .from('postback_events')
     .select('*', { count: 'exact', head: true })
@@ -43,6 +45,8 @@ const countBy = async (status: Status) => {
 // 承認＝ポイント確定は Edge Function / confirm_postback の自動パイプラインが担う。
 async function reject(formData: FormData) {
   'use server';
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const id = String(formData.get('id'));
   await supabaseAdmin
     .from('postback_events')
@@ -53,6 +57,8 @@ async function reject(formData: FormData) {
 }
 
 export default async function Postback() {
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const [received, accepted, rejected, duplicate, reversed] = await Promise.all([
     countBy('received'), countBy('accepted'), countBy('rejected'), countBy('duplicate'), countBy('reversed'),
   ]);

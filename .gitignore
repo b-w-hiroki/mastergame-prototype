@@ -14,6 +14,14 @@ desktop.ini
 /tmp/
 *.tmp
 
+# secrets
+memo.txt
+.env
+.env.*
+!.env.example
+!**/.env.example
+supabase/.temp/
+
 # QA render artifacts
 docs/render/
 docs/render2/

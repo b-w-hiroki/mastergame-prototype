@@ -5,12 +5,13 @@ import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+export const hasSupabaseConfig = Boolean(url && anonKey);
 
-if (!url || !anonKey) {
+if (!hasSupabaseConfig) {
   console.warn('[supabase] EXPO_PUBLIC_SUPABASE_URL / ANON_KEY が未設定です（.env を参照）');
 }
 
-export const supabase = createClient(url ?? '', anonKey ?? '', {
+export const supabase = createClient(url ?? 'http://127.0.0.1:54321', anonKey ?? 'demo-anon-key', {
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,

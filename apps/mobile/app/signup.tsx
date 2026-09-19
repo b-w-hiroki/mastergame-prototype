@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
+import { Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -9,22 +9,40 @@ export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
 
   async function signUp() {
-    if (password.length < 8) {
-      Alert.alert('パスワードは8文字以上にしてください');
+    if (!email.trim()) {
+      setMessage('メールアドレスを入力してください。');
       return;
     }
+    if (password.length < 8) {
+      setMessage('パスワードは8文字以上にしてください。');
+      return;
+    }
+    setMessage('');
     setBusy(true);
-    // profiles / point_wallets は handle_new_user トリガで自動作成（0001_core.sql）
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { username: username || 'Player' } },
-    });
-    setBusy(false);
-    if (error) { Alert.alert('登録に失敗しました', error.message); return; }
-    router.replace('/'); // 確認不要設定なら即ログイン → ホーム
+    try {
+      // profiles / point_wallets は handle_new_user トリガで自動作成（0001_core.sql）
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { data: { username: username.trim() || 'Player' } },
+      });
+      if (error) {
+        setMessage(`登録に失敗しました: ${error.message}`);
+        return;
+      }
+      if (!data.session) {
+        setMessage('確認メールを送信しました。メール内のリンクを開いてからログインしてください。');
+        return;
+      }
+      router.replace('/');
+    } catch (error) {
+      setMessage(`登録に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -41,6 +59,7 @@ export default function SignUp() {
       <Pressable style={[s.btn, busy && { opacity: 0.6 }]} onPress={signUp} disabled={busy}>
         <Text style={s.btnText}>{busy ? '...' : 'アカウントを作成'}</Text>
       </Pressable>
+      {message ? <Text style={s.message}>{message}</Text> : null}
 
       <Link href="/login" style={s.link}>すでにアカウントをお持ちの方はログイン</Link>
     </SafeAreaView>
@@ -54,5 +73,6 @@ const s = StyleSheet.create({
   input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d8dbe2', borderRadius: 12, padding: 14, marginBottom: 12, fontSize: 15 },
   btn: { backgroundColor: '#4f46e5', borderRadius: 12, padding: 15, alignItems: 'center', marginTop: 4 },
   btnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  message: { color: '#b42318', fontWeight: '600', fontSize: 13, marginTop: 12, textAlign: 'center' },
   link: { textAlign: 'center', color: '#4f46e5', fontWeight: '700', marginTop: 18 },
 });

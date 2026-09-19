@@ -21,7 +21,9 @@ create or replace function public.point_yen_rate() returns int
 $$;
 
 -- ポイント→円換算ヘルパー
-create or replace function public.points_to_yen(p bigint) returns numeric
+-- sum(bigint) returns numeric in PostgreSQL, so accept numeric here.
+-- bigint values continue to work through PostgreSQL's implicit cast.
+create or replace function public.points_to_yen(p numeric) returns numeric
   language sql stable as $$ select round(p::numeric / public.point_yen_rate()); $$;
 
 -- ---------- XP をポイントから分離（活動量ベース） ----------

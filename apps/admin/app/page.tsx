@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,8 @@ type Overview = {
 };
 
 export default async function Dashboard() {
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   // service_role で集計ビューを参照（admin_overview は 0007_admin.sql）
   const { data, error } = await supabaseAdmin.from('admin_overview').select('*').single<Overview>();
 

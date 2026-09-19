@@ -12,6 +12,9 @@ cp .env.example .env.local    # Supabase URL / anon / service_role を設定
 npm run dev                    # http://localhost:3000
 ```
 
+クラウド接続のローカル開発では、リポジトリルートから `npm run admin:dev:cloud` を実行できます。
+ログイン済みSupabase CLIからservice roleをプロセス環境へ一時注入し、秘密値はファイルへ保存しません。
+
 ## 構成
 
 ```
@@ -22,6 +25,8 @@ app/
   users/page.tsx      # ユーザー管理（admin_user_rows・保有P降順）
   missions/page.tsx   # ミッション管理（missions マスタ一覧）
   items/page.tsx      # 交換アイテム管理（exchange_items マスタ一覧）
+  exchanges/page.tsx  # 交換申請（完了／取消・返還）
+  login/page.tsx      # 管理者ログイン
   moderation/page.tsx # 通報・モデレーション（reports 一覧＋対応：削除/警告/却下）
   postback/page.tsx   # postback監視（状態集計・承認率＋検証中の却下）
   globals.css
@@ -45,6 +50,8 @@ lib/supabase/
 - ✅ ミッション管理 / 交換アイテム管理（マスタの作成・編集・稼働切替・削除を Server Actions で実装）
 - ✅ 通報・モデレーション（Server Actions で `moderation_actions` 記録＋`reports` 状態更新）
 - ✅ postback監視（状態別集計・承認率、検証中イベントの手動却下）
+- ✅ 管理者ログイン、ロール検証、Middleware／Server Actionsの二重認可
+- ✅ 交換申請一覧、完了、取消時のポイント・在庫返還
 
 ### PWA（インストール可能・オフライン対応）
 

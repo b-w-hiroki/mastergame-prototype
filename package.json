@@ -1,5 +1,13 @@
 {
+  "scripts": {
+    "test:postback": "node scripts/send-test-postback.mjs",
+    "admin:dev:cloud": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-admin-cloud.ps1",
+    "verify:mvp:cloud": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-mvp-cloud.ps1"
+  },
   "dependencies": {
     "pptxgenjs": "^4.0.1"
+  },
+  "devDependencies": {
+    "supabase": "^2.117.0"
   }
 }

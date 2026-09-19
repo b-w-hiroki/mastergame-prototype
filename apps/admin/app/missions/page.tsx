@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -53,6 +54,8 @@ const toIntOrNull = (v: FormDataEntryValue | null) => {
 // 作成 / 更新（マスタ。ポイント操作なし＝安全。service_role でRLSバイパス）
 async function saveMission(formData: FormData) {
   'use server';
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const id = String(formData.get('id') ?? '').trim();
   const title = String(formData.get('title') ?? '').trim();
   const reward = toIntOrNull(formData.get('reward_points'));
@@ -83,6 +86,8 @@ async function saveMission(formData: FormData) {
 
 async function toggleMission(formData: FormData) {
   'use server';
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const id = String(formData.get('id'));
   const next = String(formData.get('next')) === 'true';
   const { error } = await supabaseAdmin.from('missions').update({ is_active: next }).eq('id', id);
@@ -92,6 +97,8 @@ async function toggleMission(formData: FormData) {
 
 async function deleteMission(formData: FormData) {
   'use server';
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const id = String(formData.get('id'));
   const { error } = await supabaseAdmin.from('missions').delete().eq('id', id);
   if (error) throw new Error(error.message);
@@ -154,6 +161,8 @@ function MissionForm({ m }: { m?: Mission }) {
 }
 
 export default async function Missions() {
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from('missions')
     .select('id,type,title,description,reward_points,max_progress,requires_verification,is_active,starts_at,ends_at,created_at')

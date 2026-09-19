@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "export:web": "expo export -p web && node scripts/inject-pwa.mjs",
+    "serve:web": "node scripts/serve-spa.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

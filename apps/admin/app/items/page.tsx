@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -34,6 +35,8 @@ const toIntOrNull = (v: FormDataEntryValue | null) => {
 // 作成 / 更新（マスタ。ポイント操作なし＝安全。service_role でRLSバイパス）
 async function saveItem(formData: FormData) {
   'use server';
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const id = String(formData.get('id') ?? '').trim();
   const name = String(formData.get('name') ?? '').trim();
   const cost = toIntOrNull(formData.get('cost_points'));
@@ -64,6 +67,8 @@ async function saveItem(formData: FormData) {
 
 async function toggleItem(formData: FormData) {
   'use server';
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const id = String(formData.get('id'));
   const next = String(formData.get('next')) === 'true';
   const { error } = await supabaseAdmin.from('exchange_items').update({ is_active: next }).eq('id', id);
@@ -73,6 +78,8 @@ async function toggleItem(formData: FormData) {
 
 async function deleteItem(formData: FormData) {
   'use server';
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const id = String(formData.get('id'));
   const { error } = await supabaseAdmin.from('exchange_items').delete().eq('id', id);
   if (error) throw new Error(error.message);
@@ -125,6 +132,8 @@ function ItemForm({ it }: { it?: Item }) {
 }
 
 export default async function Items() {
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from('exchange_items')
     .select('id,name,description,cost_points,delivery_method,stock,is_active,sort,created_at')

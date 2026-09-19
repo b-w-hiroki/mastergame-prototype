@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,8 @@ const fmt = (iso: string) => {
 // 通報への運営対応：moderation_actions に記録し、reports の状態を更新する（ポイント操作なし＝安全）
 async function moderate(formData: FormData) {
   'use server';
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const id = String(formData.get('id'));
   const action = String(formData.get('action')) as 'delete' | 'warn' | 'dismiss';
   const target_type = String(formData.get('target_type'));
@@ -47,6 +50,8 @@ async function moderate(formData: FormData) {
 }
 
 export default async function Moderation() {
+  await requireAdmin();
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from('reports')
     .select('id,reporter_id,target_type,target_id,reason,detail,status,created_at,resolved_at')
