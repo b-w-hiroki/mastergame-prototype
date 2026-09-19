@@ -52,7 +52,8 @@ SUPABASE_SERVICE_ROLE_KEY=<service_role> \
   npm run check:supabase
 ```
 
-運用（定期実行）：
+運用（定期実行）：`0033_schedule_maintenance_jobs.sql` が `pg_cron` 対応環境で
+日次・月次ジョブを重複なく登録します。下記は月次ジョブの内容です。
 
 ```sql
 -- ステーキング月次付与（Supabase の Scheduled Functions / pg_cron 等で）

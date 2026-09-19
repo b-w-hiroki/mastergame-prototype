@@ -119,8 +119,9 @@ eas update --branch production --message "fix: ..."
 
 ## 4. バックエンドの定期実行
 
-本番では以下を日次で回します（`pg_cron` か外部スケジューラ）。
-**いずれも初回は `dry_run = true` で対象件数を確認してから本番実行してください。**
+本番では以下を `pg_cron` で定期実行します。`0033_schedule_maintenance_jobs.sql` が
+同名ジョブを重複させずに自動登録します。時刻は UTC（JST は +9 時間）です。
+**初回適用前に、変更系の関数は `dry_run = true` で対象件数を確認してください。**
 
 ```sql
 create extension if not exists pg_cron;
