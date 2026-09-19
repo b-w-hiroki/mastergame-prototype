@@ -15,6 +15,8 @@ desktop.ini
 # build / temp
 /tmp/
 *.tmp
+apps/admin/test-results/
+apps/admin/playwright-report/
 
 # QA render artifacts
 docs/render/

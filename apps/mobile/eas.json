@@ -7,7 +7,7 @@
     "base": {
       "node": "20.x",
       "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "https://REPLACE-ME.supabase.co"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://zjgkqruiltiqthjhgotk.supabase.co"
       }
     },
     "development": {
