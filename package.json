@@ -2,7 +2,7 @@
   "scripts": {
     "check:supabase": "node scripts/check-supabase.mjs"
   },
-  "dependencies": {
+  "devDependencies": {
     "pptxgenjs": "^4.0.1"
   }
 }

@@ -36,12 +36,12 @@ async function req(path, { key, method = 'GET', body } = {}) {
 }
 
 async function main() {
-  // 1) 公開カタログは anon で読めること（RLS: is_active）
+  // 1) 認証後にだけ見せるカタログは anon から読めないこと（0030）
   for (const table of ['missions', 'exchange_items', 'vip_tiers']) {
     try {
       const r = await req(`/rest/v1/${table}?select=id&limit=1`, { key: ANON });
-      record(r.status === 200, `anon が ${table} を読める`, `status=${r.status}`);
-    } catch (e) { record(false, `anon が ${table} を読める`, String(e)); }
+      record([401, 403, 404].includes(r.status), `anon が ${table} を読めない`, `status=${r.status}`);
+    } catch (e) { record(false, `anon が ${table} を読めない`, String(e)); }
   }
 
   // 2) 付与の内部口 apply_points は anon から実行できないこと（0013 の権限剥奪）

@@ -10,7 +10,7 @@ export { assertUuid, assertEnum, assertSlug } from '@/lib/validate';
 // ページ / server action の先頭で呼ぶ。管理者でなければ /login へ。
 // middleware が一次ゲートだが、action 単体で叩かれた場合の二次防御として必ず併用する。
 export async function requireAdmin(): Promise<User> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!isAdminUser(user)) redirect('/login');
   return user!;

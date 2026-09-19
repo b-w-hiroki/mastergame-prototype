@@ -7,7 +7,8 @@ import { supabase } from './supabase';
 // フォアグラウンドでも通知バナーを表示する
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),

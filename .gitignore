@@ -4,6 +4,8 @@ node_modules/
 # local tooling
 .claude/
 *.log
+memo.txt
+supabase/.temp/
 
 # OS
 .DS_Store
