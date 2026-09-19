@@ -3,6 +3,8 @@ node_modules/
 
 # local tooling
 .claude/
+.vercel/
+**/.vercel/
 *.log
 memo.txt
 supabase/.temp/
