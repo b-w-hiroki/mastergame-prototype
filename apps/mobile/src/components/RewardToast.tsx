@@ -41,7 +41,10 @@ export function useReward() {
 }
 
 const s = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', zIndex: 50 },
+  overlay: {
+    position: 'absolute', top: 0, right: 0, bottom: 0, left: 0,
+    alignItems: 'center', justifyContent: 'center', zIndex: 50,
+  },
   card: {
     backgroundColor: colors.ink, borderRadius: 18, paddingVertical: 20, paddingHorizontal: 30,
     alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 8,

@@ -76,10 +76,11 @@ async function close(formData: FormData) {
 export default async function Support({
   searchParams,
 }: {
-  searchParams: { id?: string };
+  searchParams: Promise<{ id?: string }>;
 }) {
   await requireAdmin();
   const db = getAdminClient();
+  const query = await searchParams;
 
   const { data, error } = await db
     .from('admin_inquiry_rows')
@@ -104,7 +105,7 @@ export default async function Support({
   const open = rows.filter((r) => r.status === 'open').length;
 
   // 選択中スレッドの本文と、対応に必要なユーザー情報をまとめて引く
-  const selected = searchParams.id ? rows.find((r) => r.id === searchParams.id) : undefined;
+  const selected = query.id ? rows.find((r) => r.id === query.id) : undefined;
   let messages: Message[] = [];
   let context: Context | null = null;
   if (selected) {

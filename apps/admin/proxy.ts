@@ -4,7 +4,7 @@ import { isAdminUser } from '@/lib/admin-check';
 
 // 全ルートの一次ゲート：未ログイン / 非管理者は /login へ。
 // service_role を使う server action / ページは requireAdmin() で二次防御する。
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

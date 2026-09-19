@@ -5,8 +5,8 @@ import type { Database } from '@mastergame/shared';
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 // 認証ユーザーのセッションに紐づくサーバークライアント（RLS 有効）
-export function createClient() {
-  const cookieStore = cookies();
+export async function createClient() {
+  const cookieStore = await cookies();
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

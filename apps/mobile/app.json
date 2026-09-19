@@ -6,9 +6,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "icon": "./assets/icon.png",
-    "splash": { "backgroundColor": "#0c0e16" },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "jp.criticalhit.mastergame",
@@ -49,8 +47,18 @@
     },
     "plugins": [
       "expo-router",
-      ["expo-notifications", { "color": "#4f46e5" }]
+      [
+        "expo-notifications",
+        {
+          "color": "#4f46e5"
+        }
+      ],
+      "expo-web-browser",
+      "expo-status-bar",
+      "expo-font"
     ],
-    "experiments": { "typedRoutes": true }
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }
