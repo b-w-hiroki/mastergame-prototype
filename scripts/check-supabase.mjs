@@ -144,6 +144,24 @@ async function main() {
       record(hasSandbox, 'seed の ad_partner(sandbox) が投入済み', hasSandbox ? '' : 'seed 未適用の可能性');
     } catch (e) { record(false, 'seed の ad_partner(sandbox) が投入済み', String(e)); }
 
+    try {
+      const r = await req('/rest/v1/offers?select=external_id,offer_url&status=eq.active', { key: SERVICE });
+      const invalid = Array.isArray(r.json)
+        ? r.json.filter((offer) => {
+            if (!offer.offer_url) return true;
+            try {
+              const host = new URL(offer.offer_url).hostname.toLowerCase();
+              return host === 'example.com' || host === 'www.example.com';
+            } catch {
+              return true;
+            }
+          }).map((offer) => offer.external_id)
+        : [];
+      record(r.status === 200 && invalid.length === 0,
+        'active オファーに未設定・ダミーURLがない',
+        invalid.length ? `要停止またはURL設定: ${invalid.join(', ')}` : `status=${r.status}`);
+    } catch (e) { record(false, 'active オファーのURL確認', String(e)); }
+
     // 新しいマイグレーション（0021〜0031）が適用されているか。
     // ブラウザ経由セットアップで setup_all.sql が古いと、ここだけ落ちる。
     for (const [path, label] of [

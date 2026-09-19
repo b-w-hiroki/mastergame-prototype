@@ -4804,6 +4804,29 @@ grant execute on function public.record_events(jsonb) to authenticated;
 
 
 -- ┌────────────────────────────────────────────────────────
+-- │ supabase/migrations/0032_release_offer_safety.sql
+-- └────────────────────────────────────────────────────────
+-- ============================================================
+-- 0032: 公開前のオファー安全化
+--
+-- URL 未設定または example.com のダミーURLを持つオファーが active だと、
+-- 利用者に達成不能な導線を表示してしまう。実ネットワークのURLが設定されるまで
+-- paused にし、管理画面で実値を確認してから明示的に再開する。
+-- ============================================================
+
+update public.offers
+set status = 'paused'
+where status = 'active'
+  and (
+    offer_url is null
+    or offer_url ~* '^https?://(www\.)?example\.com(?:/|$)'
+  );
+
+comment on column public.offers.status is
+  'active は実際に遷移可能な offer_url を設定・確認したオファーだけに使用する。';
+
+
+-- ┌────────────────────────────────────────────────────────
 -- │ supabase/seed.sql
 -- └────────────────────────────────────────────────────────
 -- ============================================================
@@ -4866,14 +4889,15 @@ update public.missions m
   set partner_id = (select id from public.ad_partners where slug = 'sandbox')
   where m.requires_verification and m.partner_id is null;
 
--- offers（offerwall。ad_networks に紐づく）。offer_url は本番でネットワーク SDK/API が払い出す。
+-- offers（offerwall。ad_networks に紐づく）。
+-- 実ネットワークの URL が払い出されるまでは paused のままにし、ダミーURLを利用者へ見せない。
 insert into public.offers (network_id, external_id, title, description, reward_points, event_type, status, offer_url)
-select n.id, v.ext, v.title, v.descr, v.reward, v.evt, 'active', v.url
+select n.id, v.ext, v.title, v.descr, v.reward, v.evt, 'paused', null::text
 from (values
-  ('applovin','of-install-001','新作RPGをインストール','インストール後に起動で達成',60000,'install','https://example.com/offer/of-install-001'),
-  ('tapjoy','of-purchase-002','ショップで初回購入','初回課金で達成',200000,'purchase','https://example.com/offer/of-purchase-002'),
-  ('pollfish','of-survey-003','アンケートに回答','約5分のアンケート',12000,'survey','https://example.com/offer/of-survey-003')
-) as v(netcode,ext,title,descr,reward,evt,url)
+  ('applovin','of-install-001','新作RPGをインストール','インストール後に起動で達成',60000,'install'),
+  ('tapjoy','of-purchase-002','ショップで初回購入','初回課金で達成',200000,'purchase'),
+  ('pollfish','of-survey-003','アンケートに回答','約5分のアンケート',12000,'survey')
+) as v(netcode,ext,title,descr,reward,evt)
 join public.ad_networks n on n.code = v.netcode;
 
 -- public forum（author設定はアプリ層/サインアップ後に作成想定。ここは構造例）
