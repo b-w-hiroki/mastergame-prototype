@@ -1,5 +1,7 @@
 # MasterGame Mobile (Expo)
 
+現行の機能範囲と未検証事項は [現行機能仕様](../../docs/PRODUCT_SPEC.md)、画面と DB の責務は [現行技術設計](../../docs/ARCHITECTURE.md) を参照。この README の画面一覧は初期実装時の概要であり、全ルートの網羅表ではない。
+
 React Native + Expo (expo-router, TypeScript) の本番モバイルアプリ。
 プロトタイプ `wireframes/core-flow.html` の画面・導線を、Supabase に接続した実装へ落とし込んでいます。
 

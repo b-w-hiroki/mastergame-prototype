@@ -1,6 +1,7 @@
 import { getAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { assertFraudResult } from '@/lib/fraud-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,11 +62,12 @@ async function resolve(formData: FormData) {
   const id = assertUuid(formData.get('id'));
   const action = assertEnum(formData.get('action'), ['dismiss', 'freeze', 'ban'] as const, 'action');
 
-  const { error } = await getAdminClient().rpc('resolve_fraud_flag', {
+  const { data, error } = await getAdminClient().rpc('resolve_fraud_flag', {
     p_flag_id: id,
     p_action: action,
   });
   if (error) throw new Error(`resolve_fraud_flag failed: ${error.message}`);
+  assertFraudResult(data, action);
 
   revalidatePath('/fraud');
 }

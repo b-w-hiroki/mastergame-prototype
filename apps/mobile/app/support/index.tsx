@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-native';
+import { AppAlert as Alert } from '@/components/AppAlert';
+import { useAction } from '@/lib/useAction';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -34,41 +36,45 @@ export default function Support() {
   const [category, setCategory] = useState<string>('points');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [busy, setBusy] = useState(false);
+  const { busy, run } = useAction();
   const [composing, setComposing] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isCurrent: () => boolean) => {
+    setList([]);
     const { data, error: qErr } = await supabase
       .from('inquiries')
       .select('id,category,subject,status,created_at,last_message_at')
       .order('last_message_at', { ascending: false });
     if (qErr) throw qErr;
-    setList((data as unknown as Inquiry[]) ?? []);
+    if (!Array.isArray(data)) throw new Error('問い合わせ一覧を確認できませんでした。');
+    if (!isCurrent()) return;
+    setList(data as Inquiry[]);
   }, []);
 
-  const { loading, error, reload } = useLoader(load, { auto: false });
-  useFocusEffect(useCallback(() => { reload().catch(() => {}); }, [reload]));
+  const { loading, error, reload, cancel } = useLoader(load, { auto: false });
+  useFocusEffect(useCallback(() => { void reload(); return cancel; }, [reload, cancel]));
 
   async function submit() {
     if (subject.trim() === '' || body.trim() === '') {
       Alert.alert('件名と内容を入力してください');
       return;
     }
-    setBusy(true);
+    if (body.trim().length > 4000) { Alert.alert('内容は4,000文字以内で入力してください'); return; }
+    await run(async () => {
     const { data, error: rErr } = await supabase.rpc('create_inquiry', {
       p_category: category, p_subject: subject.trim(), p_body: body.trim(),
     });
-    setBusy(false);
     if (rErr) { Alert.alert('送信できませんでした', rErr.message); return; }
 
-    const res = data as unknown as { status: string; reason?: string };
-    if (res.status !== 'ok') {
-      Alert.alert('送信できませんでした', REASON_MESSAGE[res.reason ?? ''] ?? 'しばらくしてからお試しください。');
+    const res = data as unknown as { status: string; reason?: string } | null;
+    if (res?.status !== 'ok') {
+      Alert.alert('送信できませんでした', REASON_MESSAGE[res?.reason ?? ''] ?? 'しばらくしてからお試しください。');
       return;
     }
     setSubject(''); setBody(''); setComposing(false);
     Alert.alert('送信しました', '回答があり次第、通知でお知らせします。');
     reload().catch(() => {});
+    }, '送信を確認できませんでした');
   }
 
   return (
@@ -106,7 +112,7 @@ export default function Support() {
             <Text style={s.label}>内容</Text>
             <TextInput style={[s.input, s.textarea]} multiline
               placeholder="いつ・どのミッション/オファーで・どうなったかを書いていただけると調査が早くなります"
-              value={body} onChangeText={setBody} accessibilityLabel="内容" />
+              value={body} onChangeText={setBody} accessibilityLabel="内容" maxLength={4000} />
 
             <View style={s.formFoot}>
               <Pressable style={[s.submit, busy && { opacity: 0.5 }]} onPress={submit} disabled={busy}
@@ -121,7 +127,7 @@ export default function Support() {
         )}
 
         <Text style={s.section}>これまでの問い合わせ</Text>
-        {list.map((q) => (
+        {!loading && !error && list.map((q) => (
           <Pressable key={q.id} style={s.row} onPress={() => router.push(`/support/${q.id}`)}>
             <View style={{ flex: 1 }}>
               <Text style={s.subject} numberOfLines={1}>{q.subject}</Text>
@@ -131,7 +137,7 @@ export default function Support() {
             <Text style={s.chevron}>›</Text>
           </Pressable>
         ))}
-        {!loading && list.length === 0 && (
+        {!loading && !error && list.length === 0 && (
           <Text style={s.empty}>まだ問い合わせはありません</Text>
         )}
       </ScrollView>

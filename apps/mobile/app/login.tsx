@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
+import { useRef, useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -9,15 +9,30 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+<<<<<<< HEAD
   const [message, setMessage] = useState('');
 
   async function signIn() {
 <<<<<<< HEAD
+=======
+  const [errorMessage, setErrorMessage] = useState('');
+  const submitting = useRef(false);
+
+  async function signIn() {
+    if (submitting.current) return;
+    setErrorMessage('');
+>>>>>>> codex/points-exchange-ux
     if (email.trim() === '' || password === '') {
-      Alert.alert('メールアドレスとパスワードを入力してください');
+      setErrorMessage('メールアドレスとパスワードを入力してください');
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setErrorMessage('メールアドレスの形式を確認してください');
+      return;
+    }
+    submitting.current = true;
     setBusy(true);
+<<<<<<< HEAD
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) Alert.alert('ログインに失敗しました', error.message);
@@ -41,44 +56,76 @@ export default function Login() {
       setBusy(false);
     }
 >>>>>>> codex/mvp-stabilization-20260919
+=======
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) {
+        setErrorMessage(error.message === 'Invalid login credentials'
+          ? 'メールアドレスまたはパスワードが正しくありません。未登録の場合は新規アカウント作成へ進んでください。'
+          : error.message === 'Email not confirmed'
+            ? 'メールアドレスの確認が必要です。登録時の確認メールと迷惑メールフォルダをご確認ください。'
+            : `ログインに失敗しました。${error.message}`);
+      }
+    } catch {
+      setErrorMessage('通信に失敗しました。接続を確認して、もう一度ログインしてください。');
+    } finally {
+      submitting.current = false;
+      setBusy(false);
+    }
+>>>>>>> codex/points-exchange-ux
   }
 
   async function signInOAuth(provider: 'google' | 'apple') {
+    if (submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
+    setErrorMessage('');
     try {
       await signInWithOAuth(provider);
-    } catch (e) {
-      Alert.alert('ログインに失敗しました', String((e as Error).message ?? e));
+    } catch {
+      setErrorMessage('外部サービスでのログインに失敗しました。接続を確認して再試行するか、メールアドレスでログインしてください。');
+    } finally {
+      submitting.current = false;
+      setBusy(false);
     }
   }
 
   return (
     <SafeAreaView style={s.root}>
+      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
       <View style={s.logo}><Text style={s.logoText}>MG</Text></View>
       <Text style={s.title}>おかえりなさい</Text>
       <Text style={s.sub}>ログインしてミッションを続けよう</Text>
 
       <TextInput style={s.input} placeholder="メールアドレス" autoCapitalize="none"
-        keyboardType="email-address" value={email} onChangeText={setEmail} />
+        accessibilityLabel="メールアドレス" autoComplete="email" autoCorrect={false}
+        editable={!busy} keyboardType="email-address" value={email} onChangeText={setEmail} />
       <TextInput style={s.input} placeholder="パスワード" secureTextEntry
-        value={password} onChangeText={setPassword} />
+        accessibilityLabel="パスワード" autoComplete="current-password" editable={!busy}
+        value={password} onChangeText={setPassword} onSubmitEditing={signIn} />
 
-      <Pressable style={[s.btn, busy && { opacity: 0.6 }]} onPress={signIn} disabled={busy}>
-        <Text style={s.btnText}>{busy ? '...' : 'ログイン'}</Text>
+      {errorMessage !== '' && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={s.error}>{errorMessage}</Text>}
+
+      <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={[s.btn, busy && { opacity: 0.6 }]} onPress={signIn} disabled={busy}>
+        <Text style={s.btnText}>{busy ? '認証中...' : 'ログイン'}</Text>
       </Pressable>
       {message ? <Text style={s.message}>{message}</Text> : null}
 
       <Text style={s.or}>または</Text>
-      <Pressable style={s.oauth} onPress={() => signInOAuth('google')}><Text style={s.oauthText}>Googleでログイン</Text></Pressable>
-      <Pressable style={s.oauth} onPress={() => signInOAuth('apple')}><Text style={s.oauthText}>Appleでログイン</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} style={[s.oauth, busy && { opacity: 0.6 }]} onPress={() => signInOAuth('google')}><Text style={s.oauthText}>Googleでログイン</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} style={[s.oauth, busy && { opacity: 0.6 }]} onPress={() => signInOAuth('apple')}><Text style={s.oauthText}>Appleでログイン</Text></Pressable>
 
       <Link href="/signup" style={s.link}>新規アカウント作成</Link>
       <Link href="/forgot" style={s.linkSub}>パスワードをお忘れですか？</Link>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f4f5f8', padding: 24, justifyContent: 'center' },
+  root: { flex: 1, backgroundColor: '#f4f5f8' },
+  content: { width: '100%', maxWidth: 520, alignSelf: 'center', flexGrow: 1, padding: 24, justifyContent: 'center' },
+  error: { color: '#b91c1c', backgroundColor: '#fef2f2', padding: 12, borderRadius: 12, marginBottom: 12, lineHeight: 21 },
   logo: { width: 56, height: 56, borderRadius: 15, backgroundColor: '#4f46e5', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   logoText: { color: '#fff', fontWeight: '900', fontSize: 22 },
   title: { fontSize: 22, fontWeight: '800', color: '#1f2430' },

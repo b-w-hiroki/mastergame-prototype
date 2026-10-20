@@ -6,6 +6,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/auth';
 >>>>>>> codex/mvp-stabilization-20260919
 import { revalidatePath } from 'next/cache';
+import { readItemForm } from '@/lib/master-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,13 +31,6 @@ const DELIVERY: Record<Item['delivery_method'], string> = {
 // 1,000P = 1円（app_config.point_yen_rate と一致。表示用の概算）
 const toYen = (p: number) => Math.round((p / 1000) * 100) / 100;
 
-const toIntOrNull = (v: FormDataEntryValue | null) => {
-  const s = v ? String(v).trim() : '';
-  if (s === '') return null;
-  const n = Math.floor(Number(s));
-  return Number.isFinite(n) ? n : null;
-};
-
 // 作成 / 更新（マスタ。ポイント操作なし＝安全。service_role でRLSバイパス）
 async function saveItem(formData: FormData) {
   'use server';
@@ -44,6 +38,7 @@ async function saveItem(formData: FormData) {
 <<<<<<< HEAD
   const idRaw = String(formData.get('id') ?? '').trim();
   const id = idRaw === '' ? '' : assertUuid(idRaw);
+<<<<<<< HEAD
 =======
   const supabaseAdmin = getSupabaseAdmin();
   const id = String(formData.get('id') ?? '').trim();
@@ -67,6 +62,9 @@ async function saveItem(formData: FormData) {
     sort: toIntOrNull(formData.get('sort')) ?? 0,
     is_active: formData.get('is_active') === 'on',
   };
+=======
+  const payload = readItemForm(formData);
+>>>>>>> codex/points-exchange-ux
 
   const res = id
     ? await getAdminClient().from('exchange_items').update(payload).eq('id', id)
@@ -81,11 +79,15 @@ async function toggleItem(formData: FormData) {
   await requireAdmin();
 <<<<<<< HEAD
   const id = assertUuid(formData.get('id'));
+<<<<<<< HEAD
 =======
   const supabaseAdmin = getSupabaseAdmin();
   const id = String(formData.get('id'));
 >>>>>>> codex/mvp-stabilization-20260919
   const next = String(formData.get('next')) === 'true';
+=======
+  const next = assertEnum(formData.get('next'), ['true', 'false'] as const, 'next') === 'true';
+>>>>>>> codex/points-exchange-ux
   const { error } = await getAdminClient().from('exchange_items').update({ is_active: next }).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/items');
@@ -121,7 +123,7 @@ function ItemForm({ it }: { it?: Item }) {
         </div>
         <div className="field">
           <label>必要ポイント</label>
-          <input type="number" name="cost_points" defaultValue={it?.cost_points ?? 1000} min={1} required />
+          <input type="number" name="cost_points" defaultValue={it?.cost_points ?? 1000} min={1} max={2_147_483_647} step={1} required />
         </div>
         <div className="field">
           <label>受け渡し方法</label>
@@ -133,11 +135,11 @@ function ItemForm({ it }: { it?: Item }) {
         </div>
         <div className="field">
           <label>在庫（空欄＝無制限）</label>
-          <input type="number" name="stock" defaultValue={it?.stock ?? ''} min={0} />
+          <input type="number" name="stock" defaultValue={it?.stock ?? ''} min={0} max={2_147_483_647} step={1} />
         </div>
         <div className="field">
           <label>並び順（sort）</label>
-          <input type="number" name="sort" defaultValue={it?.sort ?? 0} />
+          <input type="number" name="sort" defaultValue={it?.sort ?? 0} min={-2_147_483_648} max={2_147_483_647} step={1} />
         </div>
         <div className="field check">
           <input type="checkbox" id={`ia-${it?.id ?? 'new'}`} name="is_active" defaultChecked={it?.is_active ?? true} />

@@ -50,8 +50,19 @@ insert into exchange_items(id,name,cost_points,stock,is_active)
 select test.set_uid('22222222-0000-0000-0000-000000000002');
 select public.request_exchange('22222222-0000-0000-0000-0000000000b2')->>'request_id' as rid \gset
 select test.eq((select stock from exchange_items where id='22222222-0000-0000-0000-0000000000b2'), 2::int, 'stock decremented on request');
+select test.eq(public.fulfill_exchange(:'rid',null)->>'reason', 'code_required', 'code delivery rejects null code');
+select test.eq(public.fulfill_exchange(:'rid','   ')->>'reason', 'code_required', 'code delivery rejects blank code');
+select test.eq(public.fulfill_exchange(:'rid',E' \n\t ')->>'reason', 'code_required', 'code delivery rejects whitespace code');
+select test.eq(public.fulfill_exchange(:'rid',repeat('x',65))->>'reason', 'code_too_long', 'overlong code rejected');
+select test.eq((select status from exchange_requests where id=:'rid'), 'processing', 'invalid fulfillment keeps request processing');
+select test.eq((select count(*)::int from notifications where type='exchange_fulfilled' and payload->>'request_id'=:'rid'), 0::int, 'invalid fulfillment sends no completion notice');
 select test.eq(public.fulfill_exchange(:'rid','CODE-1')->>'status', 'fulfilled', 'fulfill ok');
 select test.eq((select code from exchange_requests where id=:'rid'), 'CODE-1', 'code set');
+select test.eq(public.fulfill_exchange(:'rid','CODE-2')->>'reason', 'not_processing', 'second fulfillment rejected');
+insert into exchange_items(id,name,cost_points,delivery_method,stock,is_active)
+  values ('22222222-0000-0000-0000-0000000000b3','api item',5000,'api',1,true);
+select public.request_exchange('22222222-0000-0000-0000-0000000000b3')->>'request_id' as api_rid \gset
+select test.eq(public.fulfill_exchange(:'api_rid',null)->>'status', 'fulfilled', 'API delivery permits no code');
 -- cancel path
 select public.request_exchange('22222222-0000-0000-0000-0000000000b2')->>'request_id' as rid2 \gset
 select public.cancel_exchange(:'rid2','t');

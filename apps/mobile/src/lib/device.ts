@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { supabase } from './supabase';
 
 const KEY = 'mg.device_id';
+let pendingDeviceId: Promise<string> | null = null;
 
 /**
  * 端末識別子を返す（無ければ生成して永続化）。
@@ -15,11 +16,16 @@ const KEY = 'mg.device_id';
  * アテステーションが要る（本番強化の次段）。
  */
 export async function getDeviceId(): Promise<string> {
-  const saved = await AsyncStorage.getItem(KEY);
-  if (saved) return saved;
-  const id = randomId();
-  await AsyncStorage.setItem(KEY, id);
-  return id;
+  if (!pendingDeviceId) {
+    pendingDeviceId = (async () => {
+      const saved = await AsyncStorage.getItem(KEY);
+      if (saved) return saved;
+      const id = randomId();
+      await AsyncStorage.setItem(KEY, id);
+      return id;
+    })().finally(() => { pendingDeviceId = null; });
+  }
+  return pendingDeviceId;
 }
 
 /** crypto.getRandomValues（react-native-get-random-values で polyfill 済み）ベースの UUID v4。 */
@@ -40,11 +46,13 @@ function platformTag(): 'ios' | 'android' | 'web' {
  * 端末をサーバに登録する。多重アカウント/エミュレータ検知はサーバ側で走る。
  * ログイン後に呼ぶ。未ログインなら何もしない。
  */
-export async function registerDevice(): Promise<void> {
+export async function registerDevice(expectedUserId?: string): Promise<void> {
   const { data: u } = await supabase.auth.getUser();
-  if (!u.user) return;
+  if (!u.user || (expectedUserId && u.user.id !== expectedUserId)) return;
 
   const deviceId = await getDeviceId();
+  const { data: current } = await supabase.auth.getUser();
+  if (!current.user || current.user.id !== u.user.id) return;
   const { error } = await supabase.rpc('register_device', {
     p_device_id: deviceId,
     p_platform: platformTag(),

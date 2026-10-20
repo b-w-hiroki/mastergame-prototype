@@ -7,7 +7,7 @@
 #
 # 環境変数:
 #   PGHOST/PGPORT/PGUSER/PGPASSWORD … 接続先（既定 localhost:5432/postgres）
-#   TEST_DB … 作成するテストDB名（既定 mastergame_test）
+#   TEST_DB … mastergame_test または mastergame_test_ で始まるテスト専用名
 # ============================================================
 set -euo pipefail
 
@@ -21,6 +21,12 @@ export PGPORT="${PGPORT:-5432}"
 export PGUSER="${PGUSER:-postgres}"
 export PGDATABASE="postgres"
 TEST_DB="${TEST_DB:-mastergame_test}"
+
+# SQL 文字列への注入と既存DBの誤削除を、psql を呼ぶ前に防ぐ。
+if [[ ! "$TEST_DB" =~ ^mastergame_test(_[a-z0-9_]+)?$ ]] || (( ${#TEST_DB} > 63 )); then
+  echo "Unsafe TEST_DB: use mastergame_test or mastergame_test_<lowercase suffix>" >&2
+  exit 2
+fi
 
 psql -v ON_ERROR_STOP=1 -q -c "drop database if exists ${TEST_DB} with (force)"
 psql -v ON_ERROR_STOP=1 -q -c "create database ${TEST_DB}"

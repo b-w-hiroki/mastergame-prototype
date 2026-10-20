@@ -1,5 +1,7 @@
 # MasterGame — プロトタイプ
 
+> 現行アプリ・DB の動作は [現行機能仕様](docs/PRODUCT_SPEC.md)、構造と権限境界は [現行技術設計](docs/ARCHITECTURE.md) を参照してください。本 README と `wireframes/` はプロトタイプの説明です。変更時は [文書更新ワークフロー](docs/DOCS_WORKFLOW.md) に従います。
+
 ![MasterGame](assets/og.png)
 
 > **ポイ活 × ゲームコミュニティ** プラットフォーム。遊ぶ・助け合う・活動するほど“得”になる世界を。

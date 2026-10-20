@@ -23,8 +23,11 @@ function platformTag(): 'ios' | 'android' | 'web' {
  * 実機のみ（シミュレータ/権限拒否/未ログインでは null を返す）。
  * 例外は握りつぶさず呼び出し側で .catch すること。
  */
-export async function registerPushToken(): Promise<string | null> {
-  if (!Device.isDevice) return null;
+export async function registerPushToken(expectedUserId?: string): Promise<string | null> {
+  if (Platform.OS === 'web' || !Device.isDevice) return null;
+
+  const { data: initial } = await supabase.auth.getUser();
+  if (!initial.user || (expectedUserId && initial.user.id !== expectedUserId)) return null;
 
   const { status: existing } = await Notifications.getPermissionsAsync();
   let status = existing;
@@ -45,7 +48,7 @@ export async function registerPushToken(): Promise<string | null> {
   const token = tokenResp.data;
 
   const { data: u } = await supabase.auth.getUser();
-  if (!u.user) return null;
+  if (!u.user || u.user.id !== initial.user.id) return null;
 
   const { error } = await supabase.rpc('register_push_token', { p_token: token, p_platform: platformTag() });
   if (error) throw error;
@@ -54,5 +57,6 @@ export async function registerPushToken(): Promise<string | null> {
 
 /** ログアウト時などに自端末のトークンを解除する。 */
 export async function unregisterPushToken(token: string): Promise<void> {
-  await supabase.rpc('remove_push_token', { p_token: token });
+  const { error } = await supabase.rpc('remove_push_token', { p_token: token });
+  if (error) throw error;
 }

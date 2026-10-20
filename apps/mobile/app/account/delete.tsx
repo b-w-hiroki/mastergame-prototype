@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-native';
+import { AppAlert as Alert } from '@/components/AppAlert';
+import { useAction } from '@/lib/useAction';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -21,26 +23,35 @@ const fmtDate = (iso: string) => {
  */
 export default function DeleteAccount() {
   const [status, setStatus] = useState<Status | null>(null);
-  const [balance, setBalance] = useState(0);
+  const [balance, setBalance] = useState<number | null>(null);
   const [reason, setReason] = useState('');
-  const [busy, setBusy] = useState(false);
+  const { busy, run } = useAction();
 
-  const load = useCallback(async () => {
-    const { data: u } = await supabase.auth.getUser();
-    const [{ data: st, error: sErr }, { data: w }] = await Promise.all([
+  const load = useCallback(async (isCurrent: () => boolean) => {
+    setStatus(null);
+    setBalance(null);
+    const { data: u, error: userError } = await supabase.auth.getUser();
+    if (userError || !u.user) throw userError ?? new Error('not authenticated');
+    const [{ data: st, error: sErr }, { data: w, error: wErr }] = await Promise.all([
       supabase.rpc('my_account_deletion'),
-      u.user
-        ? supabase.from('point_wallets').select('balance').eq('user_id', u.user.id).single()
-        : Promise.resolve({ data: null }),
+      supabase.from('point_wallets').select('balance').eq('user_id', u.user.id).single(),
     ]);
     if (sErr) throw sErr;
+    if (wErr) throw wErr;
+    if (!st || typeof st !== 'object' || Array.isArray(st) || typeof st.pending !== 'boolean'
+      || !w || typeof w.balance !== 'number'
+      || !Number.isSafeInteger(w.balance) || w.balance < 0) {
+      throw new Error('退会状態と残高を確認できませんでした。');
+    }
+    if (!isCurrent()) return;
     setStatus(st as unknown as Status);
-    setBalance((w as { balance: number } | null)?.balance ?? 0);
+    setBalance(w.balance);
   }, []);
 
   const { loading, error, reload } = useLoader(load);
 
   function confirmDelete() {
+    if (loading || error || busy || !status || status.pending || balance === null) return;
     // 残高がある場合は失効を明示してから確認する（黙って消さない）
     const warn = balance > 0
       ? `保有中の ${balance.toLocaleString()} P は退会の完了時に失効します。\n交換がお済みでない場合は、退会前にご交換ください。\n\n本当に退会しますか？`
@@ -52,16 +63,21 @@ export default function DeleteAccount() {
   }
 
   async function submit() {
-    setBusy(true);
+    if (loading || error || busy || !status || status.pending || balance === null) return;
+    await run(async () => {
     const { data, error: rErr } = await supabase.rpc('request_account_deletion', {
       p_reason: reason.trim() || null,
     });
-    setBusy(false);
     if (rErr) { Alert.alert('手続きできませんでした', rErr.message); return; }
 
-    const res = data as unknown as { status: string; reason?: string; scheduled_at?: string; notice?: string };
-    if (res.status !== 'ok') {
+    const res = data as unknown as { status: string; reason?: string; scheduled_at?: string; notice?: string } | null;
+    if (res?.status === 'rejected' && res.reason === 'already_deleted') {
       Alert.alert('手続きできませんでした', 'すでに退会手続きが完了しています。');
+      return;
+    }
+    if (res?.status !== 'ok') {
+      Alert.alert('手続きできませんでした', '退会手続きの状態を再読み込みしてご確認ください。');
+      await reload();
       return;
     }
     Alert.alert(
@@ -69,15 +85,22 @@ export default function DeleteAccount() {
       `${res.scheduled_at ? fmtDate(res.scheduled_at) : ''}に完了します。それまではいつでもキャンセルできます。`,
     );
     reload().catch(() => {});
+    }, '退会手続きの結果を確認できませんでした');
   }
 
   async function cancel() {
-    setBusy(true);
-    const { error: cErr } = await supabase.rpc('cancel_account_deletion');
-    setBusy(false);
+    if (loading || error || busy || !status?.pending || balance === null) return;
+    await run(async () => {
+    const { data, error: cErr } = await supabase.rpc('cancel_account_deletion');
     if (cErr) { Alert.alert('キャンセルできませんでした', cErr.message); return; }
+    if ((data as { status?: string } | null)?.status !== 'ok') {
+      Alert.alert('キャンセルできませんでした', '退会手続きの状態を再読み込みしてご確認ください。');
+      await reload();
+      return;
+    }
     Alert.alert('退会をキャンセルしました', 'これまで通りご利用いただけます。');
     reload().catch(() => {});
+    }, 'キャンセルの結果を確認できませんでした');
   }
 
   return (
@@ -87,7 +110,7 @@ export default function DeleteAccount() {
         {loading && <LoadingView />}
         {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
 
-        {status?.pending ? (
+        {!loading && !error && status?.pending ? (
           <>
             <View style={s.pendingBox}>
               <Text style={s.pendingTitle}>退会手続き中</Text>
@@ -96,12 +119,12 @@ export default function DeleteAccount() {
                 {'\n'}それまではキャンセルできます。
               </Text>
             </View>
-            <Pressable style={[s.cancelBtn, busy && { opacity: 0.5 }]} onPress={cancel} disabled={busy}
+            <Pressable style={[s.cancelBtn, busy && { opacity: 0.5 }]} onPress={cancel} disabled={busy || loading || !!error}
               accessibilityRole="button">
               <Text style={s.cancelText}>{busy ? '...' : '退会をキャンセルする'}</Text>
             </Pressable>
           </>
-        ) : status ? (
+        ) : !loading && !error && status ? (
           <>
             <Text style={s.h}>退会するとどうなりますか？</Text>
             <View style={s.list}>
@@ -112,13 +135,13 @@ export default function DeleteAccount() {
               <Text style={s.li}>・同じメールアドレスで再登録しても、以前のデータは復元できません</Text>
             </View>
 
-            {balance > 0 && (
+            {balance !== null && balance > 0 && (
               <View style={s.warnBox}>
                 <Text style={s.warnText}>
                   現在 {balance.toLocaleString()} P を保有しています。{'\n'}
                   退会前の交換をおすすめします。
                 </Text>
-                <Pressable onPress={() => router.push('/exchange')} accessibilityRole="button">
+                <Pressable onPress={() => router.push({ pathname: '/points', params: { section: 'exchange' } })} accessibilityRole="button">
                   <Text style={s.warnLink}>ポイントを交換する ›</Text>
                 </Pressable>
               </View>
@@ -134,7 +157,7 @@ export default function DeleteAccount() {
               accessibilityLabel="退会理由"
             />
 
-            <Pressable style={[s.deleteBtn, busy && { opacity: 0.5 }]} onPress={confirmDelete} disabled={busy}
+            <Pressable style={[s.deleteBtn, busy && { opacity: 0.5 }]} onPress={confirmDelete} disabled={busy || loading || !!error || balance === null}
               accessibilityRole="button">
               <Text style={s.deleteText}>{busy ? '...' : '退会手続きへ進む'}</Text>
             </Pressable>

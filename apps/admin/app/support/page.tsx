@@ -1,6 +1,7 @@
 import { getAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { assertSupportResult, replyBody } from '@/lib/support-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,14 +54,14 @@ async function answer(formData: FormData) {
   'use server';
   await requireAdmin();
   const id = assertUuid(formData.get('id'));
-  const body = String(formData.get('body') ?? '').trim();
-  if (body === '') throw new Error('body required');
+  const body = replyBody(formData.get('body'));
   const action = assertEnum(formData.get('action'), ['answer', 'resolve'] as const, 'action');
 
-  const { error } = await getAdminClient().rpc('answer_inquiry', {
+  const { data, error } = await getAdminClient().rpc('answer_inquiry', {
     p_inquiry_id: id, p_body: body, p_resolve: action === 'resolve',
   });
   if (error) throw new Error(`answer_inquiry failed: ${error.message}`);
+  assertSupportResult(data, 'answer_inquiry');
   revalidatePath('/support');
 }
 
@@ -68,8 +69,9 @@ async function close(formData: FormData) {
   'use server';
   await requireAdmin();
   const id = assertUuid(formData.get('id'));
-  const { error } = await getAdminClient().rpc('close_inquiry', { p_inquiry_id: id });
+  const { data, error } = await getAdminClient().rpc('close_inquiry', { p_inquiry_id: id });
   if (error) throw new Error(`close_inquiry failed: ${error.message}`);
+  assertSupportResult(data, 'close_inquiry');
   revalidatePath('/support');
 }
 
@@ -108,14 +110,21 @@ export default async function Support({
   const selected = query.id ? rows.find((r) => r.id === query.id) : undefined;
   let messages: Message[] = [];
   let context: Context | null = null;
+  let detailError = false;
   if (selected) {
     const [msgRes, ctxRes] = await Promise.all([
       db.from('inquiry_messages').select('id,is_staff,body,created_at')
         .eq('inquiry_id', selected.id).order('created_at'),
       db.rpc('support_user_context', { p_user: selected.user_id }),
     ]);
-    messages = (msgRes.data as unknown as Message[]) ?? [];
-    context = (ctxRes.data as unknown as Context) ?? null;
+    const payload = ctxRes.data as unknown as Partial<Context> | null;
+    detailError = !!msgRes.error || !!ctxRes.error || !Array.isArray(msgRes.data) || !payload
+      || !Array.isArray(payload.recent_ledger) || !Array.isArray(payload.pending_offers)
+      || !Array.isArray(payload.rejected_postbacks) || !Array.isArray(payload.open_fraud_flags);
+    if (!detailError) {
+      messages = msgRes.data as unknown as Message[];
+      context = ctxRes.data as unknown as Context;
+    }
   }
 
   return (
@@ -157,6 +166,8 @@ export default async function Support({
       {selected && (
         <>
           <h2 style={{ fontSize: 15, marginTop: 28 }}>{selected.subject}</h2>
+
+          {detailError && <p className="note alert" role="alert">問い合わせの詳細を取得できませんでした。再読み込みしてから対応してください。</p>}
 
           {context && (
             <div className="ctx">
@@ -213,20 +224,20 @@ export default async function Support({
             </div>
           )}
 
-          <h3 style={{ fontSize: 13, marginTop: 20 }}>やり取り</h3>
+          {!detailError && <><h3 style={{ fontSize: 13, marginTop: 20 }}>やり取り</h3>
           {messages.map((m) => (
             <div key={m.id} className={m.is_staff ? 'msg staff' : 'msg user'}>
               <div className="msg-who">{m.is_staff ? 'サポート' : 'ユーザー'} ・ <span className="mono">{fmt(m.created_at)}</span></div>
               <div className="msg-body">{m.body}</div>
             </div>
-          ))}
+          ))}</>}
 
-          {selected.status !== 'closed' && (
+          {!detailError && selected.status !== 'closed' && (
             <form className="form" action={answer} style={{ padding: 0, marginTop: 14 }}>
               <input type="hidden" name="id" value={selected.id} />
               <div className="field wide">
                 <label htmlFor="reply-body">返信</label>
-                <textarea id="reply-body" name="body" required />
+                <textarea id="reply-body" name="body" required maxLength={4000} />
               </div>
               <div className="form-foot">
                 <button className="btn primary" type="submit" name="action" value="answer">返信する</button>
@@ -234,10 +245,10 @@ export default async function Support({
               </div>
             </form>
           )}
-          <form action={close} style={{ marginTop: 10 }}>
+          {!detailError && <form action={close} style={{ marginTop: 10 }}>
             <input type="hidden" name="id" value={selected.id} />
             <button className="btn" type="submit">クローズする</button>
-          </form>
+          </form>}
         </>
       )}
     </>

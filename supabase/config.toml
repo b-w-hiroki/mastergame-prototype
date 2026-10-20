@@ -26,7 +26,16 @@ port = 54323
 [auth]
 enabled = true
 site_url = "http://localhost:8081"
-additional_redirect_urls = ["http://localhost:3000", "mastergame://", "mastergame://auth-callback"]
+additional_redirect_urls = [
+  "http://localhost:3000",
+  "http://localhost:8081/auth-callback",
+  "http://localhost:8081/reset-password",
+  "http://127.0.0.1:8081/auth-callback",
+  "http://127.0.0.1:8081/reset-password",
+  "mastergame://",
+  "mastergame://auth-callback",
+  "mastergame://reset-password"
+]
 jwt_expiry = 3600
 enable_signup = true
 

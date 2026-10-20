@@ -33,6 +33,20 @@ describe('device id', () => {
     mockStore['mg.device_id'] = 'preexisting-id';
     expect(await getDeviceId()).toBe('preexisting-id');
   });
+
+  it('同時取得でも同じIDを生成・保存する', async () => {
+    const storage = require('@react-native-async-storage/async-storage');
+    let release!: () => void;
+    storage.getItem.mockImplementationOnce(() => new Promise<string | null>((resolve) => {
+      release = () => resolve(null);
+    }));
+    const first = getDeviceId();
+    const second = getDeviceId();
+    release();
+    const [a, b] = await Promise.all([first, second]);
+    expect(a).toBe(b);
+    expect(storage.setItem).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('registerDevice', () => {
@@ -60,5 +74,26 @@ describe('registerDevice', () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
     mockRpc.mockResolvedValue({ error: { message: 'boom' } });
     await expect(registerDevice()).rejects.toBeTruthy();
+  });
+
+  it('対象ユーザーが違う場合は端末登録しない', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'other' } } });
+    await registerDevice('u1');
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('端末ID取得中にアカウントが変わった場合は登録しない', async () => {
+    const storage = require('@react-native-async-storage/async-storage');
+    let release!: () => void;
+    storage.getItem.mockImplementationOnce(() => new Promise<string | null>((resolve) => {
+      release = () => resolve('saved-id');
+    }));
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'u1' } } })
+      .mockResolvedValueOnce({ data: { user: { id: 'u2' } } });
+    const work = registerDevice('u1');
+    await Promise.resolve();
+    release();
+    await work;
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 });

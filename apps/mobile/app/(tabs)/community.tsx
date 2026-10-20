@@ -5,6 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
+import { isForumRow, isTopicRow, isFeedRow, hasUniqueIds } from '@/lib/communityRows';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
 
 type Forum = { id: string; name: string; description: string | null; type: 'public' | 'game' };
@@ -52,22 +53,42 @@ export default function Community() {
   const [refreshing, setRefreshing] = useState(false);
 >>>>>>> codex/mvp-stabilization-20260919
 
-  const load = useCallback(async () => {
-    const [{ data: f }, { data: t }, { data: fd }] = await Promise.all([
+  const load = useCallback(async (isCurrent: () => boolean) => {
+    setForums([]);
+    setTopics([]);
+    setFeed([]);
+    const { data: userData, error: authError } = await supabase.auth.getUser();
+    if (authError || !userData.user) throw authError ?? new Error('ログイン状態を確認できません。');
+    const [{ data: f, error: fErr }, { data: t, error: tErr }, { data: fd, error: fdErr }] = await Promise.all([
       supabase.from('forums').select('id,name,description,type').limit(20),
 <<<<<<< HEAD
       supabase.from('topics').select('id,forum_id,kind,title,reply_count,has_bounty,last_activity_at')
         .order('last_activity_at', { ascending: false }).limit(30),
       supabase.rpc('my_game_feed', { p_limit: 20 }),
     ]);
-    setForums((f as Forum[]) ?? []);
-    setTopics((t as Topic[]) ?? []);
-    setFeed((fd as unknown as FeedRow[]) ?? []);
+    if (fErr || tErr || fdErr) throw fErr || tErr || fdErr;
+    if (!Array.isArray(f) || !Array.isArray(t) || !Array.isArray(fd)) {
+      throw new Error('コミュニティの内容を確認できませんでした。');
+    }
+    if (!f.every(isForumRow) || !t.every(isTopicRow) || !fd.every(isFeedRow)
+      || !hasUniqueIds(f, (row) => row.id) || !hasUniqueIds(t, (row) => row.id)
+      || !hasUniqueIds(fd, (row) => row.topic_id)) {
+      throw new Error('コミュニティの内容を確認できませんでした。');
+    }
+    if (!isCurrent()) return;
+    const { data: currentUser, error: currentAuthError } = await supabase.auth.getUser();
+    if (currentAuthError || currentUser.user?.id !== userData.user.id) {
+      throw new Error('コミュニティの取得中にログイン状態が変わりました。');
+    }
+    if (!isCurrent()) return;
+    setForums(f);
+    setTopics(t);
+    setFeed(fd as FeedRow[]);
   }, []);
 
   // 自動ロードは無効化し、フォーカス時ロードに一本化（初回の二重フェッチを防ぐ）
-  const { loading, error, refreshing, reload, onRefresh } = useLoader(load, { auto: false });
-  useFocusEffect(useCallback(() => { reload().catch(() => {}); }, [reload]));
+  const { loading, error, refreshing, reload, onRefresh, cancel } = useLoader(load, { auto: false });
+  useFocusEffect(useCallback(() => { void reload(); return cancel; }, [reload, cancel]));
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
@@ -127,11 +148,11 @@ export default function Community() {
             <Text style={s.moreLink}>ゲームを探す ›</Text>
           </Pressable>
         </View>
-        {feed.length === 0 ? (
+        {feed.length === 0 ? (!loading && !error &&
           <Pressable style={s.emptyCard} onPress={() => router.push('/games')} accessibilityRole="button">
-            <Text style={s.emptyCardTitle}>🎮 好きなゲームをフォローしよう</Text>
+            <Text style={s.emptyCardTitle}>🎮 フォロー中のゲームの投稿はまだありません</Text>
             <Text style={s.emptyCardText}>
-              タイトルをフォローすると、そのゲームの攻略・質問だけがここに流れます。
+              ゲームをフォローすると、そのゲームの攻略・質問がここに流れます。
             </Text>
           </Pressable>
         ) : (
@@ -163,6 +184,7 @@ export default function Community() {
               <Text style={s.guildType}>{forum.type === 'game' ? 'ゲーム別' : '公開'}</Text>
             </View>
           ))}
+<<<<<<< HEAD
         </ScrollView>
 
         <View style={s.sectionRow}>
@@ -171,6 +193,15 @@ export default function Community() {
         </View>
         {topics.map((topic) => {
           const kind = kinds[topic.kind] ?? kinds.chat;
+=======
+          {!loading && !error && forums.length === 0 && <Text style={s.empty}>ギルドがまだありません</Text>}
+        </ScrollView>
+
+        <Text style={s.section}>最近のトピック（最新30件）</Text>
+        {!loading && !error && topics.length === 0 && <Text style={s.empty}>トピックがまだありません</Text>}
+        {topics.map((t) => {
+          const k = KIND[t.kind] ?? KIND.chat;
+>>>>>>> codex/points-exchange-ux
           return (
             <Pressable key={topic.id} style={s.topic} onPress={() => router.push(`/topic/${topic.id}`)}>
               <View style={[s.kindBadge, { backgroundColor: kind[1] }]}><Text style={s.kindText}>{kind[0]}</Text></View>

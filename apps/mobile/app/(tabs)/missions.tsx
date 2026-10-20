@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useCallback, useMemo, useState } from 'react';
 <<<<<<< HEAD
 import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl, Alert, Linking } from 'react-native';
@@ -8,18 +9,34 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { VisualSlot } from '@/components/VisualSlot';
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+=======
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl, Linking } from 'react-native';
+import { AppAlert as Alert } from '@/components/AppAlert';
+import { useAction } from '@/lib/useAction';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+>>>>>>> codex/points-exchange-ux
 import { colors } from '@/lib/theme';
 <<<<<<< HEAD
 import { useLoader } from '@/lib/useLoader';
+import { missionPeriodKey } from '@/lib/missionPeriod';
+import { safeOfferUrl } from '@/lib/offerUrl';
+import { isMissionRow, isMissionCompletionRow, isOfferRow, isOfferCompletionRow, hasUniqueKeys, offerCompletionStatus } from '@/lib/missionRows';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import { useReward } from '@/components/RewardToast';
 import type { Mission, MissionType, MissionCompletion, Offer } from '@/lib/types';
 import { track, EVENTS } from '@/lib/analytics';
 
+<<<<<<< HEAD
 type OfferCompletion = { offer_id: string | null; status: string };
 =======
 import type { Mission, MissionCompletion, MissionType, Offer } from '@/lib/types';
 >>>>>>> codex/mvp-stabilization-20260919
+=======
+type MissionState = Pick<MissionCompletion, 'status' | 'progress' | 'period_key'>;
+>>>>>>> codex/points-exchange-ux
 
 const tabs: { key: MissionType; label: string }[] = [
   { key: 'daily', label: 'デイリー' },
@@ -42,11 +59,18 @@ const demoOffers: Offer[] = [
 ];
 
 export default function Missions() {
+<<<<<<< HEAD
   const router = useRouter();
   const [tab, setTab] = useState<MissionType>('daily');
   const [missions, setMissions] = useState<Mission[]>(demoMissions);
   const [completions, setCompletions] = useState<Record<string, MissionCompletion>>({});
 <<<<<<< HEAD
+=======
+  const { busy: offerBusy, run: runOffer } = useAction();
+  const [tab, setTab] = useState<MissionType>('daily');
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [completions, setCompletions] = useState<Record<string, MissionState>>({});
+>>>>>>> codex/points-exchange-ux
   const [offers, setOffers] = useState<Offer[]>([]);
   const [offerStatus, setOfferStatus] = useState<Record<string, string>>({});
 =======
@@ -54,6 +78,7 @@ export default function Missions() {
   const [refreshing, setRefreshing] = useState(false);
 >>>>>>> codex/mvp-stabilization-20260919
   const [busy, setBusy] = useState<string | null>(null);
+<<<<<<< HEAD
   const [offerError, setOfferError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -65,29 +90,120 @@ export default function Missions() {
 
     const [{ data: ms }, { data: cs }, { data: os }] = await Promise.all([
 >>>>>>> codex/mvp-stabilization-20260919
+=======
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [serviceDate, setServiceDate] = useState<string | null>(null);
+  const claimInFlight = useRef<{ userId: string; version: number } | null>(null);
+  const readVersion = useRef(0);
+  const loadedUser = useRef<string | null>(null);
+
+  const load = useCallback(async (isCurrent: () => boolean) => {
+    ++readVersion.current;
+    loadedUser.current = null;
+    setMissions([]);
+    setCompletions({});
+    setOffers([]);
+    setOfferStatus({});
+    setServiceDate(null);
+    const { data: u, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!u.user) throw new Error('ログイン状態を確認できません。');
+    if (claimInFlight.current && claimInFlight.current.userId !== u.user.id) {
+      claimInFlight.current = null;
+      setBusy(null);
+    }
+    const results = await Promise.all([
+>>>>>>> codex/points-exchange-ux
       supabase.from('missions').select('*').eq('is_active', true),
       supabase.from('mission_completions').select('*').eq('user_id', u.user.id),
       supabase.from('offers').select('*').eq('status', 'active').limit(20),
-      supabase.from('offer_completions').select('offer_id,status').eq('user_id', u.user.id),
+      supabase.from('offer_completions').select('user_id,offer_id,status').eq('user_id', u.user.id),
+      supabase.rpc('service_today'),
     ]);
+<<<<<<< HEAD
 <<<<<<< HEAD
     setMissions(ms ?? []);
     const map: Record<string, MissionCompletion> = {};
     (cs ?? []).forEach((c) => { map[c.mission_id] = c; });
+=======
+    const failed = results.find((result) => result.error);
+    if (failed?.error) throw failed.error;
+    const [{ data: ms }, { data: cs }, { data: os }, { data: ocs }, { data: day }] = results;
+    if (!Array.isArray(ms) || !Array.isArray(cs) || !Array.isArray(os) || !Array.isArray(ocs)) {
+      throw new Error('ミッションとオファーの状態を確認できませんでした。');
+    }
+    if (!ms.every(isMissionRow) || !os.every(isOfferRow)) {
+      throw new Error('ミッションまたはオファーの内容を確認できませんでした。');
+    }
+    if (!cs.every((c) => isMissionCompletionRow(c, u.user.id))
+      || !ocs.every((o) => isOfferCompletionRow(o, u.user.id))) {
+      throw new Error('達成状況の内容を確認できませんでした。');
+    }
+    if (!hasUniqueKeys(ms, (m) => m.id) || !hasUniqueKeys(os, (o) => o.id)
+      || !hasUniqueKeys(cs, (c) => `${c.mission_id}\u0000${c.period_key}`)) {
+      throw new Error('ミッションまたは達成状況に重複があります。');
+    }
+    if (!day) throw new Error('サービス日付を確認できません。');
+    missionPeriodKey('daily', day);
+    if (!isCurrent()) return;
+    const { data: currentUser, error: currentAuthError } = await supabase.auth.getUser();
+    if (currentAuthError || currentUser.user?.id !== u.user.id) {
+      throw new Error('ミッションの取得中にログイン状態が変わりました。');
+    }
+    if (!isCurrent()) return;
+    loadedUser.current = u.user.id;
+    setMissions(ms);
+    const periods = new Map(ms.map((m) => [m.id, missionPeriodKey(m.type, day)]));
+    const map: Record<string, MissionState> = {};
+    cs.forEach((c) => {
+      if (c.period_key === periods.get(c.mission_id)) map[c.mission_id] = c;
+    });
+>>>>>>> codex/points-exchange-ux
     setCompletions(map);
-    setOffers(os ?? []);
+    setServiceDate(day);
+    setOffers(os);
     const om: Record<string, string> = {};
-    ((ocs as OfferCompletion[]) ?? []).forEach((o) => { if (o.offer_id) om[o.offer_id] = o.status; });
+    const offerStates = new Map<string, string[]>();
+    ocs.forEach((o) => {
+      if (o.offer_id) offerStates.set(o.offer_id, [...(offerStates.get(o.offer_id) ?? []), o.status]);
+    });
+    offerStates.forEach((statuses, offerId) => {
+      const status = offerCompletionStatus(statuses);
+      if (status) om[offerId] = status;
+    });
     setOfferStatus(om);
-    track(EVENTS.missionListView, { count: (ms ?? []).length });
+    track(EVENTS.missionListView, { count: ms.length });
   }, []);
 
-  const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
+  const { loading, error, refreshing, reload, onRefresh, cancel } = useLoader(load, { auto: false });
+  useFocusEffect(useCallback(() => {
+    void reload();
+    return () => {
+      readVersion.current += 1;
+      loadedUser.current = null;
+      cancel();
+    };
+  }, [reload, cancel]));
   const reward = useReward();
 =======
 
+<<<<<<< HEAD
     if (ms?.length) setMissions(ms as Mission[]);
     if (os?.length) setOffers(os as Offer[]);
+=======
+  async function isCurrentAction(userId: string, version: number): Promise<boolean> {
+    if (readVersion.current !== version || loadedUser.current !== userId) return false;
+    try {
+      const { data, error: authError } = await supabase.auth.getUser();
+      return !authError && data.user?.id === userId
+        && readVersion.current === version && loadedUser.current === userId;
+    } catch {
+      return false;
+    }
+  }
+
+  const list = useMemo(() => missions.filter((m) => m.type === tab), [missions, tab]);
+>>>>>>> codex/points-exchange-ux
 
     const map: Record<string, MissionCompletion> = {};
     ((cs as MissionCompletion[]) ?? []).forEach((completion) => {
@@ -107,34 +223,106 @@ export default function Missions() {
 
 <<<<<<< HEAD
   async function claim(m: Mission) {
+    const userId = loadedUser.current;
+    const version = readVersion.current;
+    if (claimInFlight.current || loading || refreshing || error || m.requires_verification || !serviceDate || !userId) return;
+    const claimToken = { userId, version };
+    claimInFlight.current = claimToken;
     track(EVENTS.missionClaimTap, { mission_id: m.id, type: m.type });
     setBusy(m.id);
-    const { error: claimError } = await supabase.rpc('claim_mission', { p_mission_id: m.id });
-    setBusy(null);
-    if (claimError) { Alert.alert('受け取れませんでした', claimError.message); return; }
-    track(EVENTS.missionClaimed, { mission_id: m.id, reward: m.reward_points });
-    reward.show(m.reward_points, m.title);
-    reload().catch(() => {});
+    setActionMessage(null);
+    const markConfirmed = () => setCompletions((previous) => ({ ...previous,
+      [m.id]: { status: 'confirmed', progress: m.max_progress, period_key: missionPeriodKey(m.type, serviceDate) },
+    }));
+    try {
+      if (!await isCurrentAction(userId, version)) {
+        setActionMessage('ログイン状態を確認できませんでした。報酬は申請していません。再読み込みしてください。');
+        await reload();
+        return;
+      }
+      const { data, error: claimError } = await supabase.rpc('claim_mission', { p_mission_id: m.id });
+      if (!await isCurrentAction(userId, version)) {
+        if (loadedUser.current && loadedUser.current !== userId) return;
+        setActionMessage('受取中に画面またはアカウントが変わりました。ポイント履歴で受取結果をご確認ください。');
+        await reload();
+        return;
+      }
+      if (claimError) {
+        const alreadyClaimed = claimError.message.includes('mission already claimed');
+        if (alreadyClaimed) markConfirmed();
+        setActionMessage(alreadyClaimed ? 'この報酬はすでに受取済みです。表示を更新しました。'
+          : '報酬を受け取れませんでした。最新の状態を確認してから、もう一度お試しください。');
+        await reload();
+        return;
+      }
+      const result = data as { ok?: boolean; reward?: number } | null;
+      if (result?.ok !== true) {
+        setActionMessage('この報酬は現在受け取れません。画面を更新して状態をご確認ください。');
+        await reload();
+        return;
+      }
+      markConfirmed();
+      if (typeof result.reward === 'number' && Number.isSafeInteger(result.reward) && result.reward > 0) {
+        track(EVENTS.missionClaimed, { mission_id: m.id, reward: result.reward });
+        reward.show(result.reward, m.title);
+      } else {
+        setActionMessage('受取結果のポイント数を確認できませんでした。ポイント履歴をご確認ください。');
+      }
+      await reload();
+    } catch {
+      if (loadedUser.current && loadedUser.current !== userId) return;
+      setActionMessage('通信結果を確認できませんでした。再申請する前に、画面を更新して受取状態をご確認ください。');
+      await reload();
+    } finally {
+      if (claimInFlight.current === claimToken) {
+        claimInFlight.current = null;
+        setBusy(null);
+      }
+    }
   }
 
   // オファー挑戦：クリックを記録（日次上限を確認）→ 外部へ遷移。
   // 達成 → ネットワークの postback → confirm_offer で確定付与される（アプリ内では「確認中」表示）。
   async function openOffer(o: Offer) {
+    if (loading || refreshing || error || offerBusy) return;
+    const userId = loadedUser.current;
+    const version = readVersion.current;
+    if (!userId) return;
+    await runOffer(async () => {
+    const offerUrl = safeOfferUrl(o.offer_url);
+    if (!offerUrl) { Alert.alert('準備中', 'このオファーのリンクは現在ご利用いただけません。'); return; }
+    if (!await isCurrentAction(userId, version)) {
+      Alert.alert('開けませんでした', 'ログイン状態が変わりました。再読み込みしてからお試しください。');
+      await reload();
+      return;
+    }
     track(EVENTS.offerTap, { offer_id: o.id });
     const { data, error: recErr } = await supabase.rpc('record_ad_impression', {
       p_placement: 'offerwall', p_ad_type: 'offerwall', p_network_id: o.network_id,
     });
+    if (!await isCurrentAction(userId, version)) {
+      Alert.alert('開けませんでした', '操作中に画面またはアカウントが変わりました。再読み込みしてからお試しください。');
+      await reload();
+      return;
+    }
     if (recErr) { Alert.alert('開けませんでした', recErr.message); return; }
-    const remaining = (data as { remaining?: number } | null)?.remaining;
-    if (typeof remaining === 'number' && remaining <= 0) {
+    const result = data as { ok?: boolean; remaining?: number } | null;
+    if (result?.ok !== true || typeof result.remaining !== 'number'
+      || !Number.isSafeInteger(result.remaining) || result.remaining < 0) {
+      Alert.alert('開けませんでした', '利用状況を確認できませんでした。時間をおいて再度お試しください。');
+      return;
+    }
+    if (result.remaining === 0) {
       Alert.alert('本日の上限に達しました', '提携オファーの獲得は1日の上限があります。また明日お試しください。');
       return;
     }
-    if (!o.offer_url) { Alert.alert('準備中', 'このオファーは現在ご利用いただけません。'); return; }
-    const can = await Linking.canOpenURL(o.offer_url).catch(() => false);
+    const can = await Linking.canOpenURL(offerUrl).catch(() => false);
+    if (!await isCurrentAction(userId, version)) return;
     if (!can) { Alert.alert('開けませんでした', 'リンクを開けませんでした。'); return; }
-    await Linking.openURL(o.offer_url);
+    await Linking.openURL(offerUrl);
+    if (!await isCurrentAction(userId, version)) return;
     Alert.alert('達成後に確定します', '外部で条件を達成すると、確認後にポイントが付与されます（アプリでは「確認中」と表示されます）。');
+<<<<<<< HEAD
 =======
   async function claim(mission: Mission) {
     setBusy(mission.id);
@@ -217,6 +405,9 @@ export default function Missions() {
     } finally {
       setBusy(null);
     }
+=======
+    }, 'オファーを開けませんでした');
+>>>>>>> codex/points-exchange-ux
   }
 
   return (
@@ -245,8 +436,9 @@ export default function Missions() {
 
         {loading && <LoadingView />}
         {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
+        {actionMessage && <Text accessibilityRole="alert" style={s.actionMessage}>{actionMessage}</Text>}
 
-        {!loading && list.length === 0 && <Text style={s.empty}>このカテゴリのミッションはありません</Text>}
+        {!loading && !error && list.length === 0 && <Text style={s.empty}>このカテゴリのミッションはありません</Text>}
         {list.map((m) => {
           const c = completions[m.id];
           const done = c?.status === 'confirmed';
@@ -310,9 +502,17 @@ export default function Missions() {
                 <View style={[s.badge, s.badgeOk]}><Text style={s.badgeOkText}>完了</Text></View>
               ) : pending ? (
                 <View style={[s.badge, s.badgeWarn]}><Text style={s.badgeWarnText}>検証中</Text></View>
+              ) : m.requires_verification ? (
+                <Text style={s.verificationHint}>条件達成後に自動反映</Text>
               ) : (
+<<<<<<< HEAD
                 <Pressable style={[s.btn, busy === mission.id && { opacity: 0.5 }]} disabled={busy === mission.id} onPress={() => claim(mission)}>
                   <Text style={s.btnText}>{busy === mission.id ? '...' : '挑戦'}</Text>
+=======
+                <Pressable accessibilityRole="button" style={[s.btn, busy !== null && { opacity: 0.5 }]}
+                  disabled={busy !== null || loading || refreshing || !!error} onPress={() => claim(m)}>
+                  <Text style={s.btnText}>{busy === m.id ? '受取中…' : '達成'}</Text>
+>>>>>>> codex/points-exchange-ux
                 </Pressable>
               )}
             </View>
@@ -339,7 +539,9 @@ export default function Missions() {
                   ) : pending ? (
                     <View style={[s.badge, s.badgeWarn]}><Text style={s.badgeWarnText}>確認中</Text></View>
                   ) : (
-                    <Pressable style={s.btn} onPress={() => openOffer(o).catch(() => {})}>
+                    <Pressable style={[s.btn, (loading || refreshing || !!error || offerBusy) && { opacity: 0.5 }]}
+                      disabled={loading || refreshing || !!error || offerBusy}
+                      onPress={() => openOffer(o).catch(() => {})}>
                       <Text style={s.btnText}>挑戦</Text>
                     </Pressable>
                   )}
@@ -399,6 +601,11 @@ const s = StyleSheet.create({
   fireText: { color: '#a13226', fontWeight: '700', fontSize: 11, marginTop: 3 },
   empty: { color: colors.muted, fontSize: 13 },
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  actionMessage: { color: colors.ink, backgroundColor: colors.warnSoft, borderWidth: 1, borderColor: colors.warn, borderRadius: 12, padding: 13, fontSize: 13, lineHeight: 20, marginBottom: 12 },
+  verificationHint: { color: colors.sub, fontSize: 11, lineHeight: 17, maxWidth: 95, marginLeft: 10 },
+>>>>>>> codex/points-exchange-ux
   card: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 14, marginBottom: 10 },
   title: { fontSize: 13, fontWeight: '700', color: colors.ink },
   desc: { fontSize: 12, color: colors.sub, marginTop: 3 },

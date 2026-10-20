@@ -25,3 +25,15 @@ export function assertSlug(v: unknown, field = 'slug'): string {
   if (s.includes('--')) throw new Error(`invalid ${field}`);
   return s;
 }
+
+/** 空欄だけをnullとする。不正値を「未指定」へ変換してはいけない。 */
+export function optionalInteger(v: unknown, field: string, min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER): number | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v !== 'string') throw new Error(`invalid ${field}`);
+  const s = v.trim();
+  if (s === '') return null;
+  if (!/^-?\d+$/.test(s)) throw new Error(`invalid ${field}: integer required`);
+  const value = Number(s);
+  if (!Number.isSafeInteger(value) || value < min || value > max) throw new Error(`invalid ${field}: out of range`);
+  return value;
+}

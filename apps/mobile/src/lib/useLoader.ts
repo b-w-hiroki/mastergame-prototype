@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * 画面のデータ取得を統一的に扱うフック。
@@ -10,30 +10,42 @@ import { useCallback, useEffect, useState } from 'react';
  * opts.auto=false にすると初回自動ロードを行わない（useFocusEffect 等で自前に reload する画面向け。
  * 自動ロードと useFocusEffect を併用すると初回マウントで二重フェッチになるため）。
  */
-export function useLoader(load: () => Promise<void>, opts?: { auto?: boolean }) {
+export function useLoader(load: (isCurrent: () => boolean) => Promise<void>, opts?: { auto?: boolean }) {
   const auto = opts?.auto ?? true;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const generation = useRef(0);
+  const mounted = useRef(true);
 
-  const run = useCallback(async () => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; generation.current += 1; };
+  }, []);
+
+  const run = useCallback(async (refresh: boolean) => {
+    if (!mounted.current) return;
+    const version = ++generation.current;
+    const isCurrent = () => mounted.current && version === generation.current;
+    setRefreshing(refresh);
     try {
       setError(null);
-      await load();
+      await load(isCurrent);
     } catch {
-      setError('データの取得に失敗しました。通信環境を確認してください。');
+      if (isCurrent()) setError('データの取得に失敗しました。通信環境を確認してください。');
     } finally {
-      setLoading(false);
+      if (isCurrent()) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [load]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await run();
-    setRefreshing(false);
-  }, [run]);
+  const reload = useCallback(() => run(false), [run]);
+  const onRefresh = useCallback(() => run(true), [run]);
+  const cancel = useCallback(() => { generation.current += 1; }, []);
 
-  useEffect(() => { if (auto) run().catch(() => {}); }, [run, auto]);
+  useEffect(() => { if (auto) void reload(); }, [reload, auto]);
 
-  return { loading, error, refreshing, reload: run, onRefresh };
+  return { loading, error, refreshing, reload, onRefresh, cancel };
 }

@@ -1,12 +1,19 @@
 <<<<<<< HEAD
 import { useCallback, useState } from 'react';
+<<<<<<< HEAD
 import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl, Alert } from 'react-native';
 =======
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 >>>>>>> codex/mvp-stabilization-20260919
+=======
+import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { AppAlert as Alert } from '@/components/AppAlert';
+>>>>>>> codex/points-exchange-ux
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useAction } from '@/lib/useAction';
+import { Linking, Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
@@ -38,6 +45,7 @@ export default function MyPage() {
   const [vip, setVip] = useState<VipInfo | null>(null);
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
+<<<<<<< HEAD
 =======
   const [profile, setProfile] = useState<Profile | null>(demoProfile);
   const [vip, setVip] = useState<VipInfo | null>({ user_id: 'demo', xp: 6400, tier_name: 'シルバー', staking_rate_bps: 150 });
@@ -51,19 +59,46 @@ export default function MyPage() {
     if (!u.user) return;
 
     const [{ data: p }, { data: v }, { data: t }, { data: g }] = await Promise.all([
+=======
+  const { busy, run } = useAction();
+
+  const load = useCallback(async (isCurrent: () => boolean) => {
+    setProfile(null);
+    setVip(null);
+    setTiers([]);
+    setGenres([]);
+    const { data: u, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!u.user) throw new Error('ログイン状態を確認できません。');
+    const [{ data: p, error: pErr }, { data: v, error: vErr }, { data: t, error: tErr }, { data: g, error: gErr }] = await Promise.all([
+>>>>>>> codex/points-exchange-ux
       supabase.from('profiles').select('*').eq('id', u.user.id).single(),
       supabase.from('user_vip').select('*').eq('user_id', u.user.id).single(),
       supabase.from('vip_tiers').select('name,min_xp,sort').order('sort'),
       supabase.from('user_genres').select('genre').eq('user_id', u.user.id),
     ]);
 <<<<<<< HEAD
+<<<<<<< HEAD
     setProfile(p ?? null);
     setVip(v ?? null);
     setTiers((t as Tier[]) ?? []);
     setGenres(((g as { genre: Genre }[]) ?? []).map((x) => x.genre));
+=======
+    if (pErr || vErr || tErr || gErr) throw pErr || vErr || tErr || gErr;
+    if (!p || (p as Profile).id !== u.user.id || !v || (v as VipInfo).user_id !== u.user.id
+      || !Array.isArray(t) || !Array.isArray(g)) {
+      throw new Error('マイページの情報を確認できませんでした。');
+    }
+    if (!isCurrent()) return;
+    setProfile(p as Profile);
+    setVip(v as VipInfo);
+    setTiers(t as Tier[]);
+    setGenres((g as { genre: Genre }[]).map((x) => x.genre));
+>>>>>>> codex/points-exchange-ux
   }, []);
 
-  const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
+  const { loading, error, refreshing, reload, onRefresh, cancel } = useLoader(load, { auto: false });
+  useFocusEffect(useCallback(() => { void reload(); return cancel; }, [reload, cancel]));
 
   const xp = vip?.xp ?? profile?.xp ?? 0;
   const { current, next, ratio: progress } = tierProgress(xp, tiers);
@@ -88,7 +123,10 @@ export default function MyPage() {
   async function logout() {
     Alert.alert('ログアウト', 'ログアウトしますか？', [
       { text: 'キャンセル', style: 'cancel' },
-      { text: 'ログアウト', style: 'destructive', onPress: () => supabase.auth.signOut() },
+      { text: 'ログアウト', style: 'destructive', onPress: () => { void run(async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+      }, 'ログアウトできませんでした'); } },
     ]);
   }
 
@@ -117,7 +155,9 @@ export default function MyPage() {
         {loading && <LoadingView />}
         {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
 
+        {!loading && !error && profile && vip && <>
         <View style={s.profile}>
+<<<<<<< HEAD
           <View style={s.avatar}>
             <Text style={s.avatarText}>{(profile?.username ?? 'P').slice(0, 1).toUpperCase()}</Text>
           </View>
@@ -125,17 +165,31 @@ export default function MyPage() {
             <Text style={s.name}>{profile?.username ?? 'Player'}</Text>
             <Text style={s.handle}>{profile?.handle ?? '@mastergame'}</Text>
             {!!profile?.bio && <Text style={s.bio} numberOfLines={2}>{profile.bio}</Text>}
+=======
+          <View style={s.avatar}><Text style={s.avatarText}>{(profile.username ?? 'P').slice(0, 1).toUpperCase()}</Text></View>
+          <View>
+            <Text style={s.name}>{profile.username ?? 'Player'}</Text>
+            <Text style={s.handle}>{profile.handle}</Text>
+>>>>>>> codex/points-exchange-ux
           </View>
         </View>
 
         <View style={s.vipCard}>
           <View style={s.vipHead}>
+<<<<<<< HEAD
             <Text style={s.vipTier}>VIP {vip?.tier_name ?? current?.name ?? 'ブロンズ'}</Text>
+=======
+            <Text style={s.vipTier}>👑 VIP {vip.tier_name ?? current?.name ?? '—'}</Text>
+>>>>>>> codex/points-exchange-ux
             <Text style={s.vipXp}>{xp.toLocaleString()} XP</Text>
           </View>
           <View style={s.track}><View style={[s.fill, { width: `${progress * 100}%` }]} /></View>
           <Text style={s.vipNext}>
+<<<<<<< HEAD
             {next ? `次のランク「${next.name}」まで あと ${(next.min_xp - xp).toLocaleString()} XP` : '最高ランクに到達しています'}
+=======
+            {tiers.length === 0 ? 'ランク情報を取得できていません' : next ? `次のランク「${next.name}」まで あと ${(next.min_xp - xp).toLocaleString()} XP` : '最高ランクに到達しています 🎉'}
+>>>>>>> codex/points-exchange-ux
           </Text>
         </View>
 
@@ -149,18 +203,26 @@ export default function MyPage() {
         <Pressable style={s.editBtn} onPress={() => router.push('/genres')}>
           <Text style={s.editText}>ジャンルを編集</Text>
         </Pressable>
+        </>}
 
         <Text style={s.section}>設定</Text>
         <View style={s.settings}>
+<<<<<<< HEAD
           <Pressable style={s.setRow} onPress={() => router.push('/exchange')}>
             <Text style={s.setText}>交換履歴・ポイント交換</Text>
             <Text style={s.chevron}>›</Text>
           </Pressable>
+=======
+          <Pressable style={s.setRow} onPress={() => router.push({ pathname: '/points', params: { section: 'history' } })}><Text style={s.setText}>ポイント・交換履歴</Text><Text style={s.chevron}>›</Text></Pressable>
+>>>>>>> codex/points-exchange-ux
           <View style={s.sep} />
 <<<<<<< HEAD
           <Pressable style={s.setRow} onPress={() => router.push('/invite')}><Text style={s.setText}>友だち招待</Text><Text style={s.chevron}>›</Text></Pressable>
           <View style={s.sep} />
-          <Pressable style={s.setRow} onPress={() => Alert.alert('プッシュ通知', '本番では端末の通知設定と連動します。')}><Text style={s.setText}>プッシュ通知</Text><Text style={s.chevron}>›</Text></Pressable>
+          <Pressable style={s.setRow} onPress={() => {
+            if (Platform.OS === 'web') Alert.alert('プッシュ通知', 'Web版のプッシュ通知は未対応です。アプリ内のお知らせから通知を確認できます。');
+            else void run(async () => { await Linking.openSettings(); }, '端末設定を開けませんでした');
+          }}><Text style={s.setText}>プッシュ通知</Text><Text style={s.chevron}>›</Text></Pressable>
           <View style={s.sep} />
           <Pressable style={s.setRow} onPress={() => router.push('/support')}><Text style={s.setText}>お問い合わせ</Text><Text style={s.chevron}>›</Text></Pressable>
           <View style={s.sep} />
@@ -186,7 +248,7 @@ export default function MyPage() {
           <Text style={s.deleteRowText}>退会（アカウント削除）</Text><Text style={s.chevron}>›</Text>
         </Pressable>
 
-        <Pressable style={s.logout} onPress={logout}>
+        <Pressable style={s.logout} disabled={busy} accessibilityRole="button" accessibilityState={{ disabled: busy }} onPress={logout}>
           <Text style={s.logoutText}>ログアウト</Text>
         </Pressable>
       </ScrollView>

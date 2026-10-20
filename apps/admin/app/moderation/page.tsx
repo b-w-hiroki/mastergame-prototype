@@ -95,7 +95,8 @@ export default async function Moderation() {
   return (
     <>
       <h1>通報・モデレーション（未対応 {open} / 直近 {rows.length}）</h1>
-      <div className="sub">通報を確認し、対応（削除／警告／却下）を記録します。対応は <code>moderation_actions</code> に残ります。</div>
+      <div className="sub">通報を確認し、実施した対応（削除／警告／却下）を記録します。対応は <code>moderation_actions</code> に残ります。</div>
+      <p className="note">以下は対応内容の記録です。投稿の非表示・削除やユーザーへの警告通知は自動実行しません。実際の対応が完了してから記録してください。</p>
       <table>
         <thead>
           <tr>
@@ -124,14 +125,14 @@ export default async function Moderation() {
                         <input type="hidden" name="target_type" value={r.target_type} />
                         <input type="hidden" name="target_id" value={r.target_id} />
                         <input type="hidden" name="action" value="delete" />
-                        <button className="btn danger" type="submit">削除して対応</button>
+                        <button className="btn danger" type="submit">削除対応を記録</button>
                       </form>
                       <form action={moderate}>
                         <input type="hidden" name="id" value={r.id} />
                         <input type="hidden" name="target_type" value={r.target_type} />
                         <input type="hidden" name="target_id" value={r.target_id} />
                         <input type="hidden" name="action" value="warn" />
-                        <button className="btn warn" type="submit">警告</button>
+                        <button className="btn warn" type="submit">警告対応を記録</button>
                       </form>
                       <form action={moderate}>
                         <input type="hidden" name="id" value={r.id} />

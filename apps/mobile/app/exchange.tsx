@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { useCallback, useState } from 'react';
 import { View, Text, Pressable, FlatList, StyleSheet, Alert } from 'react-native';
 =======
@@ -262,3 +263,11 @@ const s = StyleSheet.create({
   statusDone: { color: '#179a5b', backgroundColor: '#e6f4ec' },
   statusCancelled: { color: colors.danger, backgroundColor: '#fdecea' },
 });
+=======
+import { Redirect } from 'expo-router';
+
+/** 既存の交換リンクからも統合済みのポイント画面へ案内する。 */
+export default function ExchangeRedirect() {
+  return <Redirect href={{ pathname: '/points', params: { section: 'exchange' } }} />;
+}
+>>>>>>> codex/points-exchange-ux

@@ -1,6 +1,7 @@
 jest.mock('@/lib/supabase', () => ({ supabase: { rpc: jest.fn() } }));
 
-import { createTracker } from '@/lib/analytics';
+import { createTracker, setAnalyticsUser, track, flushEvents } from '@/lib/analytics';
+import { supabase } from '@/lib/supabase';
 
 describe('createTracker', () => {
   it('flushSize に達するまで送らない（1件ずつ通信しない）', async () => {
@@ -98,5 +99,50 @@ describe('createTracker', () => {
     const t = createTracker({ send, flushSize: 1 });
     t.track('a_event');
     await expect(t.flush()).resolves.toBeUndefined();
+  });
+  it('アカウントの切替で未送信分を消去し、新しいセッションIDを使う', async () => {
+    const send = jest.fn().mockResolvedValue(undefined);
+    const t = createTracker({ send, sessionId: 'first' });
+    t.track('old_event');
+    t.reset('second');
+    t.track('new_event');
+    await t.flush();
+    expect(send.mock.calls[0][0]).toEqual([expect.objectContaining({ name: 'new_event', session_id: 'second' })]);
+  });
+  it('切替前の送信が遅れて失敗しても、古いイベントを新しいバッファへ戻さない', async () => {
+    let reject!: (error: Error) => void;
+    const send = jest.fn().mockReturnValueOnce(new Promise((_, fail) => { reject = fail; })).mockResolvedValue(undefined);
+    const t = createTracker({ send });
+    t.track('old_event');
+    const pending = t.flush();
+    t.reset('second');
+    t.track('new_event');
+    reject(new Error('offline'));
+    await pending;
+    await t.flush();
+    expect(send.mock.calls[1][0].map((e: { name: string }) => e.name)).toEqual(['new_event']);
+  });
+});
+
+describe('analytics account binding', () => {
+  beforeEach(() => {
+    setAnalyticsUser(null);
+    (supabase.rpc as jest.Mock).mockReset().mockResolvedValue({ error: null });
+  });
+  afterEach(() => setAnalyticsUser(null));
+  it('未認証中の行動を次のログインへ持ち越さない', async () => {
+    track('anonymous_event');
+    setAnalyticsUser('player');
+    track('signed_in_event');
+    await flushEvents();
+    const events = (supabase.rpc as jest.Mock).mock.calls[0][1].p_events;
+    expect(events.map((event: { name: string }) => event.name)).toEqual(['signed_in_event']);
+  });
+  it('同じユーザーのトークン更新では未送信イベントを消さない', async () => {
+    setAnalyticsUser('player');
+    track('one_event');
+    expect(setAnalyticsUser('player')).toBe(false);
+    await flushEvents();
+    expect((supabase.rpc as jest.Mock).mock.calls[0][1].p_events).toHaveLength(1);
   });
 });

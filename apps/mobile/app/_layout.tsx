@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -8,10 +8,18 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { registerPushToken } from '@/lib/push';
 import { registerDevice } from '@/lib/device';
+<<<<<<< HEAD
 import { track, flushEvents, EVENTS } from '@/lib/analytics';
 =======
 import { hasSupabaseConfig, supabase } from '@/lib/supabase';
 >>>>>>> codex/mvp-stabilization-20260919
+=======
+import { track, flushEvents, setAnalyticsUser, EVENTS } from '@/lib/analytics';
+import { AppAlertHost, clearAppAlerts } from '@/components/AppAlert';
+import { AccountSetupGate } from '@/components/AccountSetupGate';
+import { OnboardingCompletedContext } from '@/lib/onboarding';
+import { withReadTimeout } from '@/lib/readTimeout';
+>>>>>>> codex/points-exchange-ux
 
 /**
  * 認証＋オンボーディングのゲート。
@@ -22,11 +30,13 @@ import { hasSupabaseConfig, supabase } from '@/lib/supabase';
  */
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
-  const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  const [onboarding, setOnboarding] = useState<{ userId: string; complete: boolean } | null>(null);
+  const onboardingVersion = useRef(0);
   const [ready, setReady] = useState(false);
   const segments = useSegments();
   const router = useRouter();
 
+<<<<<<< HEAD
   // ジャンル選択の有無で初回オンボーディング要否を判定
   async function refreshOnboarded(s: Session | null) {
     if (!hasSupabaseConfig) { setOnboarded(true); return; }
@@ -47,16 +57,38 @@ export default function RootLayout() {
 
   useEffect(() => {
 <<<<<<< HEAD
+=======
+  const userId = session?.user.id;
+  const latestUserId = useRef(userId);
+  latestUserId.current = userId;
+  const onboarded = onboarding?.userId === userId ? onboarding?.complete ?? null : null;
+  const stackOwner = useRef(userId ?? 'anonymous');
+  // 一度限りのcodeを検証中の画面は、認証成立で作り直さない。
+  if (segments[0] !== 'reset-password' && segments[0] !== 'auth-callback') stackOwner.current = userId ?? 'anonymous';
+
+  function publishSession(value: Session | null) {
+    if (setAnalyticsUser(value?.user.id ?? null)) clearAppAlerts();
+    setSession(value);
+  }
+
+  useEffect(() => {
+    let active = true;
+    let authEvents = 0;
+>>>>>>> codex/points-exchange-ux
     // getSession/refresh が失敗しても必ず ready にし、永久ブランク＋未処理 rejection を防ぐ
     (async () => {
       try {
-        const { data } = await supabase.auth.getSession();
-        setSession(data.session);
-        await refreshOnboarded(data.session);
+        const { data, error } = await withReadTimeout(supabase.auth.getSession());
+        if (error) throw error;
+        // 認証イベントが先に届いたら、古い起動時スナップショットで上書きしない。
+        if (active && authEvents === 0) publishSession(data.session);
+      } catch {
+        if (active && authEvents === 0) publishSession(null);
       } finally {
-        setReady(true);
+        if (active) setReady(true);
       }
     })();
+<<<<<<< HEAD
     const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
 =======
     if (!hasSupabaseConfig) {
@@ -79,18 +111,44 @@ export default function RootLayout() {
       setTimeout(() => {
         void refreshOnboarded(s);
       }, 0);
+=======
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      if (!active) return;
+      authEvents += 1;
+      publishSession(s);
+      setReady(true);
+>>>>>>> codex/points-exchange-ux
     });
-    return () => sub.subscription.unsubscribe();
+    return () => { active = false; sub.subscription.unsubscribe(); };
   }, []);
+
+  // 認証コールバック内で Supabase の別リクエストを待たない。
+  useEffect(() => {
+    const version = ++onboardingVersion.current;
+    if (!userId) { setOnboarding(null); return; }
+    (async () => {
+      let complete = true;
+      try {
+        const { count, error } = await withReadTimeout(supabase.from('user_genres')
+          .select('genre', { count: 'exact', head: true }).eq('user_id', userId));
+        if (error) throw error;
+        complete = (count ?? 0) > 0;
+      } catch {
+        // 好みの設定は後から変更可能。通信失敗だけで初回設定へ閉じ込めない。
+      }
+      if (version === onboardingVersion.current) setOnboarding({ userId, complete });
+    })();
+    return () => { onboardingVersion.current += 1; };
+  }, [userId]);
 
   // ログイン後にプッシュ通知トークンと端末を登録
   // （どちらも失敗してもアプリの利用は続行できるため握りつぶす）
   useEffect(() => {
-    if (!session) return;
-    registerPushToken().catch(() => {});
-    registerDevice().catch(() => {});
+    if (!userId) return;
+    registerPushToken(userId).catch(() => {});
+    registerDevice(userId).catch(() => {});
     track(EVENTS.appOpen);
-  }, [session]);
+  }, [userId]);
 
   // バックグラウンド移行時に未送信のイベントを送り切る（次回起動まで滞留させない）
   useEffect(() => {
@@ -104,11 +162,15 @@ export default function RootLayout() {
     if (!ready) return;
     if (!hasSupabaseConfig) return;
     const seg = segments[0];
-    const inAuth = seg === 'login' || seg === 'signup' || seg === 'forgot';
+    // 再設定リンクの認証前・認証後とも、フォームから追い出さない。
+    if (seg === 'reset-password' || seg === 'forgot' || seg === 'legal' || seg === 'auth-callback') return;
+    const inAuth = seg === 'login' || seg === 'signup';
     const inOnboarding = seg === 'onboarding' || seg === 'genres';
 
     if (!session) {
       if (!inAuth) router.replace('/login');
+    } else if (onboarded === null) {
+      return;
     } else if (onboarded === false) {
       if (!inOnboarding) router.replace('/onboarding');
     } else if (inAuth || inOnboarding) {
@@ -118,8 +180,16 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <OnboardingCompletedContext.Provider value={() => {
+        if (!userId || latestUserId.current !== userId) return;
+        onboardingVersion.current += 1;
+        setOnboarding({ userId, complete: true });
+      }}>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack key={`navigation:${stackOwner.current}`} screenOptions={{ headerShown: false }} />
+      {ready && session && !['reset-password', 'forgot', 'legal', 'auth-callback'].includes(segments[0] ?? '') && <AccountSetupGate key={`setup:${session.user.id}`} userId={session.user.id} />}
+      <AppAlertHost />
+      </OnboardingCompletedContext.Provider>
     </SafeAreaProvider>
   );
 }
