@@ -1,7 +1,7 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import Nav from './nav';
 import Pwa from './pwa';
+import Shell from './shell';
 
 export const metadata: Metadata = {
   title: 'MasterGame 運営コンソール',
@@ -19,13 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja">
       <body>
-        <div className="layout">
-          <aside className="side">
-            <div className="brand"><span className="logo">MG</span>MasterGame</div>
-            <Nav />
-          </aside>
-          <main className="main">{children}</main>
-        </div>
+        <Shell>{children}</Shell>
         <Pwa />
       </body>
     </html>

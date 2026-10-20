@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { getAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin, assertUuid } from '@/lib/auth';
+=======
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/auth';
+>>>>>>> codex/mvp-stabilization-20260919
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -32,8 +37,14 @@ const fmt = (iso: string) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
+<<<<<<< HEAD
 const countBy = async (status: Status): Promise<number | null> => {
   const { count, error } = await getAdminClient()
+=======
+const countBy = async (status: Status) => {
+  const supabaseAdmin = getSupabaseAdmin();
+  const { count } = await supabaseAdmin
+>>>>>>> codex/mvp-stabilization-20260919
     .from('postback_events')
     .select('*', { count: 'exact', head: true })
     .eq('status', status);
@@ -47,8 +58,14 @@ const countBy = async (status: Status): Promise<number | null> => {
 async function reject(formData: FormData) {
   'use server';
   await requireAdmin();
+<<<<<<< HEAD
   const id = assertUuid(formData.get('id'));
   await getAdminClient()
+=======
+  const supabaseAdmin = getSupabaseAdmin();
+  const id = String(formData.get('id'));
+  await supabaseAdmin
+>>>>>>> codex/mvp-stabilization-20260919
     .from('postback_events')
     .update({ status: 'rejected', processed_at: new Date().toISOString() })
     .eq('id', id)
@@ -58,6 +75,10 @@ async function reject(formData: FormData) {
 
 export default async function Postback() {
   await requireAdmin();
+<<<<<<< HEAD
+=======
+  const supabaseAdmin = getSupabaseAdmin();
+>>>>>>> codex/mvp-stabilization-20260919
   const [received, accepted, rejected, duplicate, reversed] = await Promise.all([
     countBy('received'), countBy('accepted'), countBy('rejected'), countBy('duplicate'), countBy('reversed'),
   ]);

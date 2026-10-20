@@ -42,3 +42,18 @@ curl -X POST "https://<ref>.functions.supabase.co/postback" \
 ### 関連
 - RPC：`supabase/migrations/0011_postback_rpc.sql`（`track_click` / `confirm_postback`）
 - 仕様：`docs/specs/mission-verification-postback.md`
+
+## test-offer-complete — クローズドテスト専用
+
+ログイン中のユーザーが自分の `test-partner` click IDだけを成果確定できる、MVP検証用の関数です。報酬額やユーザーIDはクライアントから受け取りません。
+
+```bash
+supabase secrets set ENABLE_TEST_OFFERS=true
+supabase functions deploy test-offer-complete
+```
+
+- `ENABLE_TEST_OFFERS=true` のときだけ動作します。
+- JWT認証が必須です。`--no-verify-jwt` ではデプロイしません。
+- `test-partner` かつ `sandbox` のクリックだけを受け付けます。
+- 本番テスト終了後は `ENABLE_TEST_OFFERS=false` にするか、関数をデプロイ対象から外します。
+- 同じ click ID は同じ transaction ID になるため、連打しても `duplicate` となり二重付与されません。

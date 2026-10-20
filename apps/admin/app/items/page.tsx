@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { getAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
+=======
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/auth';
+>>>>>>> codex/mvp-stabilization-20260919
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -36,8 +41,13 @@ const toIntOrNull = (v: FormDataEntryValue | null) => {
 async function saveItem(formData: FormData) {
   'use server';
   await requireAdmin();
+<<<<<<< HEAD
   const idRaw = String(formData.get('id') ?? '').trim();
   const id = idRaw === '' ? '' : assertUuid(idRaw);
+=======
+  const supabaseAdmin = getSupabaseAdmin();
+  const id = String(formData.get('id') ?? '').trim();
+>>>>>>> codex/mvp-stabilization-20260919
   const name = String(formData.get('name') ?? '').trim();
   const cost = toIntOrNull(formData.get('cost_points'));
 
@@ -69,7 +79,12 @@ async function saveItem(formData: FormData) {
 async function toggleItem(formData: FormData) {
   'use server';
   await requireAdmin();
+<<<<<<< HEAD
   const id = assertUuid(formData.get('id'));
+=======
+  const supabaseAdmin = getSupabaseAdmin();
+  const id = String(formData.get('id'));
+>>>>>>> codex/mvp-stabilization-20260919
   const next = String(formData.get('next')) === 'true';
   const { error } = await getAdminClient().from('exchange_items').update({ is_active: next }).eq('id', id);
   if (error) throw new Error(error.message);
@@ -79,8 +94,14 @@ async function toggleItem(formData: FormData) {
 async function deleteItem(formData: FormData) {
   'use server';
   await requireAdmin();
+<<<<<<< HEAD
   const id = assertUuid(formData.get('id'));
   const { error } = await getAdminClient().from('exchange_items').delete().eq('id', id);
+=======
+  const supabaseAdmin = getSupabaseAdmin();
+  const id = String(formData.get('id'));
+  const { error } = await supabaseAdmin.from('exchange_items').delete().eq('id', id);
+>>>>>>> codex/mvp-stabilization-20260919
   if (error) throw new Error(error.message);
   revalidatePath('/items');
 }
@@ -132,7 +153,12 @@ function ItemForm({ it }: { it?: Item }) {
 
 export default async function Items() {
   await requireAdmin();
+<<<<<<< HEAD
   const { data, error } = await getAdminClient()
+=======
+  const supabaseAdmin = getSupabaseAdmin();
+  const { data, error } = await supabaseAdmin
+>>>>>>> codex/mvp-stabilization-20260919
     .from('exchange_items')
     .select('id,name,description,cost_points,delivery_method,stock,is_active,sort,created_at')
     .order('sort', { ascending: true })

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { signInWithOAuth } from '@/lib/auth';
 
@@ -9,8 +9,10 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
 
   async function signIn() {
+<<<<<<< HEAD
     if (email.trim() === '' || password === '') {
       Alert.alert('メールアドレスとパスワードを入力してください');
       return;
@@ -19,6 +21,26 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) Alert.alert('ログインに失敗しました', error.message);
+=======
+    if (!email.trim() || !password) {
+      setMessage('メールアドレスとパスワードを入力してください。');
+      return;
+    }
+    setMessage('');
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) {
+        setMessage(`ログインに失敗しました: ${error.message}`);
+        return;
+      }
+      router.replace('/');
+    } catch (error) {
+      setMessage(`ログインに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setBusy(false);
+    }
+>>>>>>> codex/mvp-stabilization-20260919
   }
 
   async function signInOAuth(provider: 'google' | 'apple') {
@@ -43,6 +65,7 @@ export default function Login() {
       <Pressable style={[s.btn, busy && { opacity: 0.6 }]} onPress={signIn} disabled={busy}>
         <Text style={s.btnText}>{busy ? '...' : 'ログイン'}</Text>
       </Pressable>
+      {message ? <Text style={s.message}>{message}</Text> : null}
 
       <Text style={s.or}>または</Text>
       <Pressable style={s.oauth} onPress={() => signInOAuth('google')}><Text style={s.oauthText}>Googleでログイン</Text></Pressable>
@@ -63,6 +86,7 @@ const s = StyleSheet.create({
   input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d8dbe2', borderRadius: 12, padding: 14, marginBottom: 12, fontSize: 15 },
   btn: { backgroundColor: '#4f46e5', borderRadius: 12, padding: 15, alignItems: 'center', marginTop: 4 },
   btnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  message: { color: '#b42318', fontWeight: '600', fontSize: 13, marginTop: 12, textAlign: 'center' },
   or: { textAlign: 'center', color: '#9aa0ac', marginVertical: 18 },
   oauth: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d8dbe2', borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 10 },
   oauthText: { fontWeight: '700', color: '#1f2430' },

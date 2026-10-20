@@ -14,10 +14,15 @@ a { color: inherit; text-decoration: none; }
 .side .logo { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(140deg,#5563e0,#7c5cff); display: grid; place-items: center; font-size: 13px; }
 .side a { display: block; padding: 10px 12px; border-radius: 9px; color: #c4c8e0; font-size: 13.5px; font-weight: 600; }
 .side a.on, .side a:hover { background: rgba(255,255,255,.08); color: #fff; }
+<<<<<<< HEAD
 .side .navlogout { display: block; width: 100%; text-align: left; margin-top: 18px; padding: 10px 12px; border: 0; border-radius: 9px; background: transparent; color: #9aa0c0; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .side .navlogout:hover { background: rgba(255,255,255,.08); color: #fff; }
 form.inline { display: inline-flex; gap: 6px; align-items: center; }
 form.inline input[type=text] { padding: 6px 9px; border: 1px solid #d8dbe2; border-radius: 8px; font-size: 12.5px; width: 130px; }
+=======
+.nav-logout { width: 100%; margin-top: 18px; padding: 10px 12px; border: 1px solid rgba(255,255,255,.15); border-radius: 9px; background: transparent; color: #c4c8e0; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-align: left; }
+.nav-logout:hover { background: rgba(255,255,255,.08); color: #fff; }
+>>>>>>> codex/mvp-stabilization-20260919
 .main { flex: 1; padding: 26px; }
 h1 { font-size: 20px; font-weight: 800; margin-bottom: 18px; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 14px; margin-bottom: 22px; }
@@ -73,6 +78,7 @@ th { color: var(--sub); font-weight: 800; font-size: 11px; }
 .field.check label { font-weight: 700; font-size: 12.5px; color: var(--ink); }
 .form-foot { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
 
+<<<<<<< HEAD
 /* ポイント経済ダッシュボード（グラフ / 債務サマリ） */
 .chartwrap { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 14px 14px 8px; }
 .chart { width: 100%; height: auto; display: block; }
@@ -99,3 +105,17 @@ th { color: var(--sub); font-weight: 800; font-size: 11px; }
 .msg.staff { background: #eef0ff; border: 1px solid #d9ddfb; margin-left: 28px; }
 .msg-who { font-size: 11px; font-weight: 800; color: var(--sub); margin-bottom: 5px; }
 .msg-body { font-size: 13.5px; color: var(--ink); line-height: 20px; white-space: pre-wrap; }
+=======
+.login-main { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: linear-gradient(145deg, #eef1ff, #f7f8fc 55%, #e9f5ef); }
+.login-card { width: min(420px, 100%); display: flex; flex-direction: column; gap: 9px; padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: 0 18px 55px rgba(18,21,42,.12); }
+.login-brand { display: flex; align-items: center; gap: 10px; color: #12152a; font-weight: 900; }
+.login-brand .logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(140deg,#5563e0,#7c5cff); color: #fff; display: grid; place-items: center; font-size: 13px; }
+.login-card h1 { margin: 12px 0 0; font-size: 24px; }
+.login-card .sub { margin: 0 0 10px; }
+.login-card label { margin-top: 5px; color: var(--sub); font-size: 12px; font-weight: 800; }
+.login-card input { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fafbfd; font: inherit; }
+.login-error { color: var(--danger); font-size: 12px; font-weight: 700; }
+.login-button { margin-top: 10px; padding: 11px 14px; }
+.exchange-action { display: flex; gap: 6px; align-items: center; }
+.exchange-action input { width: 190px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 11px; }
+>>>>>>> codex/mvp-stabilization-20260919

@@ -4,10 +4,14 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
+<<<<<<< HEAD
 import { supabase } from '@/lib/supabase';
 import { registerPushToken } from '@/lib/push';
 import { registerDevice } from '@/lib/device';
 import { track, flushEvents, EVENTS } from '@/lib/analytics';
+=======
+import { hasSupabaseConfig, supabase } from '@/lib/supabase';
+>>>>>>> codex/mvp-stabilization-20260919
 
 /**
  * 認証＋オンボーディングのゲート。
@@ -25,6 +29,7 @@ export default function RootLayout() {
 
   // ジャンル選択の有無で初回オンボーディング要否を判定
   async function refreshOnboarded(s: Session | null) {
+    if (!hasSupabaseConfig) { setOnboarded(true); return; }
     if (!s) { setOnboarded(null); return; }
     try {
       const { count, error } = await supabase
@@ -41,6 +46,7 @@ export default function RootLayout() {
   }
 
   useEffect(() => {
+<<<<<<< HEAD
     // getSession/refresh が失敗しても必ず ready にし、永久ブランク＋未処理 rejection を防ぐ
     (async () => {
       try {
@@ -52,8 +58,27 @@ export default function RootLayout() {
       }
     })();
     const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
+=======
+    if (!hasSupabaseConfig) {
+      setSession(null);
+      setOnboarded(true);
+      setReady(true);
+      return;
+    }
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      setSession(data.session);
+      await refreshOnboarded(data.session);
+      setReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+>>>>>>> codex/mvp-stabilization-20260919
       setSession(s);
-      await refreshOnboarded(s);
+      // Supabase auth callbacks run while the auth client holds an internal lock.
+      // Defer queries that use the same client so sign-in/sign-up can finish.
+      setTimeout(() => {
+        void refreshOnboarded(s);
+      }, 0);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -77,6 +102,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!ready) return;
+    if (!hasSupabaseConfig) return;
     const seg = segments[0];
     const inAuth = seg === 'login' || seg === 'signup' || seg === 'forgot';
     const inOnboarding = seg === 'onboarding' || seg === 'genres';

@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
+=======
+import { useState } from 'react';
+import { Text, TextInput, Pressable, StyleSheet } from 'react-native';
+>>>>>>> codex/mvp-stabilization-20260919
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -19,6 +24,7 @@ export default function SignUp() {
   const [day, setDay] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
+<<<<<<< HEAD
   const [docs, setDocs] = useState<LegalDoc[]>([]);
 
   // 同意した「版」を記録する必要があるため、登録前に現行版を取得しておく（未ログインでも読める）
@@ -84,6 +90,42 @@ export default function SignUp() {
       );
     }
     router.replace('/'); // 確認不要設定なら即ログイン → ホーム
+=======
+  const [message, setMessage] = useState('');
+
+  async function signUp() {
+    if (!email.trim()) {
+      setMessage('メールアドレスを入力してください。');
+      return;
+    }
+    if (password.length < 8) {
+      setMessage('パスワードは8文字以上にしてください。');
+      return;
+    }
+    setMessage('');
+    setBusy(true);
+    try {
+      // profiles / point_wallets は handle_new_user トリガで自動作成（0001_core.sql）
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { data: { username: username.trim() || 'Player' } },
+      });
+      if (error) {
+        setMessage(`登録に失敗しました: ${error.message}`);
+        return;
+      }
+      if (!data.session) {
+        setMessage('確認メールを送信しました。メール内のリンクを開いてからログインしてください。');
+        return;
+      }
+      router.replace('/');
+    } catch (error) {
+      setMessage(`登録に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setBusy(false);
+    }
+>>>>>>> codex/mvp-stabilization-20260919
   }
 
   return (
@@ -100,6 +142,7 @@ export default function SignUp() {
         <TextInput style={s.input} placeholder="パスワード（確認）" secureTextEntry
           value={password2} onChangeText={setPassword2} />
 
+<<<<<<< HEAD
         <Text style={s.label}>生年月日</Text>
         <Text style={s.labelHint}>年齢確認のために使用します。あとから変更できません。</Text>
         <View style={s.dobRow}>
@@ -113,6 +156,12 @@ export default function SignUp() {
             value={day} onChangeText={setDay} accessibilityLabel="生日" />
           <Text style={s.dobSep}>日</Text>
         </View>
+=======
+      <Pressable style={[s.btn, busy && { opacity: 0.6 }]} onPress={signUp} disabled={busy}>
+        <Text style={s.btnText}>{busy ? '...' : 'アカウントを作成'}</Text>
+      </Pressable>
+      {message ? <Text style={s.message}>{message}</Text> : null}
+>>>>>>> codex/mvp-stabilization-20260919
 
         <Pressable
           style={s.agreeRow}
@@ -160,5 +209,6 @@ const s = StyleSheet.create({
   legalLink: { color: '#4f46e5', fontWeight: '700' },
   btn: { backgroundColor: '#4f46e5', borderRadius: 12, padding: 15, alignItems: 'center', marginTop: 18 },
   btnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  message: { color: '#b42318', fontWeight: '600', fontSize: 13, marginTop: 12, textAlign: 'center' },
   link: { textAlign: 'center', color: '#4f46e5', fontWeight: '700', marginTop: 18 },
 });

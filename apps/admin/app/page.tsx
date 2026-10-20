@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { getAdminClient } from '@/lib/supabase/admin';
+=======
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+>>>>>>> codex/mvp-stabilization-20260919
 import { requireAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +20,10 @@ type Overview = {
 
 export default async function Dashboard() {
   await requireAdmin();
+<<<<<<< HEAD
+=======
+  const supabaseAdmin = getSupabaseAdmin();
+>>>>>>> codex/mvp-stabilization-20260919
   // service_role で集計ビューを参照（admin_overview は 0007_admin.sql）
   const { data, error } = await getAdminClient().from('admin_overview').select('*').single<Overview>();
 

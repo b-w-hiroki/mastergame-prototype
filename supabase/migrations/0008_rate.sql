@@ -20,9 +20,17 @@ create or replace function public.point_yen_rate() returns int
   select (value #>> '{}')::int from public.app_config where key = 'point_yen_rate';
 $$;
 
+<<<<<<< HEAD
 -- ポイント→円換算ヘルパー（sum(delta) は numeric を返すため引数も numeric で受ける）
 create or replace function public.points_to_yen(p numeric) returns numeric
   language sql stable as $$ select round(p / public.point_yen_rate()); $$;
+=======
+-- ポイント→円換算ヘルパー
+-- sum(bigint) returns numeric in PostgreSQL, so accept numeric here.
+-- bigint values continue to work through PostgreSQL's implicit cast.
+create or replace function public.points_to_yen(p numeric) returns numeric
+  language sql stable as $$ select round(p::numeric / public.point_yen_rate()); $$;
+>>>>>>> codex/mvp-stabilization-20260919
 
 -- ---------- XP をポイントから分離（活動量ベース） ----------
 alter table public.missions add column if not exists xp_reward integer not null default 50;
