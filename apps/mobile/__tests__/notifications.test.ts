@@ -21,19 +21,51 @@ describe('resolveNotification', () => {
     const v = resolveNotification(n('point_expiry_notice', { balance: 5000, expires_on: '2026-09-01' }));
     expect(v.body).toContain('5,000 P');
     expect(v.body).toContain('2026年9月1日');
-    expect(v.href).toBe('/exchange');
+    expect(v.href).toBe('/points?section=exchange');
   });
 
   it('失効予告で payload が欠けていても汎用文言で成立する', () => {
     const v = resolveNotification(n('point_expiry_notice', {}));
     expect(v.body).toBe('保有ポイントの有効期限が近づいています。');
-    expect(v.href).toBe('/exchange');
+    expect(v.href).toBe('/points?section=exchange');
   });
 
-  it('失効済みはポイント画面へ', () => {
+  it('失効済みはポイント履歴へ', () => {
     const v = resolveNotification(n('point_expired', { points: 1200 }));
     expect(v.body).toContain('1,200 P');
-    expect(v.href).toBe('/points');
+    expect(v.href).toBe('/points?section=history');
+  });
+
+  it('コード付き交換の完了通知から交換履歴へ案内する', () => {
+    const v = resolveNotification(n('exchange_fulfilled', { request_id: 'r1', has_code: true }));
+    expect(v.title).toBe('ポイント交換が完了しました');
+    expect(v.body).toContain('受取コード');
+    expect(v.href).toBe('/points?section=history&request_id=r1');
+  });
+
+  it('コードのない交換完了では受取コードを案内しない', () => {
+    const v = resolveNotification(n('exchange_fulfilled', { request_id: 'r1', has_code: false }));
+    expect(v.body).not.toContain('受取コード');
+    expect(v.href).toBe('/points?section=history&request_id=r1');
+  });
+
+  it('交換取消は返還されたポイントを表示する', () => {
+    const v = resolveNotification(n('exchange_cancelled', { request_id: 'r1', refunded: 50000, reason: 'admin_cancel' }));
+    expect(v.title).toBe('ポイント交換が取り消されました');
+    expect(v.body).toContain('50,000 P が返還');
+    expect(v.body).not.toContain('admin_cancel');
+    expect(v.href).toBe('/points?section=history&request_id=r1');
+  });
+
+  it('申請IDをURLの別パラメータとして解釈させない', () => {
+    const v = resolveNotification(n('exchange_fulfilled', { request_id: 'r1&section=exchange' }));
+    expect(v.href).toBe('/points?section=history&request_id=r1%26section%3Dexchange');
+  });
+
+  it.each(['exchange_fulfilled', 'exchange_cancelled'])('交換通知 %s は空のpayloadでも履歴へ案内する', (type) => {
+    const v = resolveNotification(n(type));
+    expect(v.title).not.toBe('お知らせ');
+    expect(v.href).toBe('/points?section=history');
   });
 
   it('返信・ベストアンサー・リアクションはトピックへ飛ぶ', () => {
@@ -68,6 +100,19 @@ describe('resolveNotification', () => {
     const v = resolveNotification(n('point_expiry_notice', { balance: '5000', expires_on: '2026-09-01' }));
     expect(v.body).toBe('保有ポイントの有効期限が近づいています。');
   });
+  it.each(['https://example.test', '//example.test', '/\\example.test', 'javascript:alert(1)', '/points\n', '/topic/../../login', '/%2f%2fexample.test', '/login', '/missing-route'])('未知の通知の危険/未定義リンクを開かない: %s', (href) => {
+    expect(resolveNotification(n('future_type', { href })).href).toBeNull();
+  });
+  it.each(['/games', '/games/eldia', '/points?section=history', '/support/i1', '/legal/terms'])('既知の内部ルートは通知から開ける: %s', (href) => {
+    expect(resolveNotification(n('future_type', { href })).href).toBe(href);
+  });
+  it.each(['../login', 't1?redirect=outside', 'a/b', ''])('不正な詳細IDを別ルートとして解釈しない: %s', (id) => {
+    expect(resolveNotification(n('reply', { topic_id: id })).href).toBeNull();
+    expect(resolveNotification(n('inquiry_answered', { inquiry_id: id })).href).toBe('/support');
+  });
+  it.each([-10, 1.5, Infinity, Number.MAX_SAFE_INTEGER + 1])('不正な報酬を獲得済みとして表示しない: %s', (amount) => {
+    expect(resolveNotification(n('best_answer', { amount })).body).toBeNull();
+  });
 });
 
 describe('relativeTime', () => {
@@ -96,5 +141,11 @@ describe('formatDate', () => {
   });
   it('パースできない入力はそのまま返す', () => {
     expect(formatDate('???')).toBe('???');
+  });
+  it('日付だけの値をタイムゾーン変換で前日へずらさない', () => {
+    expect(formatDate('2026-01-01')).toBe('2026年1月1日');
+  });
+  it('実在しない日付を翌月の日時に変換しない', () => {
+    expect(formatDate('2026-02-30')).toBe('2026-02-30');
   });
 });

@@ -23,13 +23,14 @@ export default function Legal() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const [doc, setDoc] = useState<Doc | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isCurrent: () => boolean) => {
     const { data, error: qErr } = await supabase
       .from('current_legal_documents')
       .select('slug,version,title,body')
       .eq('slug', slug)
       .single();
     if (qErr) throw qErr;
+    if (!isCurrent()) return;
     setDoc(data as unknown as Doc);
   }, [slug]);
 

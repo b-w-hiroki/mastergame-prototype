@@ -1,6 +1,7 @@
 import { getAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { readMissionForm, toJapanInput } from '@/lib/master-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,27 +29,7 @@ const TYPE: Record<Mission['type'], [string, string]> = {
 
 const fmtDate = (iso: string | null) => {
   if (!iso) return '—';
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-};
-
-// datetime-local 入力用（ローカル時刻の YYYY-MM-DDTHH:mm）
-const toLocalInput = (iso: string | null) => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-};
-const toIso = (v: FormDataEntryValue | null) => {
-  const s = v ? String(v).trim() : '';
-  return s === '' ? null : new Date(s).toISOString();
-};
-const toIntOrNull = (v: FormDataEntryValue | null) => {
-  const s = v ? String(v).trim() : '';
-  if (s === '') return null;
-  const n = Math.floor(Number(s));
-  return Number.isFinite(n) ? n : null;
+  return toJapanInput(iso).slice(0, 10);
 };
 
 // 作成 / 更新（マスタ。ポイント操作なし＝安全。service_role でRLSバイパス）
@@ -57,24 +38,7 @@ async function saveMission(formData: FormData) {
   await requireAdmin();
   const idRaw = String(formData.get('id') ?? '').trim();
   const id = idRaw === '' ? '' : assertUuid(idRaw);
-  const title = String(formData.get('title') ?? '').trim();
-  const reward = toIntOrNull(formData.get('reward_points'));
-  const maxProgress = toIntOrNull(formData.get('max_progress')) ?? 1;
-
-  if (title === '') throw new Error('title required');
-  if (reward === null || reward <= 0) throw new Error('reward_points must be > 0');
-
-  const payload = {
-    type: assertEnum(formData.get('type'), ['daily', 'weekly', 'achievement', 'event', 'offer'] as const, 'type'),
-    title,
-    description: (String(formData.get('description') ?? '').trim() || null),
-    reward_points: reward,
-    max_progress: maxProgress < 1 ? 1 : maxProgress,
-    requires_verification: formData.get('requires_verification') === 'on',
-    is_active: formData.get('is_active') === 'on',
-    starts_at: toIso(formData.get('starts_at')),
-    ends_at: toIso(formData.get('ends_at')),
-  };
+  const payload = readMissionForm(formData);
 
   const res = id
     ? await getAdminClient().from('missions').update(payload).eq('id', id)
@@ -88,7 +52,7 @@ async function toggleMission(formData: FormData) {
   'use server';
   await requireAdmin();
   const id = assertUuid(formData.get('id'));
-  const next = String(formData.get('next')) === 'true';
+  const next = assertEnum(formData.get('next'), ['true', 'false'] as const, 'next') === 'true';
   const { error } = await getAdminClient().from('missions').update({ is_active: next }).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/missions');
@@ -128,19 +92,19 @@ function MissionForm({ m }: { m?: Mission }) {
         </div>
         <div className="field">
           <label>報酬ポイント</label>
-          <input type="number" name="reward_points" defaultValue={m?.reward_points ?? 100} min={1} required />
+          <input type="number" name="reward_points" defaultValue={m?.reward_points ?? 100} min={1} max={2_147_483_647} step={1} required />
         </div>
         <div className="field">
           <label>進捗（max_progress）</label>
-          <input type="number" name="max_progress" defaultValue={m?.max_progress ?? 1} min={1} />
+          <input type="number" name="max_progress" defaultValue={m?.max_progress ?? 1} min={1} max={2_147_483_647} step={1} />
         </div>
         <div className="field">
-          <label>開始（任意）</label>
-          <input type="datetime-local" name="starts_at" defaultValue={toLocalInput(m?.starts_at ?? null)} />
+          <label>開始（日本時間・任意）</label>
+          <input type="datetime-local" name="starts_at" defaultValue={toJapanInput(m?.starts_at ?? null)} />
         </div>
         <div className="field">
-          <label>終了（任意）</label>
-          <input type="datetime-local" name="ends_at" defaultValue={toLocalInput(m?.ends_at ?? null)} />
+          <label>終了（日本時間・任意）</label>
+          <input type="datetime-local" name="ends_at" defaultValue={toJapanInput(m?.ends_at ?? null)} />
         </div>
         <div className="field check">
           <input type="checkbox" id={`rv-${m?.id ?? 'new'}`} name="requires_verification" defaultChecked={m?.requires_verification ?? false} />

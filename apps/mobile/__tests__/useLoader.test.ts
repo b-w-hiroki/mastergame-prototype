@@ -36,4 +36,45 @@ describe('useLoader', () => {
     await act(async () => { await result.current.reload(); });
     expect(result.current.error).toBeNull();
   });
+
+  it('新しい読込の後に古い読込が失敗してもエラーを上書きしない', async () => {
+    let rejectOld!: (error: Error) => void;
+    const load = jest.fn().mockImplementationOnce(() => new Promise<void>((_, reject) => { rejectOld = reject; }))
+      .mockResolvedValueOnce(undefined);
+    const { result } = renderHook(() => useLoader(load, { auto: false }));
+    let old!: Promise<void>;
+    await act(async () => { old = result.current.reload(); });
+    await act(async () => { await result.current.reload(); });
+    await act(async () => { rejectOld(new Error('old offline')); await old; });
+    expect(result.current.error).toBeNull();
+    expect(result.current.loading).toBe(false);
+  });
+
+  it('新しい読込や画面離脱後は古い結果を反映しない', async () => {
+    const checks: Array<() => boolean> = [];
+    const load = jest.fn(async (isCurrent: () => boolean) => { checks.push(isCurrent); });
+    const { result } = renderHook(() => useLoader(load, { auto: false }));
+    await act(async () => { await result.current.reload(); });
+    expect(checks[0]()).toBe(true);
+    await act(async () => { await result.current.reload(); });
+    expect(checks[0]()).toBe(false);
+    expect(checks[1]()).toBe(true);
+    act(() => { result.current.cancel(); });
+    expect(checks[1]()).toBe(false);
+  });
+
+  it('古い更新が完了しても新しい更新中表示を解除しない', async () => {
+    const resolve: Array<() => void> = [];
+    const load = jest.fn(() => new Promise<void>((done) => { resolve.push(done); }));
+    const { result } = renderHook(() => useLoader(load, { auto: false }));
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    await act(async () => { first = result.current.onRefresh(); });
+    await act(async () => { second = result.current.onRefresh(); });
+    expect(result.current.refreshing).toBe(true);
+    await act(async () => { resolve[0](); await first; });
+    expect(result.current.refreshing).toBe(true);
+    await act(async () => { resolve[1](); await second; });
+    expect(result.current.refreshing).toBe(false);
+  });
 });

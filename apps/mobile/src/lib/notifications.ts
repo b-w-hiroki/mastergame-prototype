@@ -23,7 +23,21 @@ const str = (p: Payload, key: string): string | null => {
 };
 const num = (p: Payload, key: string): number | null => {
   const v = p[key];
-  return typeof v === 'number' && Number.isFinite(v) ? v : null;
+  return typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 ? v : null;
+};
+const detailHref = (base: string, p: Payload, key: string, fallback: string | null = null): string | null => {
+  const id = str(p, key);
+  return id && /^[a-z0-9_-]+$/i.test(id) ? `${base}/${encodeURIComponent(id)}` : fallback;
+};
+// 通知由来の遷移は既知のアプリ内ルートのみ。外部URLや認証画面へは飛ばさない。
+const internalHref = (href: string | null): string | null => {
+  if (!href || /[\s\\\u0000-\u001f\u007f]/.test(href)) return null;
+  const path = href.split(/[?#]/, 1)[0];
+  return /^\/(?:|points|missions|mypage|community|notifications|games|invite|support|genres|onboarding|exchange|(?:topic|support|games)\/[a-z0-9_-]+|legal\/(?:terms|privacy|tokushoho))$/i.test(path) ? href : null;
+};
+const exchangeHistoryHref = (p: Payload): string => {
+  const requestId = str(p, 'request_id');
+  return '/points?section=history' + (requestId ? `&request_id=${encodeURIComponent(requestId)}` : '');
 };
 
 /** 通知1件を表示用に解決する。未知の type は汎用表示に落とす。 */
@@ -37,7 +51,7 @@ export function resolveNotification(n: AppNotification): NotificationView {
         icon: '💬',
         title: 'お問い合わせに回答があります',
         body: str(p, 'subject'),
-        href: str(p, 'inquiry_id') ? `/support/${str(p, 'inquiry_id')}` : '/support',
+        href: detailHref('/support', p, 'inquiry_id', '/support'),
       };
 
     // ---- ポイント失効（0024）----
@@ -51,7 +65,7 @@ export function resolveNotification(n: AppNotification): NotificationView {
           balance != null && expiresOn
             ? `${balance.toLocaleString()} P が ${formatDate(expiresOn)} に失効します。お早めにご利用ください。`
             : '保有ポイントの有効期限が近づいています。',
-        href: '/exchange',   // 「使う」への最短導線
+        href: '/points?section=exchange',   // 「使う」への最短導線
       };
     }
     case 'point_expired': {
@@ -60,7 +74,29 @@ export function resolveNotification(n: AppNotification): NotificationView {
         icon: '⌛',
         title: 'ポイントが失効しました',
         body: points != null ? `${points.toLocaleString()} P が有効期限切れで失効しました。` : null,
-        href: '/points',
+        href: '/points?section=history',
+      };
+    }
+
+    // ---- ポイント交換（0017）----
+    case 'exchange_fulfilled':
+      return {
+        icon: '🎁',
+        title: 'ポイント交換が完了しました',
+        body: p.has_code === true
+          ? '受取コードを交換履歴で確認できます。'
+          : '交換申請が完了しました。詳細は交換履歴で確認できます。',
+        href: exchangeHistoryHref(p),
+      };
+    case 'exchange_cancelled': {
+      const refunded = num(p, 'refunded');
+      return {
+        icon: '↩️',
+        title: 'ポイント交換が取り消されました',
+        body: refunded != null
+          ? `${refunded.toLocaleString()} P が返還されました。交換履歴をご確認ください。`
+          : '交換履歴とポイント残高をご確認ください。',
+        href: exchangeHistoryHref(p),
       };
     }
 
@@ -70,7 +106,7 @@ export function resolveNotification(n: AppNotification): NotificationView {
         icon: '↩️',
         title: 'あなたのトピックに返信がありました',
         body: str(p, 'topic_title'),
-        href: str(p, 'topic_id') ? `/topic/${str(p, 'topic_id')}` : null,
+        href: detailHref('/topic', p, 'topic_id'),
       };
     case 'best_answer': {
       const amount = num(p, 'amount');
@@ -78,7 +114,7 @@ export function resolveNotification(n: AppNotification): NotificationView {
         icon: '🏆',
         title: 'ベストアンサーに選ばれました',
         body: amount != null ? `報酬 ${amount.toLocaleString()} P を獲得しました。` : null,
-        href: str(p, 'topic_id') ? `/topic/${str(p, 'topic_id')}` : null,
+        href: detailHref('/topic', p, 'topic_id'),
       };
     }
     case 'reaction':
@@ -86,7 +122,7 @@ export function resolveNotification(n: AppNotification): NotificationView {
         icon: '👍',
         title: 'あなたの投稿にリアクションがつきました',
         body: null,
-        href: str(p, 'topic_id') ? `/topic/${str(p, 'topic_id')}` : null,
+        href: detailHref('/topic', p, 'topic_id'),
       };
     case 'report_result':
       return {
@@ -102,12 +138,18 @@ export function resolveNotification(n: AppNotification): NotificationView {
         icon: '🔔',
         title: str(p, 'title') ?? 'お知らせ',
         body: str(p, 'body'),
-        href: str(p, 'href'),   // payload に href があれば従う
+        href: internalHref(str(p, 'href')),
       };
   }
 }
 
 export function formatDate(iso: string): string {
+  const calendarDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (calendarDate) {
+    const date = new Date(`${iso}T00:00:00.000Z`);
+    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== iso) return iso;
+    return `${Number(calendarDate[1])}年${Number(calendarDate[2])}月${Number(calendarDate[3])}日`;
+  }
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;

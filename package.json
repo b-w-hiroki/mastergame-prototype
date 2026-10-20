@@ -1,6 +1,10 @@
 {
   "scripts": {
-    "check:supabase": "node scripts/check-supabase.mjs"
+    "check:docs": "node scripts/check-docs.mjs",
+    "test:docs": "node --test scripts/check-docs.test.mjs",
+    "check:supabase": "node scripts/check-supabase.mjs",
+    "check:local": "node scripts/check-local.mjs",
+    "check:setup-sql": "node scripts/check-setup-sql.mjs"
   },
   "devDependencies": {
     "pptxgenjs": "^4.0.1"

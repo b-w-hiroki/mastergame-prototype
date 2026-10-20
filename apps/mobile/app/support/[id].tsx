@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-native';
+import { AppAlert as Alert } from '@/components/AppAlert';
+import { useAction } from '@/lib/useAction';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -30,15 +32,19 @@ export default function SupportThread() {
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [body, setBody] = useState('');
-  const [busy, setBusy] = useState(false);
+  const { busy, run } = useAction();
 
-  const load = useCallback(async () => {
-    const [{ data: i, error: iErr }, { data: m }] = await Promise.all([
+  const load = useCallback(async (isCurrent: () => boolean) => {
+    if (isCurrent()) { setInquiry(null); setMessages([]); }
+    const [{ data: i, error: iErr }, { data: m, error: mErr }] = await Promise.all([
       supabase.from('inquiries').select('id,subject,status').eq('id', id).single(),
       supabase.from('inquiry_messages').select('id,is_staff,body,created_at')
         .eq('inquiry_id', id).order('created_at', { ascending: true }),
     ]);
     if (iErr) throw iErr;
+    if (mErr) throw mErr;
+    if (!i || !Array.isArray(m)) throw new Error('Invalid inquiry response');
+    if (!isCurrent()) return;
     setInquiry(i as unknown as Inquiry);
     setMessages((m as unknown as Message[]) ?? []);
   }, [id]);
@@ -46,21 +52,23 @@ export default function SupportThread() {
   const { loading, error, reload } = useLoader(load);
 
   async function reply() {
+    if (loading || error || inquiry?.id !== id || inquiry.status === 'closed') return;
     if (body.trim() === '') { Alert.alert('内容を入力してください'); return; }
-    setBusy(true);
+    if (body.trim().length > 4000) { Alert.alert('返信は4,000文字以内で入力してください'); return; }
+    await run(async () => {
     const { data, error: rErr } = await supabase.rpc('reply_to_inquiry', {
       p_inquiry_id: id, p_body: body.trim(),
     });
-    setBusy(false);
     if (rErr) { Alert.alert('送信できませんでした', rErr.message); return; }
 
-    const res = data as unknown as { status: string; reason?: string };
-    if (res.status !== 'ok') {
-      Alert.alert('送信できませんでした', REASON_MESSAGE[res.reason ?? ''] ?? 'しばらくしてからお試しください。');
+    const res = data as unknown as { status: string; reason?: string } | null;
+    if (res?.status !== 'ok') {
+      Alert.alert('送信できませんでした', REASON_MESSAGE[res?.reason ?? ''] ?? 'しばらくしてからお試しください。');
       return;
     }
     setBody('');
     reload().catch(() => {});
+    }, '返信の送信を確認できませんでした');
   }
 
   const closed = inquiry?.status === 'closed';
@@ -72,7 +80,7 @@ export default function SupportThread() {
         {loading && <LoadingView />}
         {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
 
-        {inquiry && (
+        {!loading && !error && inquiry?.id === id && (
           <>
             <Text style={s.subject}>{inquiry.subject}</Text>
             <Text style={s.status}>{STATUS_LABEL[inquiry.status] ?? inquiry.status}</Text>
@@ -96,6 +104,7 @@ export default function SupportThread() {
                   value={body}
                   onChangeText={setBody}
                   accessibilityLabel="返信内容"
+                  maxLength={4000}
                 />
                 <Pressable style={[s.send, busy && { opacity: 0.5 }]} onPress={reply} disabled={busy}
                   accessibilityRole="button">

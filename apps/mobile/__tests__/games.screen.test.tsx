@@ -1,9 +1,11 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { Alert, RefreshControl } from 'react-native';
 
 const mockGetUser = jest.fn();
 const mockSelect = jest.fn();
 const mockInsert = jest.fn();
 const mockDelete = jest.fn();
+let mockTableErrors: Record<string, unknown> = {};
 
 // game_hub_rows / user_games の2テーブルを扱うので、テーブル名で分岐するチェーンを作る
 jest.mock('@/lib/supabase', () => {
@@ -12,8 +14,8 @@ jest.mock('@/lib/supabase', () => {
     for (const m of ['select', 'eq', 'order', 'limit']) {
       q[m] = (...a: unknown[]) => { if (m === 'select') mockSelect(table, ...a); return q; };
     }
-    (q as { then: unknown }).then = (resolve: (v: unknown) => void) => resolve({ data: rows, error: null });
-    q.insert = (...a: unknown[]) => { mockInsert(table, ...a); return Promise.resolve({ error: null }); };
+    (q as { then: unknown }).then = (resolve: (v: unknown) => void) => resolve({ data: rows, error: mockTableErrors[table] ?? null });
+    q.insert = (...a: unknown[]) => mockInsert(table, ...a);
     q.delete = () => {
       const d: Record<string, unknown> = {};
       d.eq = () => d;
@@ -26,7 +28,10 @@ jest.mock('@/lib/supabase', () => {
     supabase: {
       auth: { getUser: (...a: unknown[]) => mockGetUser(...a) },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      from: (table: string) => chain((global as any).__tables?.[table] ?? [], table),
+      from: (table: string) => {
+        const tables = (global as any).__tables;
+        return chain(tables && table in tables ? tables[table] : [], table);
+      },
     },
   };
 });
@@ -59,6 +64,8 @@ describe('Games hub screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    mockInsert.mockResolvedValue({ error: null });
+    mockTableErrors = {};
     setTables({ game_hub_rows: [GAME], user_games: [] });
   });
 
@@ -77,7 +84,7 @@ describe('Games hub screen', () => {
     render(<Games />);
     await waitFor(() => expect(screen.getByText('フォロー')).toBeTruthy());
     fireEvent.press(screen.getByText('フォロー'));
-    // 楽観更新で即座に表示が変わる
+    // 保存が成功してから表示を切り替える
     await waitFor(() => expect(screen.getByText('フォロー中')).toBeTruthy());
     await waitFor(() =>
       expect(mockInsert).toHaveBeenCalledWith('user_games', { user_id: 'u1', game_id: 'g1' }),
@@ -111,5 +118,56 @@ describe('Games hub screen', () => {
     render(<Games />);
     await waitFor(() => expect(screen.getByText('エルディア戦記')).toBeTruthy());
     expect(screen.getByText('フォロー')).toBeTruthy();
+  });
+  it('フォローの通信例外後も状態を変えず再試行できる', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    mockInsert.mockRejectedValueOnce(new Error('offline'));
+    render(<Games />);
+    await screen.findByText('エルディア戦記');
+    await act(async () => { fireEvent.press(screen.getByText('フォロー')); });
+    expect(screen.queryByText('フォロー中')).toBeNull();
+    expect(alert).toHaveBeenCalledWith('フォローを保存できませんでした', expect.any(String));
+    await act(async () => { fireEvent.press(screen.getByText('フォロー')); });
+    expect(screen.getByText('フォロー中')).toBeTruthy();
+    alert.mockRestore();
+  });
+  it('フォローボタンはカードへのクリック伝播を止める', async () => {
+    render(<Games />);
+    await screen.findByText('エルディア戦記');
+    const stopPropagation = jest.fn();
+    await act(async () => { fireEvent.press(screen.getByText('フォロー'), { stopPropagation }); });
+    expect(stopPropagation).toHaveBeenCalledTimes(1);
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('再読込失敗後は古いゲームとフォローボタンを隠し、再試行で回復する', async () => {
+    render(<Games />);
+    await screen.findByText('エルディア戦記');
+    mockTableErrors.game_hub_rows = { message: 'offline' };
+    fireEvent(screen.UNSAFE_getByType(RefreshControl), 'refresh');
+    await screen.findByText(/データの取得に失敗しました/);
+    expect(screen.queryByText('エルディア戦記')).toBeNull();
+    expect(screen.queryByLabelText('エルディア戦記をフォロー')).toBeNull();
+    mockTableErrors = {};
+    fireEvent.press(screen.getByText('再読み込み'));
+    await screen.findByText('エルディア戦記');
+  });
+
+  it('ゲーム一覧の空応答は正常な空一覧と区別する', async () => {
+    setTables({ game_hub_rows: null as unknown as unknown[], user_games: [] });
+    render(<Games />);
+    await screen.findByText(/データの取得に失敗しました/);
+    expect(screen.queryByText('ゲームがまだ登録されていません')).toBeNull();
+  });
+
+  it('操作時にログアウト済みならログインを案内し、書き込まない', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    render(<Games />);
+    await screen.findByText('エルディア戦記');
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+    await act(async () => { fireEvent.press(screen.getByText('フォロー')); });
+    expect(alert).toHaveBeenCalledWith('ログインが必要です', expect.any(String));
+    expect(mockInsert).not.toHaveBeenCalled();
+    alert.mockRestore();
   });
 });

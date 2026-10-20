@@ -1,5 +1,7 @@
 # MasterGame Admin (Next.js)
 
+現行の機能範囲と未検証事項は [現行機能仕様](../../docs/PRODUCT_SPEC.md)、管理者権限と DB の境界は [現行技術設計](../../docs/ARCHITECTURE.md) を参照。この README の構成・実装状況は初期実装時の概要であり、全ルートの網羅表ではない。
+
 運営コンソール（Next.js App Router, TypeScript）の実装足場。
 プロトタイプ `wireframes/admin.html` を、Supabase の集計ビューに接続した実装へ落とし込むベースです。
 

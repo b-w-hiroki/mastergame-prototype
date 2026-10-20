@@ -41,11 +41,11 @@ function autoConfirm() {
 
 function rpcs(overrides: Record<string, unknown> = {}) {
   mockRpc.mockImplementation(async (fn: string) => {
-    if (fn === 'my_account_deletion') return { data: overrides.my_account_deletion ?? { pending: false }, error: null };
+    if (fn === 'my_account_deletion') return { data: Object.hasOwn(overrides, 'my_account_deletion') ? overrides.my_account_deletion : { pending: false }, error: null };
     if (fn === 'request_account_deletion') {
-      return { data: overrides.request_account_deletion ?? { status: 'ok', scheduled_at: '2026-08-05T00:00:00Z' }, error: null };
+      return { data: Object.hasOwn(overrides, 'request_account_deletion') ? overrides.request_account_deletion : { status: 'ok', scheduled_at: '2026-08-05T00:00:00Z' }, error: null };
     }
-    if (fn === 'cancel_account_deletion') return { data: { status: 'ok' }, error: null };
+    if (fn === 'cancel_account_deletion') return { data: overrides.cancel_account_deletion ?? { status: 'ok' }, error: null };
     return { data: null, error: null };
   });
 }
@@ -70,7 +70,7 @@ describe('Delete account screen', () => {
     render(<DeleteAccount />);
     await waitFor(() => expect(screen.getByText(/5,000 P を保有/)).toBeTruthy());
     fireEvent.press(screen.getByText('ポイントを交換する ›'));
-    expect(mockPush).toHaveBeenCalledWith('/exchange');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/points', params: { section: 'exchange' } });
   });
 
   it('残高0なら交換の警告は出さない', async () => {
@@ -78,6 +78,42 @@ describe('Delete account screen', () => {
     render(<DeleteAccount />);
     await waitFor(() => expect(screen.getByText('退会するとどうなりますか？')).toBeTruthy());
     expect(screen.queryByText(/を保有しています/)).toBeNull();
+  });
+
+  it('残高が空応答なら退会操作を出さず再読み込みを促す', async () => {
+    mockWallet = null;
+    render(<DeleteAccount />);
+    await screen.findByText(/データの取得に失敗しました/);
+    expect(screen.queryByText('退会手続きへ進む')).toBeNull();
+    expect(screen.queryByText('退会をキャンセルする')).toBeNull();
+  });
+
+  it.each([null, { pending: 'false' }])('退会状態が不正なら手続きなしと扱わない: %p', async (status) => {
+    rpcs({ my_account_deletion: status });
+    render(<DeleteAccount />);
+    await screen.findByText(/データの取得に失敗しました/);
+    expect(screen.queryByText('退会手続きへ進む')).toBeNull();
+    expect(screen.queryByText('退会をキャンセルする')).toBeNull();
+  });
+
+  it('手続き後の再読込に失敗したら古い退会操作を表示しない', async () => {
+    let reads = 0;
+    mockRpc.mockImplementation(async (fn: string) => {
+      if (fn === 'my_account_deletion') {
+        reads += 1;
+        return reads === 1 ? { data: { pending: false }, error: null } : { data: null, error: { message: 'offline' } };
+      }
+      if (fn === 'request_account_deletion') return { data: { status: 'ok', scheduled_at: '2026-08-05T00:00:00Z' }, error: null };
+      return { data: null, error: null };
+    });
+    render(<DeleteAccount />);
+    await screen.findByText('退会手続きへ進む');
+    autoConfirm();
+    fireEvent.press(screen.getByText('退会手続きへ進む'));
+    await screen.findByText(/データの取得に失敗しました/);
+    expect(screen.queryByText('退会手続きへ進む')).toBeNull();
+    expect(screen.queryByText('退会をキャンセルする')).toBeNull();
+    expect(mockRpc).toHaveBeenCalledTimes(3);
   });
 
   it('確認ダイアログで失効額を提示してから申請する', async () => {
@@ -122,6 +158,25 @@ describe('Delete account screen', () => {
     expect(screen.getByText(/2026年8月5日に退会が完了します/)).toBeTruthy();
     fireEvent.press(screen.getByText('退会をキャンセルする'));
     await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('cancel_account_deletion'));
+  });
+
+  it('取消RPCが拒否・空応答なら成功を表示しない', async () => {
+    rpcs({ my_account_deletion: { pending: true }, cancel_account_deletion: { status: 'rejected', reason: 'no_pending_request' } });
+    render(<DeleteAccount />);
+    await waitFor(() => expect(screen.getByText('退会をキャンセルする')).toBeTruthy());
+    fireEvent.press(screen.getByText('退会をキャンセルする'));
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith('キャンセルできませんでした', expect.any(String)));
+    expect(Alert.alert).not.toHaveBeenCalledWith('退会をキャンセルしました', expect.any(String));
+  });
+
+  it('退会申請RPCが空応答なら完了済みと断定しない', async () => {
+    rpcs({ request_account_deletion: null });
+    render(<DeleteAccount />);
+    await waitFor(() => expect(screen.getByText('退会手続きへ進む')).toBeTruthy());
+    autoConfirm();
+    fireEvent.press(screen.getByText('退会手続きへ進む'));
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith('手続きできませんでした', expect.stringContaining('再読み込み')));
+    expect(Alert.alert).not.toHaveBeenCalledWith('手続きできませんでした', 'すでに退会手続きが完了しています。');
   });
 
   it('完了済みの再申請はユーザー向け文言で伝える', async () => {

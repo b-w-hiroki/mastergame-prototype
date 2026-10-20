@@ -1,6 +1,7 @@
 import { getAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { readItemForm } from '@/lib/master-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,38 +26,13 @@ const DELIVERY: Record<Item['delivery_method'], string> = {
 // 1,000P = 1円（app_config.point_yen_rate と一致。表示用の概算）
 const toYen = (p: number) => Math.round((p / 1000) * 100) / 100;
 
-const toIntOrNull = (v: FormDataEntryValue | null) => {
-  const s = v ? String(v).trim() : '';
-  if (s === '') return null;
-  const n = Math.floor(Number(s));
-  return Number.isFinite(n) ? n : null;
-};
-
 // 作成 / 更新（マスタ。ポイント操作なし＝安全。service_role でRLSバイパス）
 async function saveItem(formData: FormData) {
   'use server';
   await requireAdmin();
   const idRaw = String(formData.get('id') ?? '').trim();
   const id = idRaw === '' ? '' : assertUuid(idRaw);
-  const name = String(formData.get('name') ?? '').trim();
-  const cost = toIntOrNull(formData.get('cost_points'));
-
-  if (name === '') throw new Error('name required');
-  if (cost === null || cost <= 0) throw new Error('cost_points must be > 0');
-
-  // 在庫：空欄 = 無制限（null）
-  const stock = toIntOrNull(formData.get('stock'));
-  if (stock !== null && stock < 0) throw new Error('stock must be >= 0');
-
-  const payload = {
-    name,
-    description: (String(formData.get('description') ?? '').trim() || null),
-    cost_points: cost,
-    delivery_method: assertEnum(formData.get('delivery_method'), ['csv', 'code', 'api'] as const, 'delivery_method'),
-    stock,
-    sort: toIntOrNull(formData.get('sort')) ?? 0,
-    is_active: formData.get('is_active') === 'on',
-  };
+  const payload = readItemForm(formData);
 
   const res = id
     ? await getAdminClient().from('exchange_items').update(payload).eq('id', id)
@@ -70,7 +46,7 @@ async function toggleItem(formData: FormData) {
   'use server';
   await requireAdmin();
   const id = assertUuid(formData.get('id'));
-  const next = String(formData.get('next')) === 'true';
+  const next = assertEnum(formData.get('next'), ['true', 'false'] as const, 'next') === 'true';
   const { error } = await getAdminClient().from('exchange_items').update({ is_active: next }).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/items');
@@ -100,7 +76,7 @@ function ItemForm({ it }: { it?: Item }) {
         </div>
         <div className="field">
           <label>必要ポイント</label>
-          <input type="number" name="cost_points" defaultValue={it?.cost_points ?? 1000} min={1} required />
+          <input type="number" name="cost_points" defaultValue={it?.cost_points ?? 1000} min={1} max={2_147_483_647} step={1} required />
         </div>
         <div className="field">
           <label>受け渡し方法</label>
@@ -112,11 +88,11 @@ function ItemForm({ it }: { it?: Item }) {
         </div>
         <div className="field">
           <label>在庫（空欄＝無制限）</label>
-          <input type="number" name="stock" defaultValue={it?.stock ?? ''} min={0} />
+          <input type="number" name="stock" defaultValue={it?.stock ?? ''} min={0} max={2_147_483_647} step={1} />
         </div>
         <div className="field">
           <label>並び順（sort）</label>
-          <input type="number" name="sort" defaultValue={it?.sort ?? 0} />
+          <input type="number" name="sort" defaultValue={it?.sort ?? 0} min={-2_147_483_648} max={2_147_483_647} step={1} />
         </div>
         <div className="field check">
           <input type="checkbox" id={`ia-${it?.id ?? 'new'}`} name="is_active" defaultChecked={it?.is_active ?? true} />

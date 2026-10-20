@@ -7,6 +7,8 @@ import { colors } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import { GENRES } from '@/lib/types';
+import { useAction } from '@/lib/useAction';
+import { AppAlert } from '@/components/AppAlert';
 
 type GameRow = {
   id: string; slug: string; name: string; genre: string;
@@ -29,47 +31,64 @@ export default function GameDetail() {
   const [game, setGame] = useState<GameRow | null>(null);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [following, setFollowing] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const { busy, run } = useAction();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isCurrent: () => boolean) => {
+    setGame(null);
+    setTopics([]);
+    setFollowing(false);
     const { data: g, error: gErr } = await supabase
       .from('game_hub_rows').select('*').eq('slug', slug).single();
     if (gErr) throw gErr;
+    if (!g || typeof g !== 'object' || (g as GameRow).slug !== slug) {
+      throw new Error('ゲームの情報を確認できませんでした。');
+    }
     const row = g as unknown as GameRow;
-    setGame(row);
 
-    const { data: u } = await supabase.auth.getUser();
+    const { data: u, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    let nextFollowing = false;
     if (u.user) {
-      const { data: f } = await supabase.from('user_games')
+      const { data: f, error: fErr } = await supabase.from('user_games')
         .select('game_id').eq('user_id', u.user.id).eq('game_id', row.id);
-      setFollowing(((f as unknown[]) ?? []).length > 0);
+      if (fErr) throw fErr;
+      if (!Array.isArray(f)) throw new Error('フォロー状態を確認できませんでした。');
+      nextFollowing = f.length > 0;
     }
 
+    let nextTopics: Topic[] = [];
     if (row.forum_id) {
-      const { data: t } = await supabase.from('topics')
+      const { data: t, error: tErr } = await supabase.from('topics')
         .select('id,kind,title,reply_count,has_bounty,last_activity_at')
         .eq('forum_id', row.forum_id)
         .eq('moderation_state', 'visible')
         .order('last_activity_at', { ascending: false })
         .limit(30);
-      setTopics((t as unknown as Topic[]) ?? []);
+      if (tErr) throw tErr;
+      if (!Array.isArray(t)) throw new Error('投稿一覧を確認できませんでした。');
+      nextTopics = t as Topic[];
     }
+    if (!isCurrent()) return;
+    setGame(row);
+    setFollowing(nextFollowing);
+    setTopics(nextTopics);
   }, [slug]);
 
   const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
 
   async function toggleFollow() {
-    if (!game) return;
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
+    if (!game || loading || error) return;
+    await run(async () => {
+    const { data: u, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!u.user) { AppAlert.alert('ログインが必要です', 'フォローするにはログインしてください。'); return; }
     const on = following;
-    setBusy(true);
-    setFollowing(!on);
     const { error: wErr } = on
       ? await supabase.from('user_games').delete().eq('user_id', u.user.id).eq('game_id', game.id)
       : await supabase.from('user_games').insert({ user_id: u.user.id, game_id: game.id });
-    setBusy(false);
-    if (wErr) setFollowing(on); // 失敗したら戻す
+    if (wErr) throw wErr;
+    setFollowing(!on);
+    }, 'フォローを保存できませんでした');
   }
 
   const meta = game ? GENRES.find((x) => x.key === game.genre) : undefined;
@@ -112,7 +131,7 @@ export default function GameDetail() {
 
             <View style={s.sectionRow}>
               <Text style={s.section}>このゲームの投稿</Text>
-              <Pressable style={s.newBtn} onPress={() => router.push('/topic/new')} accessibilityRole="button">
+              <Pressable style={s.newBtn} onPress={() => router.push(game.forum_id ? { pathname: '/topic/new', params: { forum: game.forum_id } } : '/topic/new')} accessibilityRole="button">
                 <Text style={s.newBtnText}>＋ 投稿</Text>
               </Pressable>
             </View>
@@ -132,7 +151,7 @@ export default function GameDetail() {
               );
             })}
 
-            {!loading && topics.length === 0 && (
+            {!loading && !error && topics.length === 0 && (
               <Text style={s.empty}>まだ投稿がありません。最初の一件を書いてみましょう。</Text>
             )}
           </>

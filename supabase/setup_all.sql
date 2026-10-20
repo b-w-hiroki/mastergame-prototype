@@ -4925,6 +4925,87 @@ $migration$;
 
 
 -- ┌────────────────────────────────────────────────────────
+-- │ supabase/migrations/0034_nudge_stock_aware.sql
+-- └────────────────────────────────────────────────────────
+-- Do not nudge users toward sold-out rewards, and distinguish that from
+-- the case where every currently available reward is affordable.
+create or replace function public.next_nudge_target()
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare v_uid uuid := auth.uid(); v_bal bigint; v_item exchange_items; v_last timestamptz;
+begin
+  if v_uid is null then return null; end if;
+  select balance into v_bal from point_wallets where user_id = v_uid;
+  select * into v_item from exchange_items
+    where is_active and (stock is null or stock > 0)
+      and cost_points > coalesce(v_bal,0)
+    order by cost_points asc limit 1;
+  if not found then
+    if exists (select 1 from exchange_items where is_active and (stock is null or stock > 0)) then
+      return jsonb_build_object('all_affordable', true);
+    end if;
+    return jsonb_build_object('none_available', true);
+  end if;
+
+  select last_shown_at into v_last from nudge_cooldowns
+    where user_id = v_uid and nudge_type = 'home_banner';
+  if v_last is null or v_last < now() - interval '1 hour' then
+    insert into nudge_events(user_id, nudge_type, target_item_id, gap_points, variant)
+      values (v_uid, 'home_banner', v_item.id, (v_item.cost_points - coalesce(v_bal,0))::int, 'A');
+    insert into nudge_cooldowns(user_id, nudge_type, last_shown_at, count_today, day)
+      values (v_uid, 'home_banner', now(), 1, current_date)
+      on conflict (user_id, nudge_type) do update set
+        last_shown_at = now(),
+        count_today = case when nudge_cooldowns.day = current_date then nudge_cooldowns.count_today + 1 else 1 end,
+        day = current_date;
+  end if;
+
+  return jsonb_build_object(
+    'item_id', v_item.id, 'item_name', v_item.name,
+    'gap', v_item.cost_points - coalesce(v_bal,0), 'cost', v_item.cost_points);
+end $$;
+revoke all on function public.next_nudge_target() from public, anon;
+grant execute on function public.next_nudge_target() to authenticated;
+
+
+-- ┌────────────────────────────────────────────────────────
+-- │ supabase/migrations/0035_exchange_code_guard.sql
+-- └────────────────────────────────────────────────────────
+-- コード配布を空コードで確定させない。管理画面以外からの service_role 呼出しにも適用する。
+create or replace function public.fulfill_exchange(p_request_id uuid, p_code text default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_req exchange_requests;
+  v_method text;
+  v_code text := nullif(btrim(p_code, E' \t\n\r\f'), '');
+begin
+  -- 同じ申請への並行した確定/取消を直列化する。
+  select * into v_req from exchange_requests
+    where id = p_request_id and status = 'processing' for update;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_processing'); end if;
+
+  select delivery_method into v_method from exchange_items where id = v_req.item_id;
+  if v_method is null then
+    return jsonb_build_object('ok', false, 'reason', 'item_not_found');
+  end if;
+  if v_method = 'code' and v_code is null then
+    return jsonb_build_object('ok', false, 'reason', 'code_required');
+  end if;
+  if length(v_code) > 64 then
+    return jsonb_build_object('ok', false, 'reason', 'code_too_long');
+  end if;
+
+  update exchange_requests
+    set status = 'fulfilled', code = v_code, fulfilled_at = now()
+    where id = p_request_id and status = 'processing';
+  insert into notifications(user_id, type, payload)
+    values (v_req.user_id, 'exchange_fulfilled',
+      jsonb_build_object('request_id', p_request_id, 'has_code', v_code is not null));
+  return jsonb_build_object('ok', true, 'request_id', p_request_id, 'status', 'fulfilled');
+end $$;
+revoke all on function public.fulfill_exchange(uuid, text) from public, anon, authenticated;
+
+
+-- ┌────────────────────────────────────────────────────────
 -- │ supabase/seed.sql
 -- └────────────────────────────────────────────────────────
 -- ============================================================

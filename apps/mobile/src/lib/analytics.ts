@@ -14,6 +14,7 @@ export type Tracker = {
   track: (name: string, params?: Record<string, unknown>) => void;
   flush: () => Promise<void>;
   size: () => number;
+  reset: (sessionId?: string) => void;
 };
 
 /**
@@ -37,12 +38,14 @@ export function createTracker(opts: {
   const maxBuffer = opts.maxBuffer ?? 100;
   let buffer: TrackedEvent[] = [];
   let sending = false;
+  let generation = 0;
+  let activeSessionId = opts.sessionId;
 
   function track(name: string, params?: Record<string, unknown>) {
     buffer.push({
       name,
       params: params ?? {},
-      session_id: opts.sessionId,
+      session_id: activeSessionId,
       platform: Platform.OS,
     });
     // 上限超過分は古い方から捨てる
@@ -55,26 +58,32 @@ export function createTracker(opts: {
     if (sending || buffer.length === 0) return;
     sending = true;
     const batch = buffer;
+    const batchGeneration = generation;
     buffer = [];
     try {
       await opts.send(batch);
     } catch {
       // 送れなかった分は戻して次の機会に再送（新しいものを優先して残す）
-      buffer = [...batch, ...buffer].slice(-maxBuffer);
+      if (batchGeneration === generation) buffer = [...batch, ...buffer].slice(-maxBuffer);
     } finally {
       sending = false;
     }
   }
 
-  return { track, flush, size: () => buffer.length };
+  return { track, flush, size: () => buffer.length, reset: (sessionId = opts.sessionId) => {
+    generation += 1;
+    buffer = [];
+    activeSessionId = sessionId;
+  } };
 }
 
 // ---- アプリで使うシングルトン ----
 
-const sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+const newSessionId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+let analyticsUser: string | null = null;
 
 const tracker = createTracker({
-  sessionId,
+  sessionId: newSessionId(),
   send: async (events) => {
     const { error } = await supabase.rpc('record_events', {
       p_events: events as unknown as never,
@@ -83,8 +92,17 @@ const tracker = createTracker({
   },
 });
 
+/** 未送信の行動を次のアカウントへ持ち越さない。送信開始済みの通信は取消できない。 */
+export function setAnalyticsUser(userId: string | null): boolean {
+  if (analyticsUser === userId) return false;
+  analyticsUser = userId;
+  tracker.reset(newSessionId());
+  return true;
+}
+
 /** イベントを記録する。計測失敗でアプリを止めないため、例外は投げない。 */
 export function track(name: string, params?: Record<string, unknown>): void {
+  if (!analyticsUser) return;
   try {
     tracker.track(name, params);
   } catch {

@@ -1,6 +1,7 @@
 import { getAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin, assertUuid } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { assertExchangeResult, fulfillmentCode } from '@/lib/exchange-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,12 +34,17 @@ async function fulfill(formData: FormData) {
   'use server';
   await requireAdmin();
   const id = assertUuid(formData.get('id'));
-  const code = String(formData.get('code') ?? '').trim() || null;
-  const { data, error } = await getAdminClient().rpc('fulfill_exchange', { p_request_id: id, p_code: code });
+  const db = getAdminClient();
+  const { data: request, error: requestError } = await db.from('exchange_requests')
+    .select('item_id,status').eq('id', id).single();
+  if (requestError || !request || request.status !== 'processing') throw new Error('exchange request is not processing');
+  const { data: item, error: itemError } = await db.from('exchange_items')
+    .select('delivery_method').eq('id', request.item_id).single();
+  if (itemError || !item) throw new Error('exchange item not found');
+  const code = fulfillmentCode(formData.get('code'), item.delivery_method);
+  const { data, error } = await db.rpc('fulfill_exchange', { p_request_id: id, p_code: code });
   if (error) throw new Error(error.message);
-  if (data && (data as { ok?: boolean }).ok === false) {
-    throw new Error(`fulfill failed: ${(data as { reason?: string }).reason ?? 'unknown'}`);
-  }
+  assertExchangeResult(data, 'fulfill');
   revalidatePath('/exchanges');
 }
 
@@ -49,9 +55,7 @@ async function cancel(formData: FormData) {
   const id = assertUuid(formData.get('id'));
   const { data, error } = await getAdminClient().rpc('cancel_exchange', { p_request_id: id, p_reason: 'admin_cancel' });
   if (error) throw new Error(error.message);
-  if (data && (data as { ok?: boolean }).ok === false) {
-    throw new Error(`cancel failed: ${(data as { reason?: string }).reason ?? 'unknown'}`);
-  }
+  assertExchangeResult(data, 'cancel');
   revalidatePath('/exchanges');
 }
 
@@ -121,7 +125,7 @@ export default async function Exchanges() {
           )}
         </tbody>
       </table>
-      <p className="note">※ 「完了」は在庫消費済みの申請にコードを付与します。「取消・返金」は消費ポイントを戻し、有限在庫を1つ復元します（RPC は冪等）。</p>
+        <p className="note">※ コード配布の商品はコード入力が必須です。「完了」は在庫消費済みの申請を確定します。「取消・返金」は消費ポイントを戻し、有限在庫を1つ復元します（RPC は処理中の申請にだけ適用）。</p>
     </>
   );
 }

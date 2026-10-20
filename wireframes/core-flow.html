@@ -209,6 +209,11 @@
   .item .gm{font-size:10px;color:var(--muted);margin-top:2px}
   .item .cost{font-size:14px;font-weight:900;color:var(--accent);margin-top:7px}
   .item .cost small{font-size:10px}
+  .point-goal{background:var(--gold-soft);border:1px solid #e7d6a6;border-radius:14px;padding:14px;margin-top:12px}
+  .point-goal .eyebrow{font-size:10px;color:#7a5b16;font-weight:800;margin-bottom:5px}
+  .point-goal .copy{font-size:12px;color:var(--ink);font-weight:800}
+  .point-goal .gap{color:var(--gold)}
+  .point-goal button{margin-top:10px;border:0;border-radius:9px;background:var(--ink);color:#fff;padding:9px 12px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
 
   .histrow{display:flex;align-items:center;gap:11px;padding:13px 2px}
   .histrow+.histrow{border-top:1px solid var(--line2)}
@@ -217,6 +222,13 @@
   .histrow .hd{font-size:10.5px;color:var(--muted);margin-top:2px}
   .histrow .hp{margin-left:auto;font-weight:900;font-size:14px}
   .hp.plus{color:var(--ok)}.hp.minus{color:#c0392b}
+  .exchange-request{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line2);border-radius:12px;padding:12px;margin-bottom:8px}
+  .exchange-request .copy{flex:1;min-width:0}
+  .exchange-request .name{font-size:12px;font-weight:800}
+  .exchange-request .meta{font-size:10px;color:var(--muted);margin-top:3px}
+  .exchange-request .status{font-size:10px;font-weight:800;color:var(--gold);white-space:nowrap}
+  .exchange-request .status.done{color:var(--ok)}
+  .exchange-empty{font-size:11px;color:var(--muted);padding:6px 2px 12px}
   .pill{display:inline-block;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px;margin-left:6px}
   .pill.wait{background:var(--gold-soft);color:var(--gold)}
   .pill.done{background:#e7f3ec;color:var(--ok)}
@@ -421,16 +433,7 @@
   .trend-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
   .trend .th-t{font-size:13px;font-weight:800}
   .trend .th-s{font-size:10.5px;color:var(--muted);margin-top:2px}
-  .trend .lgnd{display:flex;gap:11px;flex-shrink:0}
-  .trend .lg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--sub);font-weight:700}
-  .trend .lg i{display:inline-block}
-  .trend .lg i.bar{width:11px;height:7px;border-radius:2px;background:var(--gold)}
-  .trend .lg i.line{width:14px;height:0;border-top:2px solid var(--accent)}
-  .trend-stats{display:flex;gap:10px;margin-top:10px}
-  .trend-stats .ts{flex:1;background:var(--bg);border-radius:10px;padding:9px 10px}
-  .trend-stats .ts .v{font-size:15px;font-weight:900;color:var(--ink)}
-  .trend-stats .ts .v small{font-size:9px;font-weight:800;color:var(--muted)}
-  .trend-stats .ts .l{font-size:9.5px;color:var(--muted);margin-top:1px}
+  .trend-direction{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin:0 4px 2px}
 
   /* ---------- VIP rank / staking ---------- */
   .vipcard{border-radius:18px;padding:16px;margin:14px 0;color:#fff;position:relative;overflow:hidden}
@@ -606,14 +609,14 @@
         </div>
         <div class="dots-row"><i class="on"></i><i></i><i></i></div>
 
+        <div class="nudge" id="homeNudge" onclick="go('mission')"></div>
+
         <div class="quick">
           <div class="q" onclick="go('mission')"><div class="ic">🎯</div><div class="t">ミッション</div></div>
           <div class="q" onclick="go('points')"><div class="ic">🎁</div><div class="t">交換する</div></div>
           <div class="q" onclick="go('forum')"><div class="ic">💬</div><div class="t">フォーラム</div></div>
           <div class="q" onclick="go('points')"><div class="ic">📊</div><div class="t">ポイント</div></div>
         </div>
-
-        <div class="nudge" id="homeNudge" onclick="go('mission')"></div>
 
         <div class="promo" onclick="go('mission')">
           <div>
@@ -663,42 +666,35 @@
         <div class="balance">
           <div class="lbl">保有ポイント</div>
           <div class="num"><span id="bal-points">125,000</span><small>P</small></div>
-          <div class="row">
-            <div class="b" onclick="pseg('exchange')">🎁 交換する</div>
-            <div class="b" onclick="pseg('history')">🧾 履歴</div>
-          </div>
         </div>
-
-        <div class="trend">
-          <div class="trend-head">
-            <div><div class="th-t">ポイント推移</div><div class="th-s">直近6ヶ月の獲得量と保有量</div></div>
-            <div class="lgnd"><span class="lg"><i class="bar"></i>月間獲得</span><span class="lg"><i class="line"></i>保有量</span></div>
-          </div>
-          <div id="ptChart"></div>
-          <div class="trend-stats">
-            <div class="ts"><div class="v" id="pt-total">—<small> P</small></div><div class="l">累計獲得</div></div>
-            <div class="ts"><div class="v" id="pt-avg">—<small> P</small></div><div class="l">月平均獲得</div></div>
-            <div class="ts"><div class="v" id="pt-best">—<small> P</small></div><div class="l">最高月</div></div>
-          </div>
-        </div>
-
-        <div id="stakeMount"></div>
 
         <div class="seg">
-          <button class="on" id="seg-exchange" onclick="pseg('exchange')">交換アイテム</button>
-          <button id="seg-history" onclick="pseg('history')">獲得・交換履歴</button>
+          <button class="on" id="seg-exchange" onclick="pseg('exchange')">交換する</button>
+          <button id="seg-history" onclick="pseg('history')">ポイント・履歴</button>
         </div>
 
         <!-- exchange grid -->
         <div id="pane-exchange">
           <div class="sec-label">提携ゲームのアイテム</div>
           <div class="grid2" id="itemgrid"></div>
+          <div id="pointGoal"></div>
           <div style="height:10px"></div>
         </div>
 
-        <!-- history -->
+        <!-- points and history -->
         <div id="pane-history" style="display:none">
+          <div class="trend">
+            <div class="trend-head">
+              <div><div class="th-t">ポイント推移</div><div class="th-s">直近の履歴から復元した残高</div></div>
+            </div>
+            <div id="ptChart"></div>
+            <div class="trend-direction"><span>古い</span><span>新しい</span></div>
+          </div>
+          <div class="sec-label">交換申請</div>
+          <div id="exchangeRequestList"></div>
+          <div class="sec-label">ポイント履歴（直近40件）</div>
           <div id="histlist"></div>
+          <div id="stakeMount"></div>
         </div>
       </div>
       <nav class="tabbar" data-nav></nav>
@@ -775,7 +771,7 @@
           <div class="setrow" onclick="toast('プロフィール編集（実装予定）')"><span class="si">👤</span><span class="st">プロフィール編集</span><span class="ch">›</span></div>
           <div class="setrow" onclick="toast('SNS連携（実装予定）')"><span class="si">🔗</span><span class="st">SNS連携（Google / Apple / LINE）</span><span class="ch">›</span></div>
           <div class="setrow" onclick="toast('通知設定（実装予定）')"><span class="si">🔔</span><span class="st">通知設定</span><span class="ch">›</span></div>
-          <div class="setrow" onclick="go('points')"><span class="si">🧾</span><span class="st">ポイント履歴</span><span class="ch">›</span></div>
+          <div class="setrow" onclick="go('points');pseg('history')"><span class="si">🧾</span><span class="st">ポイント・交換履歴</span><span class="ch">›</span></div>
         </div>
         <div class="sec-label">サポート</div>
         <div class="setlist">
@@ -890,6 +886,7 @@ let history=[
   {ic:'✅',t:'ログインボーナス',d:'今日 09:10',p:'+1,000',cls:'plus'},
   {ic:'🎯',t:'デイリー5日達成',d:'昨日 21:40',p:'+20,000',cls:'plus'},
 ];
+let exchangeRequests=[];
 
 /* ---------------- nav / screens ---------------- */
 function go(id){
@@ -1026,7 +1023,7 @@ function pseg(k){
   document.getElementById('pane-history').style.display=k==='history'?'':'none';
   document.getElementById('seg-exchange').classList.toggle('on',k==='exchange');
   document.getElementById('seg-history').classList.toggle('on',k==='history');
-  if(k==='history')renderHist();
+  if(k==='history'){renderExchangeRequests();renderHist();}
 }
 function renderItems(){
   document.getElementById('itemgrid').innerHTML=ITEMS.map((it,i)=>`
@@ -1036,6 +1033,14 @@ function renderItems(){
       <div class="cost">${it.cost.toLocaleString()}<small> P</small></div>
       ${it.cost>balance?`<div class="near">あと ${(it.cost-balance).toLocaleString()}P</div>`:`<div class="near" style="color:var(--ok)">✓ 交換できます</div>`}</div>
     </div>`).join('');
+  const canExchange=ITEMS.some(it=>it.cost<=balance);
+  const next=ITEMS.filter(it=>it.cost>balance).sort((a,b)=>a.cost-b.cost)[0];
+  const goal=document.getElementById('pointGoal');
+  goal.innerHTML=!canExchange&&next?`<div class="point-goal">
+    <div class="eyebrow">🎯 次の交換目標</div>
+    <div class="copy">「${next.nm}」まであと <span class="gap">${(next.cost-balance).toLocaleString()} P</span></div>
+    <button onclick="go('mission')">ミッションでポイントをためる ›</button>
+  </div>`:'';
 }
 function openItem(i){
   const it=ITEMS[i];
@@ -1055,8 +1060,9 @@ function openItem(i){
 function exchange(i){
   const it=ITEMS[i];
   balance-=it.cost;
+  exchangeRequests.unshift({name:it.nm,cost:it.cost,date:'今日 たった今',status:'processing'});
   history.unshift({ic:'🎁',t:it.nm+'と交換',d:'今日 たった今',p:'-'+it.cost.toLocaleString(),cls:'minus',wait:true});
-  closeSheet();syncBalance();
+  closeSheet();syncBalance();renderItems();
   document.getElementById('cong-pt').textContent='交換申請 完了';
   document.getElementById('cong-title').textContent='交換を受け付けました';
   document.getElementById('congrats').classList.add('show');
@@ -1066,35 +1072,32 @@ function exchange(i){
 }
 function closeSheet(){document.getElementById('overlay').classList.remove('show');}
 function renderHist(){
-  document.getElementById('histlist').innerHTML=history.map(h=>`
+  document.getElementById('histlist').innerHTML=history.slice(0,40).map(h=>`
     <div class="histrow"><div class="hi">${h.ic}</div>
       <div><div class="ht">${h.t}${h.wait?'<span class="pill wait">処理中</span>':''}${h.pending?'<span class="pill pend">検証中</span>':''}</div><div class="hd">${h.d}</div></div>
       <div class="hp ${h.cls}">${h.p}<small style="font-weight:700;font-size:10px"> P</small></div>
     </div>`).join('');
 }
+function renderExchangeRequests(){
+  const el=document.getElementById('exchangeRequestList'); if(!el)return;
+  el.innerHTML=exchangeRequests.length?exchangeRequests.slice(0,20).map(r=>`
+    <div class="exchange-request"><div class="copy"><div class="name">${r.name}</div>
+      <div class="meta">${r.date} ・ ${r.cost.toLocaleString()} P</div></div>
+      <div class="status ${r.status==='fulfilled'?'done':''}">${r.status==='fulfilled'?'交換完了':r.status==='cancelled'?'取消・返還':'確認中'}</div>
+    </div>`).join(''):'<div class="exchange-empty">交換申請はまだありません。</div>';
+}
 
 /* ---------------- point trend chart ---------------- */
-const PT_DATA=[
-  {m:'1月',e:180000,b:180000},{m:'2月',e:240000,b:340000},{m:'3月',e:210000,b:420000},
-  {m:'4月',e:320000,b:580000},{m:'5月',e:290000,b:520000},{m:'6月',e:360000,b:0},
-];
+const PT_DATA=[180000,340000,420000,580000,520000,125000];
 function renderPtChart(){
   const el=document.getElementById('ptChart'); if(!el)return;
-  const data=PT_DATA.map((d,i)=> i===PT_DATA.length-1 ? {m:d.m,e:d.e,b:balance} : d);
-  const W=320,H=148,bw=20,base=H-22,top=14;
-  const max=Math.max(...data.map(d=>Math.max(d.e,d.b)))*1.12||1;
-  const X=i=>26+i*((W-52)/(data.length-1)), Y=v=>base-(v/max)*(base-top);
-  const bars=data.map((d,i)=>`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${Y(d.e).toFixed(1)}" width="${bw}" height="${(base-Y(d.e)).toFixed(1)}" rx="4" fill="url(#ptg)"/>`).join('');
-  const line=data.map((d,i)=>`${X(i).toFixed(1)},${Y(d.b).toFixed(1)}`).join(' ');
-  const dots=data.map((d,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(d.b).toFixed(1)}" r="3.5" fill="#fff" stroke="#3b4cca" stroke-width="2"/>`).join('');
-  const labels=data.map((d,i)=>`<text x="${X(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9" fill="#9aa0ac">${d.m}</text>`).join('');
-  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="148" preserveAspectRatio="xMidYMid meet">
-    <defs><linearGradient id="ptg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3c879"/><stop offset="1" stop-color="#f3e8c6"/></linearGradient></defs>
-    ${bars}<polyline points="${line}" fill="none" stroke="#3b4cca" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}${labels}</svg>`;
-  const tot=PT_DATA.reduce((s,d)=>s+d.e,0), avg=Math.round(tot/PT_DATA.length), best=Math.max(...PT_DATA.map(d=>d.e));
-  document.getElementById('pt-total').innerHTML=tot.toLocaleString()+'<small> P</small>';
-  document.getElementById('pt-avg').innerHTML=avg.toLocaleString()+'<small> P</small>';
-  document.getElementById('pt-best').innerHTML=best.toLocaleString()+'<small> P</small>';
+  const data=[...PT_DATA.slice(0,-1),balance];
+  const W=320,H=92,bw=26,base=H-8,top=8;
+  const max=Math.max(...data,1)*1.08;
+  const X=i=>24+i*((W-48)/(data.length-1)), Y=v=>base-(v/max)*(base-top);
+  const bars=data.map((value,i)=>`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${Y(value).toFixed(1)}" width="${bw}" height="${(base-Y(value)).toFixed(1)}" rx="5" fill="url(#ptg)"/>`).join('');
+  el.innerHTML=`<svg role="img" aria-label="ポイント残高の推移" viewBox="0 0 ${W} ${H}" width="100%" height="92" preserveAspectRatio="xMidYMid meet">
+    <defs><linearGradient id="ptg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3c879"/><stop offset="1" stop-color="#f3e8c6"/></linearGradient></defs>${bars}</svg>`;
 }
 
 /* ---------------- VIP rank / staking ---------------- */

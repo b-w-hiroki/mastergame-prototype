@@ -34,10 +34,7 @@ export interface AppNotification {
 }
 
 // next_nudge_target RPC の戻り値（jsonb）
-export interface NudgeTarget {
-  item_id?: string;
-  item_name?: string;
-  gap?: number;
-  cost?: number;
-  all_affordable?: boolean;
-}
+export type NudgeTarget =
+  | { item_id: string; item_name: string; gap: number; cost: number; all_affordable?: false; none_available?: false }
+  | { item_id?: never; item_name?: never; gap?: never; cost?: never; all_affordable: true; none_available?: never }
+  | { item_id?: never; item_name?: never; gap?: never; cost?: never; all_affordable?: never; none_available: true };

@@ -7,6 +7,8 @@ import { colors } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import { GENRES } from '@/lib/types';
+import { useAction } from '@/lib/useAction';
+import { AppAlert } from '@/components/AppAlert';
 
 type GameRow = {
   id: string; slug: string; name: string; genre: string;
@@ -24,45 +26,48 @@ const PLATFORM_LABEL: Record<string, string> = { ios: 'iOS', android: 'Android',
 export default function Games() {
   const [games, setGames] = useState<GameRow[]>([]);
   const [following, setFollowing] = useState<Set<string>>(new Set());
-  const [busy, setBusy] = useState<string | null>(null);
+  const { busy, run } = useAction();
 
-  const load = useCallback(async () => {
-    const { data: u } = await supabase.auth.getUser();
-    const [{ data: rows, error: gErr }, { data: mine }] = await Promise.all([
+  const load = useCallback(async (isCurrent: () => boolean) => {
+    setGames([]);
+    setFollowing(new Set());
+    const { data: u, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    const [{ data: rows, error: gErr }, { data: mine, error: mineError }] = await Promise.all([
       supabase.from('game_hub_rows').select('*').order('is_featured', { ascending: false }).order('name'),
       u.user
         ? supabase.from('user_games').select('game_id').eq('user_id', u.user.id)
-        : Promise.resolve({ data: [] as { game_id: string }[] }),
+        : Promise.resolve({ data: [] as { game_id: string }[], error: null }),
     ]);
     if (gErr) throw gErr;
-    setGames((rows as unknown as GameRow[]) ?? []);
-    setFollowing(new Set(((mine as { game_id: string }[]) ?? []).map((r) => r.game_id)));
+    if (mineError) throw mineError;
+    if (!Array.isArray(rows) || !Array.isArray(mine)) {
+      throw new Error('ゲーム一覧を確認できませんでした。');
+    }
+    if (!isCurrent()) return;
+    setGames(rows as GameRow[]);
+    setFollowing(new Set((mine as { game_id: string }[]).map((r) => r.game_id)));
   }, []);
 
   const { loading, error, refreshing, reload, onRefresh } = useLoader(load);
 
   async function toggleFollow(game: GameRow) {
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
+    if (loading || error) return;
+    await run(async () => {
+    const { data: u, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!u.user) { AppAlert.alert('ログインが必要です', 'フォローするにはログインしてください。'); return; }
     const on = following.has(game.id);
-    setBusy(game.id);
-    // 楽観更新：失敗したら戻す
-    setFollowing((prev) => {
-      const next = new Set(prev);
-      if (on) next.delete(game.id); else next.add(game.id);
-      return next;
-    });
     const { error: wErr } = on
       ? await supabase.from('user_games').delete().eq('user_id', u.user.id).eq('game_id', game.id)
       : await supabase.from('user_games').insert({ user_id: u.user.id, game_id: game.id });
-    setBusy(null);
-    if (wErr) {
+    if (wErr) throw wErr;
       setFollowing((prev) => {
         const next = new Set(prev);
-        if (on) next.add(game.id); else next.delete(game.id);
+        if (on) next.delete(game.id); else next.add(game.id);
         return next;
       });
-    }
+    }, 'フォローを保存できませんでした');
   }
 
   return (
@@ -98,9 +103,9 @@ export default function Games() {
                 </Text>
               </View>
               <Pressable
-                style={[s.followBtn, on && s.followOn, busy === g.id && { opacity: 0.5 }]}
-                onPress={() => toggleFollow(g)}
-                disabled={busy === g.id}
+                style={[s.followBtn, on && s.followOn, busy && { opacity: 0.5 }]}
+                onPress={(event) => { event?.stopPropagation(); void toggleFollow(g); }}
+                disabled={busy}
                 accessibilityRole="button"
                 accessibilityLabel={`${g.name}を${on ? 'フォロー解除' : 'フォロー'}`}
               >
@@ -110,7 +115,7 @@ export default function Games() {
           );
         })}
 
-        {!loading && games.length === 0 && (
+        {!loading && !error && games.length === 0 && (
           <Text style={s.empty}>ゲームがまだ登録されていません</Text>
         )}
       </ScrollView>

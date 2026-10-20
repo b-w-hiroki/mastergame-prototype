@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 
 const mockSignUp = jest.fn();
@@ -49,6 +49,7 @@ const submit = () => fireEvent.press(screen.getByText('アカウントを作成'
 async function renderReady() {
   const view = render(<SignUp />);
   await waitFor(() => expect(mockFrom).toHaveBeenCalledWith('current_legal_documents'));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'アカウントを作成' }).props.accessibilityState.disabled).toBe(false));
   return view;
 }
 
@@ -57,8 +58,8 @@ describe('SignUp screen', () => {
     jest.clearAllMocks();
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     mockFrom.mockReturnValue({ select: jest.fn().mockResolvedValue({ data: DOCS, error: null }) });
-    mockSignUp.mockResolvedValue({ error: null });
-    mockRpc.mockResolvedValue({ error: null });
+    mockSignUp.mockResolvedValue({ data: { session: { user: { id: 'player' } } }, error: null });
+    mockRpc.mockResolvedValue({ data: { status: 'ok', ok: true }, error: null });
   });
 
   it('生年月日と同意欄を描画する', async () => {
@@ -140,5 +141,90 @@ describe('SignUp screen', () => {
     agree();
     submit();
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'));
+    expect(Alert.alert).toHaveBeenCalledWith('登録情報の確認が必要です', expect.stringContaining('保存が完了していません'));
+  });
+
+  it('メール確認が必要な場合は未認証 RPC を送らず確認案内を出す', async () => {
+    mockSignUp.mockResolvedValue({ data: { session: null }, error: null });
+    await renderReady(); fill(); agree(); submit();
+    await screen.findByText(/受信箱と迷惑メールフォルダ/);
+    expect(mockRpc).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(screen.queryByPlaceholderText('パスワード（8文字以上）')).toBeNull();
+  });
+
+  it('登録の通信例外後も入力を保持して操作可能に戻る', async () => {
+    mockSignUp.mockRejectedValueOnce(new Error('offline'));
+    await renderReady(); fill(); agree(); submit();
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith('登録結果を確認できませんでした', expect.any(String)));
+    expect(screen.getByPlaceholderText('メールアドレス').props.value).toBe('a@b.com');
+    expect(screen.getByText('アカウントを作成')).toBeTruthy();
+  });
+
+  it('規約を取得できなければ登録を防ぎ再読み込みを提供する', async () => {
+    mockFrom.mockReturnValue({ select: jest.fn().mockResolvedValue({ data: null, error: { message: 'offline' } }) });
+    render(<SignUp />);
+    await screen.findByText('規約を再読み込み');
+    fill(); agree(); submit();
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it.each([null, { invalid: true }, [{ slug: 'terms', version: '', requires_consent: true }, DOCS[1]]])(
+    '規約一覧の空・不正応答や版欠損では登録させない: %p', async (rows) => {
+      mockFrom.mockReturnValue({ select: jest.fn().mockResolvedValue({ data: rows, error: null }) });
+      render(<SignUp />);
+      await screen.findByText('規約を再読み込み');
+      expect(screen.getByRole('button', { name: 'アカウントを作成' }).props.accessibilityState.disabled).toBe(true);
+      expect(screen.getByLabelText('利用規約とプライバシーポリシーに同意する').props.accessibilityState.disabled).toBe(true);
+      expect(mockSignUp).not.toHaveBeenCalled();
+    },
+  );
+
+  it('規約読込中は同意できず、復旧後に改めて同意が必要', async () => {
+    let finish!: (value: unknown) => void;
+    const select = jest.fn().mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }))
+      .mockResolvedValue({ data: DOCS, error: null });
+    mockFrom.mockReturnValue({ select });
+    render(<SignUp />);
+    const checkbox = screen.getByLabelText('利用規約とプライバシーポリシーに同意する');
+    expect(checkbox.props.accessibilityState.disabled).toBe(true);
+    fireEvent.press(checkbox);
+    expect(checkbox.props.accessibilityState.checked).toBe(false);
+    await act(async () => { finish({ data: null, error: { message: 'offline' } }); });
+    await screen.findByText('規約を再読み込み');
+    fireEvent.press(screen.getByText('規約を再読み込み'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'アカウントを作成' }).props.accessibilityState.disabled).toBe(false));
+    expect(screen.getByLabelText('利用規約とプライバシーポリシーに同意する').props.accessibilityState.checked).toBe(false);
+    fill(); submit();
+    expect(Alert.alert).toHaveBeenCalledWith('利用規約とプライバシーポリシーへの同意が必要です');
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('規約取得のタイムアウト後に再読込でき、古い応答を反映しない', async () => {
+    jest.useFakeTimers();
+    try {
+      let resolveOld!: (value: unknown) => void;
+      const select = jest.fn().mockReturnValueOnce(new Promise((done) => { resolveOld = done; }))
+        .mockResolvedValue({ data: DOCS, error: null });
+      mockFrom.mockReturnValue({ select });
+      render(<SignUp />);
+      await act(async () => { jest.advanceTimersByTime(15_000); });
+      expect(screen.getByText('規約を再読み込み')).toBeTruthy();
+      await act(async () => { fireEvent.press(screen.getByText('規約を再読み込み')); });
+      await act(async () => { resolveOld({ data: [], error: null }); });
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.getByRole('button', { name: 'アカウントを作成' }).props.accessibilityState.disabled).toBe(false);
+    } finally { jest.useRealTimers(); }
+  });
+
+  it('送信中は登録内容と同意を変更させない', async () => {
+    let finish!: (value: unknown) => void;
+    mockSignUp.mockReturnValueOnce(new Promise((done) => { finish = done; }));
+    await renderReady(); fill(); agree(); submit();
+    expect(screen.getByPlaceholderText('メールアドレス').props.editable).toBe(false);
+    expect(screen.getByLabelText('生年').props.editable).toBe(false);
+    expect(screen.getByLabelText('利用規約とプライバシーポリシーに同意する').props.accessibilityState.disabled).toBe(true);
+    await act(async () => { finish({ data: { session: null }, error: null }); });
+    expect(screen.queryByPlaceholderText('メールアドレス')).toBeNull();
   });
 });

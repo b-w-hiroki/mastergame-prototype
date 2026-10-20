@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView, StyleSheet, Alert, Share } from 'react-native';
+import { View, Text, Pressable, TextInput, ScrollView, StyleSheet, Share } from 'react-native';
+import { AppAlert as Alert } from '@/components/AppAlert';
+import { useAction } from '@/lib/useAction';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -32,38 +34,53 @@ const REASON_MESSAGE: Record<string, string> = {
 export default function Invite() {
   const [status, setStatus] = useState<Status | null>(null);
   const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(false);
+  const { busy, run } = useAction();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isCurrent: () => boolean) => {
+    setStatus(null);
     const { data, error: rpcError } = await supabase.rpc('my_referral_status');
     if (rpcError) throw rpcError;
-    setStatus(data as unknown as Status);
+    const result = data as Partial<Status> | null;
+    if (!result || typeof result.code !== 'string' || !/^[A-Z0-9]{8}$/.test(result.code)
+      || !(['pending', 'confirmed', 'earned_points', 'reward_referee', 'reward_referrer'] as const)
+        .every((key) => typeof result[key] === 'number' && Number.isSafeInteger(result[key]) && result[key] >= 0)) {
+      throw new Error('Invalid referral status');
+    }
+    if (!isCurrent()) return;
+    setStatus(result as Status);
   }, []);
 
   const { loading, error, reload } = useLoader(load);
   const reward = useReward();
 
   async function redeem() {
+    if (loading || error || busy || !status) return;
     const trimmed = code.trim().toUpperCase();
     if (trimmed === '') { Alert.alert('招待コードを入力してください'); return; }
-    setBusy(true);
+    if (!/^[A-Z0-9]{8}$/.test(trimmed)) { Alert.alert('招待コードは英数字8文字で入力してください'); return; }
+    await run(async () => {
     const { data, error: rpcError } = await supabase.rpc('redeem_referral_code', { p_code: trimmed });
-    setBusy(false);
     if (rpcError) { Alert.alert('利用できませんでした', rpcError.message); return; }
 
-    const res = data as unknown as { status: string; reason?: string; reward?: number; note?: string };
-    if (res.status !== 'ok') {
-      Alert.alert('利用できませんでした', REASON_MESSAGE[res.reason ?? ''] ?? 'このコードはご利用いただけません。');
+    const res = data as unknown as { status: string; reason?: string; reward?: number; note?: string } | null;
+    if (res?.status !== 'ok') {
+      Alert.alert('利用できませんでした', REASON_MESSAGE[res?.reason ?? ''] ?? 'このコードはご利用いただけません。');
+      return;
+    }
+    if (typeof res.reward !== 'number' || !Number.isSafeInteger(res.reward) || res.reward <= 0) {
+      Alert.alert('利用結果を確認してください', '報酬を確認できませんでした。再入力する前にポイント履歴をご確認ください。');
+      void reload();
       return;
     }
     setCode('');
-    reward.show(res.reward ?? 0, '招待ボーナス');
+    reward.show(res.reward, '招待ボーナス');
     Alert.alert('招待ボーナスを獲得しました', res.note ?? '');
     reload().catch(() => {});
+    }, '招待コードを処理できませんでした');
   }
 
   async function share() {
-    if (!status) return;
+    if (loading || error || busy || !status) return;
     await Share.share({
       message:
         `MasterGame で一緒にポイ活しよう！\n招待コード: ${status.code}\n` +
@@ -79,13 +96,13 @@ export default function Invite() {
         {loading && <LoadingView />}
         {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
 
-        {status && (
+        {!loading && !error && status && (
           <>
             <View style={s.hero}>
               <Text style={s.heroTitle}>友だちを招待して、ふたりでもらう</Text>
               <Text style={s.heroSub}>
                 友だちが登録時にあなたのコードを入力すると{'\n'}
-                friend に {status.reward_referee.toLocaleString()} P・
+                友だちに {status.reward_referee.toLocaleString()} P・
                 あなたに {status.reward_referrer.toLocaleString()} P
               </Text>
 
@@ -96,8 +113,8 @@ export default function Invite() {
                 </Text>
               </View>
 
-              <Pressable style={s.shareBtn} onPress={share} accessibilityRole="button">
-                <Text style={s.shareText}>招待リンクを送る</Text>
+              <Pressable style={s.shareBtn} onPress={share} disabled={busy} accessibilityRole="button">
+                <Text style={s.shareText}>招待コードを送る</Text>
               </Pressable>
             </View>
 

@@ -56,6 +56,37 @@ describe('Invite screen', () => {
     expect(mockRpc).not.toHaveBeenCalledWith('redeem_referral_code', expect.anything());
   });
 
+  it.each(['BAD!', '1234567'])('形式が違う招待コードは送信しない: %s', async (value) => {
+    render(<Invite />);
+    await screen.findByText('A3F7KMPQ');
+    fireEvent.changeText(screen.getByPlaceholderText('例: A3F7KMPQ'), value);
+    fireEvent.press(screen.getByText('使う'));
+    expect(Alert.alert).toHaveBeenCalledWith('招待コードは英数字8文字で入力してください');
+    expect(mockRpc).not.toHaveBeenCalledWith('redeem_referral_code', expect.anything());
+  });
+
+  it('利用後の再取得失敗時は古いコードと特典を共有・利用できない', async () => {
+    let statusReads = 0;
+    mockRpc.mockImplementation(async (fn: string) => {
+      if (fn === 'my_referral_status') {
+        statusReads += 1;
+        return statusReads === 1 ? { data: STATUS, error: null } : { data: null, error: { message: 'offline' } };
+      }
+      return { data: { status: 'ok', reward: 30000 }, error: null };
+    });
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' } as never);
+    render(<Invite />);
+    await screen.findByText('A3F7KMPQ');
+    fireEvent.changeText(screen.getByPlaceholderText('例: A3F7KMPQ'), 'BBBBBBBB');
+    fireEvent.press(screen.getByText('使う'));
+    await screen.findByText(/データの取得に失敗しました/);
+    expect(screen.queryByText('A3F7KMPQ')).toBeNull();
+    expect(screen.queryByText('招待コードを送る')).toBeNull();
+    expect(screen.queryByText('使う')).toBeNull();
+    expect(share).not.toHaveBeenCalled();
+    expect(mockRpc.mock.calls.filter(([fn]) => fn === 'redeem_referral_code')).toHaveLength(1);
+  });
+
   it('入力を大文字化・トリムして送信し、成功で獲得演出を出す', async () => {
     mockRpcs({ status: 'ok', reward: 30000, note: 'ミッションを進めると確定します' });
     render(<Invite />);
@@ -103,14 +134,48 @@ describe('Invite screen', () => {
     );
   });
 
+  it('成功応答の報酬が欠損した場合に0P獲得と表示しない', async () => {
+    mockRpcs({ status: 'ok' });
+    render(<Invite />);
+    await waitFor(() => expect(screen.getByText('A3F7KMPQ')).toBeTruthy());
+    fireEvent.changeText(screen.getByPlaceholderText('例: A3F7KMPQ'), 'BBBBBBBB');
+    fireEvent.press(screen.getByText('使う'));
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith('利用結果を確認してください', expect.any(String)));
+    expect(mockShow).not.toHaveBeenCalled();
+  });
+
+  it('招待利用RPCが空応答なら画面が落ちず失敗を案内する', async () => {
+    mockRpcs(null);
+    render(<Invite />);
+    await waitFor(() => expect(screen.getByText('A3F7KMPQ')).toBeTruthy());
+    fireEvent.changeText(screen.getByPlaceholderText('例: A3F7KMPQ'), 'BBBBBBBB');
+    fireEvent.press(screen.getByText('使う'));
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith('利用できませんでした', expect.any(String)));
+    expect(mockShow).not.toHaveBeenCalled();
+  });
+
   it('共有シートに招待コードを渡す', async () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' } as never);
     render(<Invite />);
     await waitFor(() => expect(screen.getByText('A3F7KMPQ')).toBeTruthy());
-    fireEvent.press(screen.getByText('招待リンクを送る'));
+    fireEvent.press(screen.getByText('招待コードを送る'));
     await waitFor(() => expect(share).toHaveBeenCalled());
     // ShareContent は message|url のユニオンなので、message 側であることを確かめてから読む
     const content = share.mock.calls[0][0] as { message?: string };
     expect(content.message).toContain('A3F7KMPQ');
+  });
+
+  it('招待情報が空応答なら再読込エラーを表示する', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    render(<Invite />);
+    await waitFor(() => expect(screen.getByText(/データの取得に失敗しました/)).toBeTruthy());
+    expect(screen.queryByText('招待コードを送る')).toBeNull();
+  });
+
+  it('報酬額が欠損した招待情報は表示しない', async () => {
+    mockRpc.mockResolvedValue({ data: { code: 'A3F7KMPQ' }, error: null });
+    render(<Invite />);
+    await waitFor(() => expect(screen.getByText(/データの取得に失敗しました/)).toBeTruthy());
+    expect(screen.queryByText('招待コードを送る')).toBeNull();
   });
 });
