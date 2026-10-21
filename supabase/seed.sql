@@ -48,8 +48,8 @@ update public.missions
 set partner_id = (select id from public.ad_partners where slug = 'test-partner')
 where requires_verification = true and partner_id is null;
 
--- One offer is enough for the first end-to-end MVP loop. target_url remains null
--- locally, so the mobile app opens its built-in test offer page.
+-- This local test offer has no verified destination URL. Keep it paused until
+-- an isolated test explicitly activates it with a safe test destination.
 insert into public.offers
   (network_id, external_id, mission_id, title, description, reward_points, event_type, status)
 select
@@ -60,7 +60,7 @@ select
   'テストページ完了後、署名付きpostbackでポイントを確定します',
   m.reward_points,
   'install',
-  'active'
+  'paused'
 from public.ad_networks n
 join public.missions m on m.title = '『パズルキングダム』をインストール'
 where n.code = 'mastergame-test';
