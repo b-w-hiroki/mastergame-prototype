@@ -215,7 +215,6 @@ create policy "tiers read"      on public.vip_tiers      for select using (true)
 -- NOTE: all writes to wallet/ledger/completions go through SECURITY DEFINER RPCs (0006).
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0002_postback.sql
 -- └────────────────────────────────────────────────────────
@@ -318,7 +317,6 @@ create policy "own postback read" on public.postback_events for select using (au
 create policy "own modstate read" on public.user_moderation_state for select using (auth.uid() = user_id);
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0003_offerwall.sql
 -- └────────────────────────────────────────────────────────
@@ -399,7 +397,6 @@ create policy "offers read" on public.offers for select using (status = 'active'
 create policy "own offercomp" on public.offer_completions for select using (auth.uid() = user_id);
 create policy "own impressions" on public.ad_impressions for select using (auth.uid() = user_id);
 create policy "own offercounts" on public.user_daily_offer_counts for select using (auth.uid() = user_id);
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -559,7 +556,6 @@ create policy "own membership" on public.forum_members for all using (auth.uid()
 create policy "reporter insert" on public.reports for insert with check (auth.uid() = reporter_id);
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0005_nudge.sql
 -- └────────────────────────────────────────────────────────
@@ -597,7 +593,6 @@ alter table public.nudge_events    enable row level security;
 alter table public.nudge_cooldowns enable row level security;
 create policy "own nudge events" on public.nudge_events for select using (auth.uid() = user_id);
 create policy "own cooldowns"    on public.nudge_cooldowns for select using (auth.uid() = user_id);
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -685,7 +680,6 @@ grant execute on function public.request_exchange(uuid) to authenticated;
 grant execute on function public.next_nudge_target()    to authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0007_admin.sql
 -- └────────────────────────────────────────────────────────
@@ -717,7 +711,6 @@ from public.profiles p
 join auth.users u on u.id = p.id
 left join public.point_wallets w on w.user_id = p.id
 left join public.user_moderation_state m on m.user_id = p.id;
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -786,7 +779,6 @@ select
      where delta < 0 and reason = 'exchange' and status = 'confirmed')::bigint)        as exchanged_yen;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0009_economy.sql
 -- └────────────────────────────────────────────────────────
@@ -837,7 +829,6 @@ select
 from public.revenue_benchmarks b;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0010_distribution.sql
 -- └────────────────────────────────────────────────────────
@@ -875,7 +866,6 @@ $$;
 -- 額面→実コスト換算（円）
 create or replace function public.face_to_real_cost(face_yen numeric) returns numeric
   language sql stable as $$ select round(face_yen * public.effective_cost_rate()); $$;
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -981,7 +971,6 @@ end $$;
 grant execute on function public.track_click(uuid, text, inet, text) to authenticated;
 -- confirm_postback は service_role（Edge Function）からのみ。authenticated には付与しない。
 revoke all on function public.confirm_postback(text, text, text, integer, jsonb) from public, authenticated;
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -1164,7 +1153,6 @@ grant execute on function public.toggle_reaction(uuid, text)                    
 grant execute on function public.set_best_answer(uuid, uuid)                    to authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0013_offer_launch.sql
 -- └────────────────────────────────────────────────────────
@@ -1184,7 +1172,6 @@ comment on column public.offers.mission_id is
   'Verified mission used by track_click and postback attribution.';
 comment on column public.offers.target_url is
   'External offer URL. The mobile client appends click_id and offer_id.';
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -1426,7 +1413,6 @@ end $$;
 revoke all on function public.confirm_postback(text, text, text, integer, jsonb) from public, anon, authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0014_fix_track_click_random_bytes.sql
 -- └────────────────────────────────────────────────────────
@@ -1454,7 +1440,6 @@ end $$;
 grant execute on function public.track_click(uuid, text, inet, text) to authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0014_fk_indexes.sql
 -- └────────────────────────────────────────────────────────
@@ -1475,7 +1460,6 @@ create index if not exists idx_postback_partner      on public.postback_events(p
 create index if not exists idx_clicks_partner        on public.mission_clicks(partner_id);
 create index if not exists idx_topics_author         on public.topics(author_id);
 create index if not exists idx_posts_author          on public.posts(author_id);
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -1566,7 +1550,6 @@ $$;
 
 revoke all on function public.process_exchange_request(uuid, text, text) from public;
 grant execute on function public.process_exchange_request(uuid, text, text) to authenticated, service_role;
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -1774,7 +1757,6 @@ end $$;
 revoke all on function public.reverse_postback(text, text, text) from public, anon, authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0016_community_concurrency.sql
 -- └────────────────────────────────────────────────────────
@@ -1932,7 +1914,6 @@ begin
 end $$;
 revoke all on function public.toggle_reaction(uuid, text) from public, anon;
 grant execute on function public.toggle_reaction(uuid, text) to authenticated;
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -2153,7 +2134,6 @@ revoke all on function public.next_nudge_target() from public, anon;
 grant execute on function public.next_nudge_target() to authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0018_handle_uniqueness.sql
 -- └────────────────────────────────────────────────────────
@@ -2172,7 +2152,6 @@ begin
   insert into public.point_wallets (user_id) values (new.id);
   return new;
 end $$;
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -2279,7 +2258,6 @@ end $$;
 revoke all on function public.confirm_offer(text, text, uuid, text, integer) from public, anon, authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0020_push_tokens.sql
 -- └────────────────────────────────────────────────────────
@@ -2326,7 +2304,6 @@ begin
 end $$;
 revoke all on function public.remove_push_token(text) from public, anon;
 grant execute on function public.remove_push_token(text) to authenticated;
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -2616,7 +2593,6 @@ end $$;
 revoke all on function public.resolve_fraud_flag(uuid, text, text) from public, anon, authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0022_economy_analytics.sql
 -- └────────────────────────────────────────────────────────
@@ -2734,7 +2710,6 @@ select
   round(public.payout_ratio() * 100, 1)                                  as payout_ratio_pct
 from w30, w7, public.economy_liability l;
 revoke all on public.admin_economy_summary from public, anon, authenticated;
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -3045,7 +3020,6 @@ left join public.user_moderation_state me on me.user_id = r.referee_id;
 revoke all on public.admin_referral_rows from public, anon, authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0024_legal_and_expiry.sql
 -- └────────────────────────────────────────────────────────
@@ -3316,7 +3290,6 @@ E'最終更新日: 2026年7月1日', false)
 on conflict (slug, version) do nothing;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0025_game_hub.sql
 -- └────────────────────────────────────────────────────────
@@ -3480,7 +3453,6 @@ update public.games set
     else platforms end,
   is_featured = slug in ('eldia', 'monster')
 where slug in ('eldia','monster','starfall','puzzle-kingdom','sengoku');
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -3904,7 +3876,6 @@ left join public.point_wallets w on w.user_id = d.user_id;
 revoke all on public.admin_deletion_rows from public, anon, authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0027_support.sql
 -- └────────────────────────────────────────────────────────
@@ -4133,7 +4104,6 @@ end $$;
 revoke all on function public.support_user_context(uuid) from public, anon, authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0028_analytics_events.sql
 -- └────────────────────────────────────────────────────────
@@ -4306,7 +4276,6 @@ begin
   return jsonb_build_object('dry_run', p_dry_run, 'deleted', v_count, 'retention_days', v_days);
 end $$;
 revoke all on function public.purge_app_events(boolean) from public, anon, authenticated;
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -4497,7 +4466,6 @@ from public.user_streaks;
 revoke all on public.admin_streak_summary from public, anon, authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0030_grant_hardening.sql
 -- └────────────────────────────────────────────────────────
@@ -4583,7 +4551,6 @@ comment on table public.fraud_settings is
   '不正検知の閾値。露出すると回避されるため service_role 専用。';
 comment on table public.app_events is
   '行動ログの生データ。書き込みは record_events RPC 経由のみ。読み取りは集計ビュー経由。';
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -4974,7 +4941,6 @@ revoke all on function public.record_events(jsonb) from public, anon;
 grant execute on function public.record_events(jsonb) to authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0032_release_offer_safety.sql
 -- └────────────────────────────────────────────────────────
@@ -4996,7 +4962,6 @@ where status = 'active'
 
 comment on column public.offers.status is
   'active は実際に遷移可能な offer_url を設定・確認したオファーだけに使用する。';
-
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -5097,7 +5062,6 @@ end
 $migration$;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0034_nudge_stock_aware.sql
 -- └────────────────────────────────────────────────────────
@@ -5141,7 +5105,6 @@ revoke all on function public.next_nudge_target() from public, anon;
 grant execute on function public.next_nudge_target() to authenticated;
 
 
-
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0035_exchange_code_guard.sql
 -- └────────────────────────────────────────────────────────
@@ -5178,7 +5141,6 @@ begin
   return jsonb_build_object('ok', true, 'request_id', p_request_id, 'status', 'fulfilled');
 end $$;
 revoke all on function public.fulfill_exchange(uuid, text) from public, anon, authenticated;
-
 
 
 -- ┌────────────────────────────────────────────────────────
