@@ -2,6 +2,7 @@ import { getAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin, assertUuid } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { assertExchangeResult, fulfillmentCode } from '@/lib/exchange-actions';
+import { exchangeItemLabel, type ExchangeItemDisplay } from '@/lib/exchange-display';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,12 @@ export default async function Exchanges() {
     );
   }
   const rows = (data as Req[]) ?? [];
+  const itemIds = [...new Set(rows.map((r) => r.item_id))];
+  const { data: itemData, error: itemError } = itemIds.length
+    ? await getAdminClient().from('exchange_items').select('id,name,delivery_method').in('id', itemIds)
+    : { data: [], error: null };
+  if (itemError) throw new Error('交換商品の取得に失敗しました');
+  const items = new Map((itemData as ExchangeItemDisplay[]).map((item) => [item.id, item]));
   const processing = rows.filter((r) => r.status === 'processing').length;
 
   return (
@@ -85,7 +92,7 @@ export default async function Exchanges() {
       <table>
         <thead>
           <tr>
-            <th>状態</th><th>ユーザー</th><th className="right">消費P</th><th>コード</th>
+            <th>状態</th><th>ユーザー</th><th>商品・配送方法</th><th className="right">消費P</th><th>コード</th>
             <th>申請日時</th><th>完了日時</th><th className="right">操作</th>
           </tr>
         </thead>
@@ -96,6 +103,7 @@ export default async function Exchanges() {
               <tr key={r.id}>
                 <td><span className={`pill ${st[0]}`}>{st[1]}</span></td>
                 <td className="mono">#{r.user_id.slice(0, 8)}</td>
+                <td>{exchangeItemLabel(r.item_id, items)}</td>
                 <td className="right"><b>{r.cost_points.toLocaleString()}</b> P</td>
                 <td className="mono">{r.code ?? '—'}</td>
                 <td className="mono">{fmt(r.requested_at)}</td>
@@ -121,7 +129,7 @@ export default async function Exchanges() {
             );
           })}
           {rows.length === 0 && (
-            <tr><td colSpan={7} style={{ textAlign: 'center', color: '#9aa0ad', padding: 30 }}>交換申請はまだありません</td></tr>
+            <tr><td colSpan={8} style={{ textAlign: 'center', color: '#9aa0ad', padding: 30 }}>交換申請はまだありません</td></tr>
           )}
         </tbody>
       </table>
