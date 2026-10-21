@@ -4,22 +4,10 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
-<<<<<<< HEAD
 import { supabase } from '@/lib/supabase';
 import { registerPushToken } from '@/lib/push';
 import { registerDevice } from '@/lib/device';
-<<<<<<< HEAD
 import { track, flushEvents, EVENTS } from '@/lib/analytics';
-=======
-import { hasSupabaseConfig, supabase } from '@/lib/supabase';
->>>>>>> codex/mvp-stabilization-20260919
-=======
-import { track, flushEvents, setAnalyticsUser, EVENTS } from '@/lib/analytics';
-import { AppAlertHost, clearAppAlerts } from '@/components/AppAlert';
-import { AccountSetupGate } from '@/components/AccountSetupGate';
-import { OnboardingCompletedContext } from '@/lib/onboarding';
-import { withReadTimeout } from '@/lib/readTimeout';
->>>>>>> codex/points-exchange-ux
 
 /**
  * 認証＋オンボーディングのゲート。
@@ -36,7 +24,6 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
 
-<<<<<<< HEAD
   // ジャンル選択の有無で初回オンボーディング要否を判定
   async function refreshOnboarded(s: Session | null) {
     if (!hasSupabaseConfig) { setOnboarded(true); return; }
@@ -56,25 +43,6 @@ export default function RootLayout() {
   }
 
   useEffect(() => {
-<<<<<<< HEAD
-=======
-  const userId = session?.user.id;
-  const latestUserId = useRef(userId);
-  latestUserId.current = userId;
-  const onboarded = onboarding?.userId === userId ? onboarding?.complete ?? null : null;
-  const stackOwner = useRef(userId ?? 'anonymous');
-  // 一度限りのcodeを検証中の画面は、認証成立で作り直さない。
-  if (segments[0] !== 'reset-password' && segments[0] !== 'auth-callback') stackOwner.current = userId ?? 'anonymous';
-
-  function publishSession(value: Session | null) {
-    if (setAnalyticsUser(value?.user.id ?? null)) clearAppAlerts();
-    setSession(value);
-  }
-
-  useEffect(() => {
-    let active = true;
-    let authEvents = 0;
->>>>>>> codex/points-exchange-ux
     // getSession/refresh が失敗しても必ず ready にし、永久ブランク＋未処理 rejection を防ぐ
     (async () => {
       try {
@@ -88,36 +56,13 @@ export default function RootLayout() {
         if (active) setReady(true);
       }
     })();
-<<<<<<< HEAD
     const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
-=======
-    if (!hasSupabaseConfig) {
-      setSession(null);
-      setOnboarded(true);
-      setReady(true);
-      return;
-    }
-
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      await refreshOnboarded(data.session);
-      setReady(true);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
->>>>>>> codex/mvp-stabilization-20260919
       setSession(s);
       // Supabase auth callbacks run while the auth client holds an internal lock.
       // Defer queries that use the same client so sign-in/sign-up can finish.
       setTimeout(() => {
         void refreshOnboarded(s);
       }, 0);
-=======
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      if (!active) return;
-      authEvents += 1;
-      publishSession(s);
-      setReady(true);
->>>>>>> codex/points-exchange-ux
     });
     return () => { active = false; sub.subscription.unsubscribe(); };
   }, []);
