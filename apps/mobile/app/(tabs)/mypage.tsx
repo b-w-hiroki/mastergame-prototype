@@ -1,15 +1,5 @@
-<<<<<<< HEAD
 import { useCallback, useState } from 'react';
-<<<<<<< HEAD
 import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl, Alert } from 'react-native';
-=======
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
->>>>>>> codex/mvp-stabilization-20260919
-=======
-import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { AppAlert as Alert } from '@/components/AppAlert';
->>>>>>> codex/points-exchange-ux
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { useAction } from '@/lib/useAction';
@@ -40,61 +30,25 @@ const demoTiers: Tier[] = [
 ];
 
 export default function MyPage() {
-<<<<<<< HEAD
   const [profile, setProfile] = useState<Profile | null>(null);
   const [vip, setVip] = useState<VipInfo | null>(null);
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
-<<<<<<< HEAD
-=======
-  const [profile, setProfile] = useState<Profile | null>(demoProfile);
-  const [vip, setVip] = useState<VipInfo | null>({ user_id: 'demo', xp: 6400, tier_name: 'シルバー', staking_rate_bps: 150 });
-  const [tiers, setTiers] = useState<Tier[]>(demoTiers);
-  const [genres, setGenres] = useState<Genre[]>(['rpg', 'puzzle', 'casual']);
-  const [refreshing, setRefreshing] = useState(false);
->>>>>>> codex/mvp-stabilization-20260919
 
   const load = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
 
     const [{ data: p }, { data: v }, { data: t }, { data: g }] = await Promise.all([
-=======
-  const { busy, run } = useAction();
-
-  const load = useCallback(async (isCurrent: () => boolean) => {
-    setProfile(null);
-    setVip(null);
-    setTiers([]);
-    setGenres([]);
-    const { data: u, error: authError } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!u.user) throw new Error('ログイン状態を確認できません。');
-    const [{ data: p, error: pErr }, { data: v, error: vErr }, { data: t, error: tErr }, { data: g, error: gErr }] = await Promise.all([
->>>>>>> codex/points-exchange-ux
       supabase.from('profiles').select('*').eq('id', u.user.id).single(),
       supabase.from('user_vip').select('*').eq('user_id', u.user.id).single(),
       supabase.from('vip_tiers').select('name,min_xp,sort').order('sort'),
       supabase.from('user_genres').select('genre').eq('user_id', u.user.id),
     ]);
-<<<<<<< HEAD
-<<<<<<< HEAD
     setProfile(p ?? null);
     setVip(v ?? null);
     setTiers((t as Tier[]) ?? []);
     setGenres(((g as { genre: Genre }[]) ?? []).map((x) => x.genre));
-=======
-    if (pErr || vErr || tErr || gErr) throw pErr || vErr || tErr || gErr;
-    if (!p || (p as Profile).id !== u.user.id || !v || (v as VipInfo).user_id !== u.user.id
-      || !Array.isArray(t) || !Array.isArray(g)) {
-      throw new Error('マイページの情報を確認できませんでした。');
-    }
-    if (!isCurrent()) return;
-    setProfile(p as Profile);
-    setVip(v as VipInfo);
-    setTiers(t as Tier[]);
-    setGenres((g as { genre: Genre }[]).map((x) => x.genre));
->>>>>>> codex/points-exchange-ux
   }, []);
 
   const { loading, error, refreshing, reload, onRefresh, cancel } = useLoader(load, { auto: false });
@@ -102,23 +56,6 @@ export default function MyPage() {
 
   const xp = vip?.xp ?? profile?.xp ?? 0;
   const { current, next, ratio: progress } = tierProgress(xp, tiers);
-=======
-
-    if (p) setProfile(p as Profile);
-    if (v) setVip(v as VipInfo);
-    if (t?.length) setTiers(t as Tier[]);
-    if (g?.length) setGenres(((g as { genre: Genre }[]) ?? []).map((x) => x.genre));
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const xp = vip?.xp ?? profile?.xp ?? 0;
-  const current = [...tiers].reverse().find((tier) => xp >= tier.min_xp) ?? tiers[0];
-  const next = tiers.find((tier) => tier.min_xp > xp);
-  const progress = next && current ? Math.min(1, (xp - current.min_xp) / (next.min_xp - current.min_xp)) : 1;
->>>>>>> codex/mvp-stabilization-20260919
 
   async function logout() {
     Alert.alert('ログアウト', 'ログアウトしますか？', [
@@ -132,32 +69,15 @@ export default function MyPage() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-<<<<<<< HEAD
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
 
-=======
-      <ScrollView
-        contentContainerStyle={s.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={async () => {
-              setRefreshing(true);
-              await load();
-              setRefreshing(false);
-            }}
-          />
-        }
-      >
->>>>>>> codex/mvp-stabilization-20260919
         <Text style={s.h}>マイページ</Text>
         {loading && <LoadingView />}
         {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
 
         {!loading && !error && profile && vip && <>
         <View style={s.profile}>
-<<<<<<< HEAD
           <View style={s.avatar}>
             <Text style={s.avatarText}>{(profile?.username ?? 'P').slice(0, 1).toUpperCase()}</Text>
           </View>
@@ -165,31 +85,17 @@ export default function MyPage() {
             <Text style={s.name}>{profile?.username ?? 'Player'}</Text>
             <Text style={s.handle}>{profile?.handle ?? '@mastergame'}</Text>
             {!!profile?.bio && <Text style={s.bio} numberOfLines={2}>{profile.bio}</Text>}
-=======
-          <View style={s.avatar}><Text style={s.avatarText}>{(profile.username ?? 'P').slice(0, 1).toUpperCase()}</Text></View>
-          <View>
-            <Text style={s.name}>{profile.username ?? 'Player'}</Text>
-            <Text style={s.handle}>{profile.handle}</Text>
->>>>>>> codex/points-exchange-ux
           </View>
         </View>
 
         <View style={s.vipCard}>
           <View style={s.vipHead}>
-<<<<<<< HEAD
             <Text style={s.vipTier}>VIP {vip?.tier_name ?? current?.name ?? 'ブロンズ'}</Text>
-=======
-            <Text style={s.vipTier}>👑 VIP {vip.tier_name ?? current?.name ?? '—'}</Text>
->>>>>>> codex/points-exchange-ux
             <Text style={s.vipXp}>{xp.toLocaleString()} XP</Text>
           </View>
           <View style={s.track}><View style={[s.fill, { width: `${progress * 100}%` }]} /></View>
           <Text style={s.vipNext}>
-<<<<<<< HEAD
-            {next ? `次のランク「${next.name}」まで あと ${(next.min_xp - xp).toLocaleString()} XP` : '最高ランクに到達しています'}
-=======
             {tiers.length === 0 ? 'ランク情報を取得できていません' : next ? `次のランク「${next.name}」まで あと ${(next.min_xp - xp).toLocaleString()} XP` : '最高ランクに到達しています 🎉'}
->>>>>>> codex/points-exchange-ux
           </Text>
         </View>
 
@@ -207,16 +113,11 @@ export default function MyPage() {
 
         <Text style={s.section}>設定</Text>
         <View style={s.settings}>
-<<<<<<< HEAD
           <Pressable style={s.setRow} onPress={() => router.push('/exchange')}>
             <Text style={s.setText}>交換履歴・ポイント交換</Text>
             <Text style={s.chevron}>›</Text>
           </Pressable>
-=======
-          <Pressable style={s.setRow} onPress={() => router.push({ pathname: '/points', params: { section: 'history' } })}><Text style={s.setText}>ポイント・交換履歴</Text><Text style={s.chevron}>›</Text></Pressable>
->>>>>>> codex/points-exchange-ux
           <View style={s.sep} />
-<<<<<<< HEAD
           <Pressable style={s.setRow} onPress={() => router.push('/invite')}><Text style={s.setText}>友だち招待</Text><Text style={s.chevron}>›</Text></Pressable>
           <View style={s.sep} />
           <Pressable style={s.setRow} onPress={() => {
@@ -231,17 +132,6 @@ export default function MyPage() {
           <Pressable style={s.setRow} onPress={() => router.push('/legal/privacy')}><Text style={s.setText}>プライバシーポリシー</Text><Text style={s.chevron}>›</Text></Pressable>
           <View style={s.sep} />
           <Pressable style={s.setRow} onPress={() => router.push('/legal/tokushoho')}><Text style={s.setText}>特定商取引法に基づく表記</Text><Text style={s.chevron}>›</Text></Pressable>
-=======
-          <Pressable style={s.setRow} onPress={() => Alert.alert('プッシュ通知', '本番では端末の通知設定と連動します。')}>
-            <Text style={s.setText}>プッシュ通知</Text>
-            <Text style={s.chevron}>›</Text>
-          </Pressable>
-          <View style={s.sep} />
-          <Pressable style={s.setRow} onPress={() => Alert.alert('利用規約 / プライバシー', '本番では各ドキュメントを表示します。')}>
-            <Text style={s.setText}>利用規約・プライバシー</Text>
-            <Text style={s.chevron}>›</Text>
-          </Pressable>
->>>>>>> codex/mvp-stabilization-20260919
         </View>
 
         <Pressable style={s.setRow} onPress={() => router.push('/account/delete')}>
