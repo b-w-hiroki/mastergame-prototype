@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
 import { missionPeriodKey } from '@/lib/missionPeriod';
-import { safeOfferUrl } from '@/lib/offerUrl';
+import { attributedOfferUrl, safeOfferUrl } from '@/lib/offerUrl';
 import { isMissionRow, isMissionCompletionRow, isOfferRow, isOfferCompletionRow, hasUniqueKeys, offerCompletionStatus } from '@/lib/missionRows';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import { useReward } from '@/components/RewardToast';
@@ -203,8 +203,11 @@ export default function Missions() {
     const version = readVersion.current;
     if (!userId) return;
     await runOffer(async () => {
-    const offerUrl = safeOfferUrl(o.offer_url);
-    if (!offerUrl) { Alert.alert('準備中', 'このオファーのリンクは現在ご利用いただけません。'); return; }
+    const destination = safeOfferUrl(o.offer_url) ?? safeOfferUrl(o.target_url);
+    if (!destination || !o.mission_id) {
+      Alert.alert('準備中', 'このオファーのリンクまたは検証用ミッションは現在ご利用いただけません。');
+      return;
+    }
     if (!await isCurrentAction(userId, version)) {
       Alert.alert('開けませんでした', 'ログイン状態が変わりました。再読み込みしてからお試しください。');
       await reload();
@@ -230,6 +233,13 @@ export default function Missions() {
       Alert.alert('本日の上限に達しました', '提携オファーの獲得は1日の上限があります。また明日お試しください。');
       return;
     }
+    const offerUrl = await attributedOfferUrl(o, async (missionId) => {
+      const { data: clickId, error: clickError } = await supabase.rpc('track_click', { p_mission_id: missionId });
+      if (clickError) throw clickError;
+      return clickId as string;
+    });
+    if (!await isCurrentAction(userId, version)) return;
+    if (!offerUrl) { Alert.alert('開けませんでした', 'リンクを確認できませんでした。'); return; }
     const can = await Linking.canOpenURL(offerUrl).catch(() => false);
     if (!await isCurrentAction(userId, version)) return;
     if (!can) { Alert.alert('開けませんでした', 'リンクを開けませんでした。'); return; }
