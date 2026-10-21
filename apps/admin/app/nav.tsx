@@ -1,13 +1,8 @@
 'use client';
 
-<<<<<<< HEAD
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-=======
-import { usePathname } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
->>>>>>> codex/mvp-stabilization-20260919
 
 const ITEMS = [
   { href: '/', label: 'ダッシュボード' },
@@ -18,10 +13,7 @@ const ITEMS = [
   { href: '/games', label: 'ゲームタイトル' },
   { href: '/items', label: '交換アイテム管理' },
   { href: '/exchanges', label: '交換申請' },
-<<<<<<< HEAD
   { href: '/support', label: 'お問い合わせ' },
-=======
->>>>>>> codex/mvp-stabilization-20260919
   { href: '/moderation', label: '通報・モデレーション' },
   { href: '/referrals', label: '招待' },
   { href: '/fraud', label: '不正検知' },
@@ -31,7 +23,6 @@ const ITEMS = [
 
 export default function Nav() {
   const path = usePathname();
-<<<<<<< HEAD
   const router = useRouter();
 
   async function logout() {
@@ -40,16 +31,6 @@ export default function Nav() {
     router.refresh();
   }
 
-=======
-  async function logout() {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    await supabase.auth.signOut();
-    window.location.assign('/login');
-  }
->>>>>>> codex/mvp-stabilization-20260919
   return (
     <nav>
       {ITEMS.map((it) => {
@@ -60,11 +41,7 @@ export default function Nav() {
           </Link>
         );
       })}
-<<<<<<< HEAD
       <button type="button" className="navlogout" onClick={logout}>ログアウト</button>
-=======
-      <button className="nav-logout" type="button" onClick={logout}>ログアウト</button>
->>>>>>> codex/mvp-stabilization-20260919
     </nav>
   );
 }
