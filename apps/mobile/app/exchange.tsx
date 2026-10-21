@@ -1,30 +1,13 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { useCallback, useState } from 'react';
 import { View, Text, Pressable, FlatList, StyleSheet, Alert } from 'react-native';
-=======
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
->>>>>>> codex/mvp-stabilization-20260919
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { VisualSlot } from '@/components/VisualSlot';
 import { supabase } from '@/lib/supabase';
 import { colors, pointsToYen } from '@/lib/theme';
-<<<<<<< HEAD
 import { useLoader } from '@/lib/useLoader';
 import { LoadingView, ErrorBanner } from '@/components/StateViews';
 import type { ExchangeItem } from '@/lib/types';
-=======
-import type { ExchangeItem, ExchangeRequest } from '@/lib/types';
-
-const demoItems: ExchangeItem[] = [
-  { id: 'demo-code-1500', name: '1,500円分のゲームコード', cost_points: 150000, delivery_method: 'code', stock: 24, game_id: null },
-  { id: 'demo-code-500', name: '500円分のデジタルギフト', cost_points: 50000, delivery_method: 'code', stock: 80, game_id: null },
-  { id: 'demo-skin', name: '限定プロフィールフレーム', cost_points: 32000, delivery_method: 'api', stock: null, game_id: null },
-  { id: 'demo-ticket', name: '抽選チケット 5枚セット', cost_points: 18000, delivery_method: 'csv', stock: 120, game_id: null },
-];
->>>>>>> codex/mvp-stabilization-20260919
 
 export default function Exchange() {
   const [items, setItems] = useState<ExchangeItem[]>(demoItems);
@@ -45,7 +28,6 @@ export default function Exchange() {
         .order('requested_at', { ascending: false })
         .limit(10),
     ]);
-<<<<<<< HEAD
     setBalance(wallet?.balance ?? 0);
     setItems(list ?? []);
   }, []);
@@ -73,34 +55,6 @@ export default function Exchange() {
         { text: '交換する', onPress: () => { doExchange(item).catch(() => {}); } },
       ],
     );
-=======
-
-    if (wallet?.balance != null) setBalance(wallet.balance);
-    if (list?.length) setItems(list as ExchangeItem[]);
-    setRequests((history as unknown as ExchangeRequest[]) ?? []);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  async function exchange(item: ExchangeItem) {
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user || item.id.startsWith('demo-')) {
-      setBalance((current) => current - item.cost_points);
-      Alert.alert('交換を受け付けました', `「${item.name}」の交換申請をデモ受付しました。`);
-      return;
-    }
-
-    const { data, error } = await supabase.rpc('request_exchange', { p_item_id: item.id });
-    if (error) {
-      Alert.alert('交換できませんでした', error.message);
-      return;
-    }
-    Alert.alert('交換を受け付けました', `「${item.name}」と交換申請しました。`);
-    load();
-    void data;
->>>>>>> codex/mvp-stabilization-20260919
   }
 
   return (
@@ -108,7 +62,6 @@ export default function Exchange() {
       <Stack.Screen options={{ title: 'ポイント交換', headerShown: true }} />
       <FlatList
         data={items}
-<<<<<<< HEAD
         keyExtractor={(it) => it.id}
         contentContainerStyle={{ padding: 16 }}
         refreshing={refreshing}
@@ -117,30 +70,11 @@ export default function Exchange() {
           <>
             {loading && <LoadingView />}
             {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
-=======
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={s.row}
-        contentContainerStyle={s.content}
-        ListHeaderComponent={
-          <>
-            <View style={s.balance}>
-              <Text style={s.balLabel}>保有ポイント</Text>
-              <Text style={s.balNum}>{balance.toLocaleString()} P</Text>
-              <Text style={s.balYen}>約 {pointsToYen(balance).toLocaleString()} 円相当</Text>
-            </View>
-            <View style={s.nudge}>
-              <Text style={s.nudgeTitle}>あと少しで届く交換先を優先表示</Text>
-              <Text style={s.nudgeText}>不足ポイントを明確に出して、次のミッションへ戻りやすくします。</Text>
-            </View>
-            <Text style={s.section}>交換アイテム</Text>
->>>>>>> codex/mvp-stabilization-20260919
           </>
         }
         renderItem={({ item }) => {
           const soldOut = item.stock !== null && item.stock <= 0;
           const enough = balance >= item.cost_points;
-<<<<<<< HEAD
           const canExchange = enough && !soldOut && busy !== item.id;
           return (
             <View style={s.item}>
@@ -157,23 +91,6 @@ export default function Exchange() {
               <Pressable style={[s.btn, !canExchange && s.btnOff]} disabled={!canExchange} onPress={() => confirmExchange(item)}>
                 <Text style={s.btnText}>{soldOut ? '在庫切れ' : enough ? (busy === item.id ? '…' : '交換') : '不足'}</Text>
               </Pressable>
-=======
-          const gap = Math.max(0, item.cost_points - balance);
-          return (
-            <View style={s.item}>
-              <View style={s.thumb}>
-                <VisualSlot tone="gift" />
-              </View>
-              <View style={s.itemBody}>
-                <Text style={s.itemName} numberOfLines={2}>{item.name}</Text>
-                <Text style={s.stock}>{stockLabel(item.stock)}</Text>
-                <Text style={s.itemCost}>{item.cost_points.toLocaleString()} P</Text>
-                {!enough && <Text style={s.gap}>あと {gap.toLocaleString()}P</Text>}
-                <Pressable style={[s.btn, !enough && s.btnOff]} disabled={!enough} onPress={() => exchange(item)}>
-                  <Text style={s.btnText}>{enough ? '交換する' : '不足'}</Text>
-                </Pressable>
-              </View>
->>>>>>> codex/mvp-stabilization-20260919
             </View>
           );
         }}
@@ -216,7 +133,6 @@ function formatRequestDate(value: string): string {
 }
 
 const s = StyleSheet.create({
-<<<<<<< HEAD
   root: { flex: 1, backgroundColor: '#f4f5f8' },
   balance: { backgroundColor: '#1f2430', margin: 16, borderRadius: 16, padding: 18, alignItems: 'center' },
   balLabel: { color: '#c2c6d8', fontSize: 11, fontWeight: '700' },
@@ -230,27 +146,6 @@ const s = StyleSheet.create({
   metaOut: { color: colors.danger },
   gap: { fontSize: 11, color: '#b88a2e', fontWeight: '800' },
   btn: { backgroundColor: '#4f46e5', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16 },
-=======
-  root: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 16, paddingBottom: 32 },
-  balance: { backgroundColor: colors.ink, borderRadius: 18, padding: 20, marginBottom: 12, alignItems: 'center' },
-  balLabel: { color: '#c2c6d8', fontSize: 11, fontWeight: '800' },
-  balNum: { color: '#fff', fontSize: 34, fontWeight: '900', marginTop: 4 },
-  balYen: { color: '#aeb3c8', fontSize: 12, fontWeight: '700', marginTop: 4 },
-  nudge: { backgroundColor: colors.goldSoft, borderWidth: 1, borderColor: '#e7d6a6', borderRadius: 14, padding: 13, marginBottom: 18 },
-  nudgeTitle: { color: '#7a5b16', fontWeight: '900', fontSize: 13 },
-  nudgeText: { color: '#9a7e3a', fontWeight: '700', fontSize: 11, marginTop: 3, lineHeight: 16 },
-  section: { color: colors.sub, fontSize: 12, fontWeight: '900', marginBottom: 10, letterSpacing: 0.4 },
-  row: { gap: 11 },
-  item: { flex: 1, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, borderRadius: 14, overflow: 'hidden', marginBottom: 11 },
-  thumb: { height: 98, borderBottomWidth: 1, borderBottomColor: colors.line },
-  itemBody: { padding: 11 },
-  itemName: { fontSize: 12.5, fontWeight: '800', color: colors.ink, lineHeight: 17, minHeight: 34 },
-  stock: { fontSize: 10.5, color: colors.muted, fontWeight: '700', marginTop: 3 },
-  itemCost: { fontSize: 15, fontWeight: '900', color: colors.accent, marginTop: 7 },
-  gap: { fontSize: 10.5, color: colors.gold, fontWeight: '900', marginTop: 2 },
-  btn: { backgroundColor: colors.accent, borderRadius: 10, paddingVertical: 9, alignItems: 'center', marginTop: 9 },
->>>>>>> codex/mvp-stabilization-20260919
   btnOff: { backgroundColor: '#cfd2db' },
   btnText: { color: '#fff', fontWeight: '900', fontSize: 12 },
   history: { marginTop: 16 },
@@ -263,11 +158,3 @@ const s = StyleSheet.create({
   statusDone: { color: '#179a5b', backgroundColor: '#e6f4ec' },
   statusCancelled: { color: colors.danger, backgroundColor: '#fdecea' },
 });
-=======
-import { Redirect } from 'expo-router';
-
-/** 既存の交換リンクからも統合済みのポイント画面へ案内する。 */
-export default function ExchangeRedirect() {
-  return <Redirect href={{ pathname: '/points', params: { section: 'exchange' } }} />;
-}
->>>>>>> codex/points-exchange-ux
