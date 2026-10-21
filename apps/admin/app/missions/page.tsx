@@ -1,5 +1,5 @@
 import { getAdminClient } from '@/lib/supabase/admin';
-import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
+import { requireAdmin, assertUuid } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { readMissionForm, toJapanInput } from '@/lib/master-data';
 
@@ -38,24 +38,7 @@ async function saveMission(formData: FormData) {
   await requireAdmin();
   const idRaw = String(formData.get('id') ?? '').trim();
   const id = idRaw === '' ? '' : assertUuid(idRaw);
-  const title = String(formData.get('title') ?? '').trim();
-  const reward = toIntOrNull(formData.get('reward_points'));
-  const maxProgress = toIntOrNull(formData.get('max_progress')) ?? 1;
-
-  if (title === '') throw new Error('title required');
-  if (reward === null || reward <= 0) throw new Error('reward_points must be > 0');
-
-  const payload = {
-    type: assertEnum(formData.get('type'), ['daily', 'weekly', 'achievement', 'event', 'offer'] as const, 'type'),
-    title,
-    description: (String(formData.get('description') ?? '').trim() || null),
-    reward_points: reward,
-    max_progress: maxProgress < 1 ? 1 : maxProgress,
-    requires_verification: formData.get('requires_verification') === 'on',
-    is_active: formData.get('is_active') === 'on',
-    starts_at: toIso(formData.get('starts_at')),
-    ends_at: toIso(formData.get('ends_at')),
-  };
+  const payload = readMissionForm(formData);
 
   const res = id
     ? await getAdminClient().from('missions').update(payload).eq('id', id)
