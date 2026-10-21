@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useAction } from '@/lib/useAction';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
@@ -19,7 +20,7 @@ export default function SignUp() {
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
   const [agreed, setAgreed] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const { busy, run } = useAction();
   const [docs, setDocs] = useState<LegalDoc[]>([]);
   const [docsReady, setDocsReady] = useState(false);
   const [docsError, setDocsError] = useState(false);
@@ -114,6 +115,7 @@ export default function SignUp() {
       );
     }
     router.replace('/'); // 確認不要設定なら即ログイン → ホーム
+    }, '登録結果を確認できませんでした');
   }
 
   return (
