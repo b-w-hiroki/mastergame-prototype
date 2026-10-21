@@ -43,15 +43,9 @@ const demoTopics: Topic[] = [
 ];
 
 export default function Community() {
-<<<<<<< HEAD
   const [forums, setForums] = useState<Forum[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [feed, setFeed] = useState<FeedRow[]>([]);
-=======
-  const [forums, setForums] = useState<Forum[]>(demoForums);
-  const [topics, setTopics] = useState<Topic[]>(demoTopics);
-  const [refreshing, setRefreshing] = useState(false);
->>>>>>> codex/mvp-stabilization-20260919
 
   const load = useCallback(async (isCurrent: () => boolean) => {
     setForums([]);
@@ -61,7 +55,6 @@ export default function Community() {
     if (authError || !userData.user) throw authError ?? new Error('ログイン状態を確認できません。');
     const [{ data: f, error: fErr }, { data: t, error: tErr }, { data: fd, error: fdErr }] = await Promise.all([
       supabase.from('forums').select('id,name,description,type').limit(20),
-<<<<<<< HEAD
       supabase.from('topics').select('id,forum_id,kind,title,reply_count,has_bounty,last_activity_at')
         .order('last_activity_at', { ascending: false }).limit(30),
       supabase.rpc('my_game_feed', { p_limit: 20 }),
@@ -98,39 +91,6 @@ export default function Community() {
         {loading && <LoadingView />}
         {error && <ErrorBanner message={error} onRetry={() => reload().catch(() => {})} />}
 
-=======
-      supabase
-        .from('topics')
-        .select('id,forum_id,kind,title,reply_count,has_bounty,last_activity_at')
-        .order('last_activity_at', { ascending: false })
-        .limit(30),
-    ]);
-    if (f?.length) setForums(f as Forum[]);
-    if (t?.length) setTopics(t as Topic[]);
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
-
-  return (
-    <SafeAreaView style={s.root} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={s.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={async () => {
-              setRefreshing(true);
-              await load();
-              setRefreshing(false);
-            }}
-          />
-        }
-      >
->>>>>>> codex/mvp-stabilization-20260919
         <View style={s.hRow}>
           <View style={{ flex: 1 }}>
             <Text style={s.h}>コミュニティ</Text>
@@ -184,7 +144,6 @@ export default function Community() {
               <Text style={s.guildType}>{forum.type === 'game' ? 'ゲーム別' : '公開'}</Text>
             </View>
           ))}
-<<<<<<< HEAD
         </ScrollView>
 
         <View style={s.sectionRow}>
@@ -193,15 +152,6 @@ export default function Community() {
         </View>
         {topics.map((topic) => {
           const kind = kinds[topic.kind] ?? kinds.chat;
-=======
-          {!loading && !error && forums.length === 0 && <Text style={s.empty}>ギルドがまだありません</Text>}
-        </ScrollView>
-
-        <Text style={s.section}>最近のトピック（最新30件）</Text>
-        {!loading && !error && topics.length === 0 && <Text style={s.empty}>トピックがまだありません</Text>}
-        {topics.map((t) => {
-          const k = KIND[t.kind] ?? KIND.chat;
->>>>>>> codex/points-exchange-ux
           return (
             <Pressable key={topic.id} style={s.topic} onPress={() => router.push(`/topic/${topic.id}`)}>
               <View style={[s.kindBadge, { backgroundColor: kind[1] }]}><Text style={s.kindText}>{kind[0]}</Text></View>
@@ -237,7 +187,6 @@ const s = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   hRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   newBtn: { backgroundColor: colors.accent, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 16, marginTop: 2 },
-<<<<<<< HEAD
   newBtnText: { color: '#fff', fontWeight: '800', fontSize: 13 },
   h: { fontSize: 20, fontWeight: '800', color: colors.ink },
   lead: { fontSize: 13, color: colors.sub, marginTop: 4 },
@@ -250,19 +199,6 @@ const s = StyleSheet.create({
   gameTag: { fontSize: 10.5, fontWeight: '800', color: colors.accent, marginBottom: 3 },
   guild: { width: 180, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 14 },
   guildName: { fontSize: 14, fontWeight: '800', color: colors.ink },
-=======
-  newBtnText: { color: '#fff', fontWeight: '900', fontSize: 13 },
-  h: { fontSize: 21, fontWeight: '900', color: colors.ink },
-  lead: { fontSize: 12, color: colors.sub, marginTop: 4, fontWeight: '700' },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 22, marginBottom: 10 },
-  section: { fontSize: 12, fontWeight: '900', color: colors.sub, letterSpacing: 0.4 },
-  more: { marginLeft: 'auto', color: colors.accent, fontWeight: '800', fontSize: 11 },
-  guildList: { gap: 10 },
-  guild: { width: 184, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 13 },
-  guildThumb: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  guildThumbText: { color: '#fff', fontSize: 16, fontWeight: '900' },
-  guildName: { fontSize: 14, fontWeight: '900', color: colors.ink },
->>>>>>> codex/mvp-stabilization-20260919
   guildDesc: { fontSize: 12, color: colors.sub, marginTop: 4, lineHeight: 17 },
   guildType: { fontSize: 11, color: colors.muted, fontWeight: '800', marginTop: 8 },
   topic: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 14, marginBottom: 10 },
