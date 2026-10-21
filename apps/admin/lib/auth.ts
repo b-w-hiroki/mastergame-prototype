@@ -1,30 +1,15 @@
 import { redirect } from 'next/navigation';
-<<<<<<< HEAD
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { isAdminUser } from '@/lib/admin-check';
 
 export { isAdminUser };
-// バリデータは Next 非依存の純粋モジュールへ切り出し（単体テスト対象）。後方互換で re-export。
 export { assertUuid, assertEnum, assertSlug } from '@/lib/validate';
 
-// ページ / server action の先頭で呼ぶ。管理者でなければ /login へ。
-// middleware が一次ゲートだが、action 単体で叩かれた場合の二次防御として必ず併用する。
+// Server actions and pages must check again after the proxy gate.
 export async function requireAdmin(): Promise<User> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!isAdminUser(user)) redirect('/login');
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !isAdminUser(user)) redirect('/login');
   return user!;
-=======
-import { createClient } from '@/lib/supabase/server';
-
-export async function requireAdmin() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: allowed, error } = await supabase.rpc('is_admin');
-  if (error || !allowed) redirect('/login?error=forbidden');
-  return user;
->>>>>>> codex/mvp-stabilization-20260919
 }
