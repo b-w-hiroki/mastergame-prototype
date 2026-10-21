@@ -1,17 +1,5 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
-=======
-import { useState } from 'react';
-import { Text, TextInput, Pressable, StyleSheet } from 'react-native';
->>>>>>> codex/mvp-stabilization-20260919
-=======
-import { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { AppAlert as Alert } from '@/components/AppAlert';
-import { useAction } from '@/lib/useAction';
->>>>>>> codex/points-exchange-ux
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -31,12 +19,7 @@ export default function SignUp() {
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
   const [agreed, setAgreed] = useState(false);
-<<<<<<< HEAD
   const [busy, setBusy] = useState(false);
-<<<<<<< HEAD
-=======
-  const { busy, run } = useAction();
->>>>>>> codex/points-exchange-ux
   const [docs, setDocs] = useState<LegalDoc[]>([]);
   const [docsReady, setDocsReady] = useState(false);
   const [docsError, setDocsError] = useState(false);
@@ -131,46 +114,6 @@ export default function SignUp() {
       );
     }
     router.replace('/'); // 確認不要設定なら即ログイン → ホーム
-<<<<<<< HEAD
-=======
-  const [message, setMessage] = useState('');
-
-  async function signUp() {
-    if (!email.trim()) {
-      setMessage('メールアドレスを入力してください。');
-      return;
-    }
-    if (password.length < 8) {
-      setMessage('パスワードは8文字以上にしてください。');
-      return;
-    }
-    setMessage('');
-    setBusy(true);
-    try {
-      // profiles / point_wallets は handle_new_user トリガで自動作成（0001_core.sql）
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: { data: { username: username.trim() || 'Player' } },
-      });
-      if (error) {
-        setMessage(`登録に失敗しました: ${error.message}`);
-        return;
-      }
-      if (!data.session) {
-        setMessage('確認メールを送信しました。メール内のリンクを開いてからログインしてください。');
-        return;
-      }
-      router.replace('/');
-    } catch (error) {
-      setMessage(`登録に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setBusy(false);
-    }
->>>>>>> codex/mvp-stabilization-20260919
-=======
-    }, '登録結果を確認できませんでした');
->>>>>>> codex/points-exchange-ux
   }
 
   return (
@@ -192,7 +135,6 @@ export default function SignUp() {
         <TextInput style={s.input} placeholder="パスワード（確認）" secureTextEntry
           editable={!busy} autoComplete="new-password" value={password2} onChangeText={setPassword2} />
 
-<<<<<<< HEAD
         <Text style={s.label}>生年月日</Text>
         <Text style={s.labelHint}>年齢確認のために使用します。あとから変更できません。</Text>
         <View style={s.dobRow}>
@@ -206,12 +148,6 @@ export default function SignUp() {
             editable={!busy} value={day} onChangeText={setDay} accessibilityLabel="生日" />
           <Text style={s.dobSep}>日</Text>
         </View>
-=======
-      <Pressable style={[s.btn, busy && { opacity: 0.6 }]} onPress={signUp} disabled={busy}>
-        <Text style={s.btnText}>{busy ? '...' : 'アカウントを作成'}</Text>
-      </Pressable>
-      {message ? <Text style={s.message}>{message}</Text> : null}
->>>>>>> codex/mvp-stabilization-20260919
 
         <View style={s.legalLinks}>
           <Link href="/legal/terms" style={s.legalLink}>利用規約を確認</Link>
