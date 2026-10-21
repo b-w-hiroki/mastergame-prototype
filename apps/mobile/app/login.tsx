@@ -9,19 +9,9 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
-<<<<<<< HEAD
   const [message, setMessage] = useState('');
 
   async function signIn() {
-<<<<<<< HEAD
-=======
-  const [errorMessage, setErrorMessage] = useState('');
-  const submitting = useRef(false);
-
-  async function signIn() {
-    if (submitting.current) return;
-    setErrorMessage('');
->>>>>>> codex/points-exchange-ux
     if (email.trim() === '' || password === '') {
       setErrorMessage('メールアドレスとパスワードを入力してください');
       return;
@@ -32,47 +22,9 @@ export default function Login() {
     }
     submitting.current = true;
     setBusy(true);
-<<<<<<< HEAD
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) Alert.alert('ログインに失敗しました', error.message);
-=======
-    if (!email.trim() || !password) {
-      setMessage('メールアドレスとパスワードを入力してください。');
-      return;
-    }
-    setMessage('');
-    setBusy(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (error) {
-        setMessage(`ログインに失敗しました: ${error.message}`);
-        return;
-      }
-      router.replace('/');
-    } catch (error) {
-      setMessage(`ログインに失敗しました: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setBusy(false);
-    }
->>>>>>> codex/mvp-stabilization-20260919
-=======
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (error) {
-        setErrorMessage(error.message === 'Invalid login credentials'
-          ? 'メールアドレスまたはパスワードが正しくありません。未登録の場合は新規アカウント作成へ進んでください。'
-          : error.message === 'Email not confirmed'
-            ? 'メールアドレスの確認が必要です。登録時の確認メールと迷惑メールフォルダをご確認ください。'
-            : `ログインに失敗しました。${error.message}`);
-      }
-    } catch {
-      setErrorMessage('通信に失敗しました。接続を確認して、もう一度ログインしてください。');
-    } finally {
-      submitting.current = false;
-      setBusy(false);
-    }
->>>>>>> codex/points-exchange-ux
   }
 
   async function signInOAuth(provider: 'google' | 'apple') {
