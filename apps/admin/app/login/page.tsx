@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 'use client';
 
 import { useState } from 'react';
@@ -69,13 +68,4 @@ export default function Login() {
       </p>
     </div>
   );
-=======
-import LoginForm from './login-form';
-
-export default function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
-  const initialError = searchParams.error === 'forbidden'
-    ? 'このアカウントには管理者権限がありません。'
-    : '';
-  return <LoginForm initialError={initialError} />;
->>>>>>> codex/mvp-stabilization-20260919
 }
