@@ -27,7 +27,8 @@ export function isOfferRow(value: unknown): value is Offer {
   return id(value.id) && id(value.network_id) && value.status === 'active'
     && typeof value.title === 'string' && value.title.trim().length > 0
     && positive(value.reward_points) && textOrEmpty(value.description)
-    && textOrEmpty(value.event_type) && textOrEmpty(value.offer_url);
+    && textOrEmpty(value.event_type) && textOrEmpty(value.offer_url)
+    && textOrEmpty(value.target_url) && textOrEmpty(value.mission_id);
 }
 
 export function isOfferCompletionRow(value: unknown, userId: string): value is { offer_id: string | null; status: string } {
