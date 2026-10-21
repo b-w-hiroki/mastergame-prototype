@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl, Linking } from 'react-native';
+import { AppAlert as Alert } from '@/components/AppAlert';
 import { useAction } from '@/lib/useAction';
-import { View, Text, Pressable, ScrollView, StyleSheet, RefreshControl, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { VisualSlot } from '@/components/VisualSlot';
+import { useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 import { useLoader } from '@/lib/useLoader';
@@ -17,24 +17,25 @@ import { track, EVENTS } from '@/lib/analytics';
 
 type MissionState = Pick<MissionCompletion, 'status' | 'progress' | 'period_key'>;
 
-const tabs: { key: MissionType; label: string }[] = [
+const TABS: { key: MissionType; label: string }[] = [
   { key: 'daily', label: 'デイリー' },
   { key: 'weekly', label: 'ウィークリー' },
   { key: 'achievement', label: '実績' },
   { key: 'event', label: '期間限定' },
 ];
 
+/**
+ * ミッション（prototype core-flow.html のミッションに対応）。
+ * 種別タブ・提携オファー・postback検証ステータス（検証中→確定）。
+ */
 export default function Missions() {
-  const router = useRouter();
+  const { busy: offerBusy, run: runOffer } = useAction();
   const [tab, setTab] = useState<MissionType>('daily');
   const [missions, setMissions] = useState<Mission[]>([]);
   const [completions, setCompletions] = useState<Record<string, MissionState>>({});
   const [offers, setOffers] = useState<Offer[]>([]);
   const [offerStatus, setOfferStatus] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
-  const [offerError, setOfferError] = useState<string | null>(null);
-
-  const { busy: offerBusy, run: runOffer } = useAction();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [serviceDate, setServiceDate] = useState<string | null>(null);
   const claimInFlight = useRef<{ userId: string; version: number } | null>(null);
@@ -77,7 +78,7 @@ export default function Missions() {
       throw new Error('達成状況の内容を確認できませんでした。');
     }
     if (!hasUniqueKeys(ms, (m) => m.id) || !hasUniqueKeys(os, (o) => o.id)
-      || !hasUniqueKeys(cs, (c) => `${c.mission_id}\\u0000${c.period_key}`)) {
+      || !hasUniqueKeys(cs, (c) => `${c.mission_id}\u0000${c.period_key}`)) {
       throw new Error('ミッションまたは達成状況に重複があります。');
     }
     if (!day) throw new Error('サービス日付を確認できません。');
@@ -122,7 +123,18 @@ export default function Missions() {
   }, [reload, cancel]));
   const reward = useReward();
 
-  const list = useMemo(() => missions.filter((mission) => mission.type === tab), [missions, tab]);
+  async function isCurrentAction(userId: string, version: number): Promise<boolean> {
+    if (readVersion.current !== version || loadedUser.current !== userId) return false;
+    try {
+      const { data, error: authError } = await supabase.auth.getUser();
+      return !authError && data.user?.id === userId
+        && readVersion.current === version && loadedUser.current === userId;
+    } catch {
+      return false;
+    }
+  }
+
+  const list = useMemo(() => missions.filter((m) => m.type === tab), [missions, tab]);
 
   async function claim(m: Mission) {
     const userId = loadedUser.current;
@@ -224,7 +236,7 @@ export default function Missions() {
     await Linking.openURL(offerUrl);
     if (!await isCurrentAction(userId, version)) return;
     Alert.alert('達成後に確定します', '外部で条件を達成すると、確認後にポイントが付与されます（アプリでは「確認中」と表示されます）。');
-    });
+    }, 'オファーを開けませんでした');
   }
 
   return (
@@ -233,9 +245,9 @@ export default function Missions() {
       <Text style={s.h}>ミッション</Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabsWrap} contentContainerStyle={s.tabs}>
-        {tabs.map((item) => (
-          <Pressable key={item.key} style={[s.tab, tab === item.key && s.tabOn]} onPress={() => setTab(item.key)}>
-            <Text style={[s.tabText, tab === item.key && s.tabTextOn]}>{item.label}</Text>
+        {TABS.map((t) => (
+          <Pressable key={t.key} style={[s.tab, tab === t.key && s.tabOn]} onPress={() => setTab(t.key)}>
+            <Text style={[s.tabText, tab === t.key && s.tabTextOn]}>{t.label}</Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -253,10 +265,7 @@ export default function Missions() {
           const done = c?.status === 'confirmed';
           const pending = c?.status === 'pending';
           return (
-            <View key={mission.id} style={s.card}>
-              <View style={s.iconBox}>
-                <Text style={s.iconText}>{mission.icon ?? 'M'}</Text>
-              </View>
+            <View key={m.id} style={s.card}>
               <View style={{ flex: 1 }}>
                 <Text style={s.title}>{m.icon ? `${m.icon} ` : ''}{m.title}</Text>
                 {m.description && <Text style={s.desc} numberOfLines={2}>{m.description}</Text>}
@@ -271,14 +280,15 @@ export default function Missions() {
                 )}
               </View>
               {done ? (
-                <View style={[s.badge, s.badgeOk]}><Text style={s.badgeOkText}>完了</Text></View>
+                <View style={[s.badge, s.badgeOk]}><Text style={s.badgeOkText}>✓ 完了</Text></View>
               ) : pending ? (
                 <View style={[s.badge, s.badgeWarn]}><Text style={s.badgeWarnText}>検証中</Text></View>
               ) : m.requires_verification ? (
                 <Text style={s.verificationHint}>条件達成後に自動反映</Text>
               ) : (
-                <Pressable style={[s.btn, busy === mission.id && { opacity: 0.5 }]} disabled={busy === mission.id} onPress={() => claim(mission)}>
-                  <Text style={s.btnText}>{busy === mission.id ? '...' : '挑戦'}</Text>
+                <Pressable accessibilityRole="button" style={[s.btn, busy !== null && { opacity: 0.5 }]}
+                  disabled={busy !== null || loading || refreshing || !!error} onPress={() => claim(m)}>
+                  <Text style={s.btnText}>{busy === m.id ? '受取中…' : '達成'}</Text>
                 </Pressable>
               )}
             </View>
@@ -323,20 +333,16 @@ export default function Missions() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  header: { paddingHorizontal: 16, paddingTop: 8 },
-  h: { fontSize: 21, fontWeight: '900', color: colors.ink },
-  sub: { color: colors.sub, fontSize: 12, fontWeight: '700', marginTop: 3 },
+  h: { fontSize: 20, fontWeight: '800', color: colors.ink, paddingHorizontal: 16, paddingTop: 6 },
   tabsWrap: { flexGrow: 0 },
   tabs: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
-  tab: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 999, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line },
+  tab: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line },
   tabOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   tabText: { fontSize: 12, fontWeight: '800', color: colors.sub },
   tabTextOn: { color: '#fff' },
-  content: { padding: 16, paddingBottom: 32 },
-  fireBanner: { backgroundColor: '#fdecea', borderWidth: 1, borderColor: '#f3c6c0', borderRadius: 13, padding: 12, marginBottom: 12 },
-  fireTitle: { color: '#a13226', fontWeight: '900', fontSize: 13 },
-  fireText: { color: '#a13226', fontWeight: '700', fontSize: 11, marginTop: 3 },
   empty: { color: colors.muted, fontSize: 13 },
+  actionMessage: { color: colors.ink, backgroundColor: colors.warnSoft, borderWidth: 1, borderColor: colors.warn, borderRadius: 12, padding: 13, fontSize: 13, lineHeight: 20, marginBottom: 12 },
+  verificationHint: { color: colors.sub, fontSize: 11, lineHeight: 17, maxWidth: 95, marginLeft: 10 },
   card: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 14, marginBottom: 10 },
   title: { fontSize: 13, fontWeight: '700', color: colors.ink },
   desc: { fontSize: 12, color: colors.sub, marginTop: 3 },
@@ -349,15 +355,9 @@ const s = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: '800', fontSize: 12 },
   badge: { borderRadius: 999, paddingVertical: 6, paddingHorizontal: 11 },
   badgeOk: { backgroundColor: colors.okSoft },
-  badgeOkText: { color: colors.ok, fontWeight: '900', fontSize: 12 },
+  badgeOkText: { color: colors.ok, fontWeight: '800', fontSize: 12 },
   badgeWarn: { backgroundColor: colors.warnSoft },
-  badgeWarnText: { color: colors.warn, fontWeight: '900', fontSize: 12 },
-  section: { fontSize: 12, fontWeight: '900', color: colors.sub, marginTop: 18, marginBottom: 10, letterSpacing: 0.4 },
-  offerLead: { backgroundColor: '#e7f3ec', borderRadius: 13, padding: 12, marginBottom: 10 },
-  offerLeadTitle: { color: '#1f7a5b', fontWeight: '900', fontSize: 13 },
-  offerLeadText: { color: '#447765', fontWeight: '700', fontSize: 11, marginTop: 3, lineHeight: 16 },
-  offerError: { color: colors.danger, fontWeight: '800', fontSize: 12, marginBottom: 10 },
-  offer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fffdf6', borderWidth: 1, borderColor: '#e8d7a9', borderRadius: 14, padding: 13, marginBottom: 10, gap: 12 },
-  offerThumb: { width: 50, height: 50, borderRadius: 12, overflow: 'hidden' },
+  badgeWarnText: { color: colors.warn, fontWeight: '800', fontSize: 12 },
+  section: { fontSize: 12, fontWeight: '800', color: colors.sub, marginTop: 22, marginBottom: 10 },
+  hint: { fontSize: 11, color: colors.muted, marginTop: 8, lineHeight: 16 },
 });
-
