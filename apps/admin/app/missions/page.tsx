@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 import { getAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
-=======
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { requireAdmin } from '@/lib/auth';
->>>>>>> codex/mvp-stabilization-20260919
 import { revalidatePath } from 'next/cache';
 import { readMissionForm, toJapanInput } from '@/lib/master-data';
 
@@ -41,14 +36,8 @@ const fmtDate = (iso: string | null) => {
 async function saveMission(formData: FormData) {
   'use server';
   await requireAdmin();
-<<<<<<< HEAD
   const idRaw = String(formData.get('id') ?? '').trim();
   const id = idRaw === '' ? '' : assertUuid(idRaw);
-<<<<<<< HEAD
-=======
-  const supabaseAdmin = getSupabaseAdmin();
-  const id = String(formData.get('id') ?? '').trim();
->>>>>>> codex/mvp-stabilization-20260919
   const title = String(formData.get('title') ?? '').trim();
   const reward = toIntOrNull(formData.get('reward_points'));
   const maxProgress = toIntOrNull(formData.get('max_progress')) ?? 1;
@@ -67,9 +56,6 @@ async function saveMission(formData: FormData) {
     starts_at: toIso(formData.get('starts_at')),
     ends_at: toIso(formData.get('ends_at')),
   };
-=======
-  const payload = readMissionForm(formData);
->>>>>>> codex/points-exchange-ux
 
   const res = id
     ? await getAdminClient().from('missions').update(payload).eq('id', id)
@@ -82,17 +68,8 @@ async function saveMission(formData: FormData) {
 async function toggleMission(formData: FormData) {
   'use server';
   await requireAdmin();
-<<<<<<< HEAD
   const id = assertUuid(formData.get('id'));
-<<<<<<< HEAD
-=======
-  const supabaseAdmin = getSupabaseAdmin();
-  const id = String(formData.get('id'));
->>>>>>> codex/mvp-stabilization-20260919
   const next = String(formData.get('next')) === 'true';
-=======
-  const next = assertEnum(formData.get('next'), ['true', 'false'] as const, 'next') === 'true';
->>>>>>> codex/points-exchange-ux
   const { error } = await getAdminClient().from('missions').update({ is_active: next }).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/missions');
@@ -101,14 +78,8 @@ async function toggleMission(formData: FormData) {
 async function deleteMission(formData: FormData) {
   'use server';
   await requireAdmin();
-<<<<<<< HEAD
   const id = assertUuid(formData.get('id'));
   const { error } = await getAdminClient().from('missions').delete().eq('id', id);
-=======
-  const supabaseAdmin = getSupabaseAdmin();
-  const id = String(formData.get('id'));
-  const { error } = await supabaseAdmin.from('missions').delete().eq('id', id);
->>>>>>> codex/mvp-stabilization-20260919
   if (error) throw new Error(error.message);
   revalidatePath('/missions');
 }
@@ -170,12 +141,7 @@ function MissionForm({ m }: { m?: Mission }) {
 
 export default async function Missions() {
   await requireAdmin();
-<<<<<<< HEAD
   const { data, error } = await getAdminClient()
-=======
-  const supabaseAdmin = getSupabaseAdmin();
-  const { data, error } = await supabaseAdmin
->>>>>>> codex/mvp-stabilization-20260919
     .from('missions')
     .select('id,type,title,description,reward_points,max_progress,requires_verification,is_active,starts_at,ends_at,created_at')
     .order('created_at', { ascending: false })
