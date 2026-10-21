@@ -26,6 +26,8 @@
 
 DB の正本は番号順の `supabase/migrations/` と `supabase/seed.sql`。`supabase/setup_all.sql` はそれらから生成した一括適用物で、`npm run check:setup-sql` で一致を検査する。既存 migration の書き換えではなく新しい migration を追加する方針は [開発ガイド](DEVELOPMENT.md#マイグレーション方針) に従う。
 
+seed の検証用オファーは遷移先 URL が確定するまで paused に保ち、URL 未設定やプレースホルダー URL の active 行を隔離 DB のテストで拒否する。
+
 主要データは、`profiles`/`user_genres`、`missions`/`mission_completions`、`point_wallets`/`point_ledger`、`exchange_items`/`exchange_requests`、`forums`/`topics`/`posts`/`reports`、`notifications`、招待・問い合わせ・退会関連テーブルで構成される。ポイント付与・交換・取消、postback 確定などは専用 RPC で原子的に扱い、冪等性や二重処理防止は SQL の制約と関数に置く。詳細な変更履歴は migration と `supabase/tests` を参照する。
 
 ## 読み込みと失敗の設計
