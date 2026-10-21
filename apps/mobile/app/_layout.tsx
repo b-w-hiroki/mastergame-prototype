@@ -7,7 +7,11 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { registerPushToken } from '@/lib/push';
 import { registerDevice } from '@/lib/device';
-import { track, flushEvents, EVENTS } from '@/lib/analytics';
+import { track, flushEvents, setAnalyticsUser, EVENTS } from '@/lib/analytics';
+import { AppAlertHost, clearAppAlerts } from '@/components/AppAlert';
+import { AccountSetupGate } from '@/components/AccountSetupGate';
+import { OnboardingCompletedContext } from '@/lib/onboarding';
+import { withReadTimeout } from '@/lib/readTimeout';
 
 /**
  * 認証＋オンボーディングのゲート。
@@ -24,25 +28,22 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
 
-  // ジャンル選択の有無で初回オンボーディング要否を判定
-  async function refreshOnboarded(s: Session | null) {
-    if (!hasSupabaseConfig) { setOnboarded(true); return; }
-    if (!s) { setOnboarded(null); return; }
-    try {
-      const { count, error } = await supabase
-        .from('user_genres')
-        .select('genre', { count: 'exact', head: true })
-        .eq('user_id', s.user.id);
-      if (error) throw error;
-      setOnboarded((count ?? 0) > 0);
-    } catch {
-      // 判定不能（オフライン等）は、オンボーディングに閉じ込めず通す。
-      // ジャンルは後からマイページで設定できる。
-      setOnboarded(true);
-    }
+  const userId = session?.user.id;
+  const latestUserId = useRef(userId);
+  latestUserId.current = userId;
+  const onboarded = onboarding?.userId === userId ? onboarding?.complete ?? null : null;
+  const stackOwner = useRef(userId ?? 'anonymous');
+  // 一度限りのcodeを検証中の画面は、認証成立で作り直さない。
+  if (segments[0] !== 'reset-password' && segments[0] !== 'auth-callback') stackOwner.current = userId ?? 'anonymous';
+
+  function publishSession(value: Session | null) {
+    if (setAnalyticsUser(value?.user.id ?? null)) clearAppAlerts();
+    setSession(value);
   }
 
   useEffect(() => {
+    let active = true;
+    let authEvents = 0;
     // getSession/refresh が失敗しても必ず ready にし、永久ブランク＋未処理 rejection を防ぐ
     (async () => {
       try {
@@ -56,13 +57,11 @@ export default function RootLayout() {
         if (active) setReady(true);
       }
     })();
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
-      setSession(s);
-      // Supabase auth callbacks run while the auth client holds an internal lock.
-      // Defer queries that use the same client so sign-in/sign-up can finish.
-      setTimeout(() => {
-        void refreshOnboarded(s);
-      }, 0);
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      if (!active) return;
+      authEvents += 1;
+      publishSession(s);
+      setReady(true);
     });
     return () => { active = false; sub.subscription.unsubscribe(); };
   }, []);
@@ -105,7 +104,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!hasSupabaseConfig) return;
     const seg = segments[0];
     // 再設定リンクの認証前・認証後とも、フォームから追い出さない。
     if (seg === 'reset-password' || seg === 'forgot' || seg === 'legal' || seg === 'auth-callback') return;
