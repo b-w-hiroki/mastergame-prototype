@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { AppAlert as Alert } from '@/components/AppAlert';
 import { useAction } from '@/lib/useAction';
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -204,6 +205,5 @@ const s = StyleSheet.create({
   legalLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 18 },
   btn: { backgroundColor: '#4f46e5', borderRadius: 12, padding: 15, alignItems: 'center', marginTop: 18 },
   btnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
-  message: { color: '#b42318', fontWeight: '600', fontSize: 13, marginTop: 12, textAlign: 'center' },
   link: { textAlign: 'center', color: '#4f46e5', fontWeight: '700', marginTop: 18 },
 });
