@@ -381,6 +381,8 @@ describe('Missions screen', () => {
     await waitFor(() => expect(screen.getByText('挑戦')).toBeTruthy());
     fireEvent.press(screen.getByText('挑戦'));
     await waitFor(() => expect(open).toHaveBeenCalledWith(expect.stringContaining('click_id=' + CLICK_ID)));
+    expect(mockRpc).toHaveBeenCalledWith('track_click', { p_mission_id: 'm-offer' });
+    expect(open).toHaveBeenCalledWith(expect.stringContaining('offer_id=o1'));
   });
 
   it('オファーの日次残枠が0なら外部ページを開かない', async () => {
