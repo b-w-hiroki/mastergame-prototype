@@ -310,6 +310,8 @@ export interface Database {
           status: string;
           created_at: Timestamptz;
           offer_url: string | null;
+          mission_id: string | null;
+          target_url: string | null;
         };
         Insert: {
           id?: string;
@@ -319,6 +321,8 @@ export interface Database {
           description?: string | null;
           icon_url?: string | null;
           offer_url?: string | null;
+          mission_id?: string | null;
+          target_url?: string | null;
           reward_points: number;
           event_type?: string | null;
           countries?: string[] | null;
