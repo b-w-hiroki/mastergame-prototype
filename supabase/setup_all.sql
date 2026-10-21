@@ -215,6 +215,7 @@ create policy "tiers read"      on public.vip_tiers      for select using (true)
 -- NOTE: all writes to wallet/ledger/completions go through SECURITY DEFINER RPCs (0006).
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0002_postback.sql
 -- └────────────────────────────────────────────────────────
@@ -317,6 +318,7 @@ create policy "own postback read" on public.postback_events for select using (au
 create policy "own modstate read" on public.user_moderation_state for select using (auth.uid() = user_id);
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0003_offerwall.sql
 -- └────────────────────────────────────────────────────────
@@ -397,6 +399,7 @@ create policy "offers read" on public.offers for select using (status = 'active'
 create policy "own offercomp" on public.offer_completions for select using (auth.uid() = user_id);
 create policy "own impressions" on public.ad_impressions for select using (auth.uid() = user_id);
 create policy "own offercounts" on public.user_daily_offer_counts for select using (auth.uid() = user_id);
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -556,6 +559,7 @@ create policy "own membership" on public.forum_members for all using (auth.uid()
 create policy "reporter insert" on public.reports for insert with check (auth.uid() = reporter_id);
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0005_nudge.sql
 -- └────────────────────────────────────────────────────────
@@ -593,6 +597,7 @@ alter table public.nudge_events    enable row level security;
 alter table public.nudge_cooldowns enable row level security;
 create policy "own nudge events" on public.nudge_events for select using (auth.uid() = user_id);
 create policy "own cooldowns"    on public.nudge_cooldowns for select using (auth.uid() = user_id);
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -680,6 +685,7 @@ grant execute on function public.request_exchange(uuid) to authenticated;
 grant execute on function public.next_nudge_target()    to authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0007_admin.sql
 -- └────────────────────────────────────────────────────────
@@ -711,6 +717,7 @@ from public.profiles p
 join auth.users u on u.id = p.id
 left join public.point_wallets w on w.user_id = p.id
 left join public.user_moderation_state m on m.user_id = p.id;
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -779,6 +786,7 @@ select
      where delta < 0 and reason = 'exchange' and status = 'confirmed')::bigint)        as exchanged_yen;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0009_economy.sql
 -- └────────────────────────────────────────────────────────
@@ -829,6 +837,7 @@ select
 from public.revenue_benchmarks b;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0010_distribution.sql
 -- └────────────────────────────────────────────────────────
@@ -866,6 +875,7 @@ $$;
 -- 額面→実コスト換算（円）
 create or replace function public.face_to_real_cost(face_yen numeric) returns numeric
   language sql stable as $$ select round(face_yen * public.effective_cost_rate()); $$;
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -971,6 +981,7 @@ end $$;
 grant execute on function public.track_click(uuid, text, inet, text) to authenticated;
 -- confirm_postback は service_role（Edge Function）からのみ。authenticated には付与しない。
 revoke all on function public.confirm_postback(text, text, text, integer, jsonb) from public, authenticated;
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -1151,6 +1162,29 @@ grant execute on function public.create_topic(uuid, text, text, text, integer) t
 grant execute on function public.add_reply(uuid, text)                          to authenticated;
 grant execute on function public.toggle_reaction(uuid, text)                    to authenticated;
 grant execute on function public.set_best_answer(uuid, uuid)                    to authenticated;
+
+
+
+-- ┌────────────────────────────────────────────────────────
+-- │ supabase/migrations/0013_offer_launch.sql
+-- └────────────────────────────────────────────────────────
+-- ============================================================
+-- MasterGame — 0013 offer launch wiring
+-- Offer cards need a verified mission for attribution and an optional
+-- destination URL for the external offer page.
+-- ============================================================
+
+alter table public.offers
+  add column mission_id uuid references public.missions(id) on delete set null,
+  add column target_url text;
+
+create index idx_offers_mission on public.offers(mission_id);
+
+comment on column public.offers.mission_id is
+  'Verified mission used by track_click and postback attribution.';
+comment on column public.offers.target_url is
+  'External offer URL. The mobile client appends click_id and offer_id.';
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -1392,6 +1426,35 @@ end $$;
 revoke all on function public.confirm_postback(text, text, text, integer, jsonb) from public, anon, authenticated;
 
 
+
+-- ┌────────────────────────────────────────────────────────
+-- │ supabase/migrations/0014_fix_track_click_random_bytes.sql
+-- └────────────────────────────────────────────────────────
+-- Supabase installs pgcrypto in the extensions schema. The function uses a
+-- restricted search_path, so qualify gen_random_bytes explicitly.
+create or replace function public.track_click(
+  p_mission_id uuid, p_device_fp text default null, p_ip inet default null, p_ua text default null
+) returns text language plpgsql security definer set search_path = public as $$
+declare v_uid uuid := auth.uid(); v_m missions; v_click text; v_win interval;
+begin
+  if v_uid is null then raise exception 'not authenticated'; end if;
+  select * into v_m from missions where id = p_mission_id and is_active;
+  if not found then raise exception 'mission not found'; end if;
+
+  v_click := encode(extensions.gen_random_bytes(16), 'hex');
+  select coalesce(attribution_window, interval '24 hours') into v_win
+    from ad_partners where id = v_m.partner_id;
+
+  insert into mission_clicks(click_id, user_id, mission_id, partner_id, expires_at, ip, device_fp, user_agent)
+    values (v_click, v_uid, p_mission_id, v_m.partner_id, now() + coalesce(v_win, interval '24 hours'),
+            p_ip, p_device_fp, p_ua);
+  return v_click;
+end $$;
+
+grant execute on function public.track_click(uuid, text, inet, text) to authenticated;
+
+
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0014_fk_indexes.sql
 -- └────────────────────────────────────────────────────────
@@ -1412,6 +1475,98 @@ create index if not exists idx_postback_partner      on public.postback_events(p
 create index if not exists idx_clicks_partner        on public.mission_clicks(partner_id);
 create index if not exists idx_topics_author         on public.topics(author_id);
 create index if not exists idx_posts_author          on public.posts(author_id);
+
+
+
+-- ┌────────────────────────────────────────────────────────
+-- │ supabase/migrations/0015_admin_auth_exchange_ops.sql
+-- └────────────────────────────────────────────────────────
+-- Admin authorization and atomic exchange-request processing.
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.user_roles
+    where user_id = auth.uid()
+      and role in ('admin', 'superuser')
+  );
+$$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated;
+
+create or replace function public.process_exchange_request(
+  p_request_id uuid,
+  p_action text,
+  p_code text default null
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_request exchange_requests;
+  v_item exchange_items;
+  v_refund_ledger uuid;
+begin
+  if auth.role() <> 'service_role' and not public.is_admin() then
+    raise exception 'admin required';
+  end if;
+  if p_action not in ('fulfilled', 'cancelled') then
+    raise exception 'invalid action';
+  end if;
+
+  select * into v_request
+  from exchange_requests
+  where id = p_request_id
+  for update;
+
+  if not found then raise exception 'exchange request not found'; end if;
+  if v_request.status <> 'processing' then
+    return jsonb_build_object('ok', true, 'status', v_request.status, 'idempotent', true);
+  end if;
+
+  if p_action = 'fulfilled' then
+    update exchange_requests
+    set status = 'fulfilled', code = nullif(trim(p_code), ''), fulfilled_at = now()
+    where id = p_request_id;
+  else
+    v_refund_ledger := apply_points(
+      v_request.user_id,
+      v_request.cost_points,
+      'exchange_refund',
+      'exchange_item',
+      v_request.item_id
+    );
+
+    select * into v_item from exchange_items where id = v_request.item_id for update;
+    if v_item.stock is not null then
+      update exchange_items set stock = stock + 1 where id = v_request.item_id;
+    end if;
+
+    update exchange_requests
+    set status = 'cancelled', fulfilled_at = now()
+    where id = p_request_id;
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'request_id', p_request_id,
+    'status', p_action,
+    'refund_ledger_id', v_refund_ledger
+  );
+end;
+$$;
+
+revoke all on function public.process_exchange_request(uuid, text, text) from public;
+grant execute on function public.process_exchange_request(uuid, text, text) to authenticated, service_role;
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -1619,6 +1774,7 @@ end $$;
 revoke all on function public.reverse_postback(text, text, text) from public, anon, authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0016_community_concurrency.sql
 -- └────────────────────────────────────────────────────────
@@ -1776,6 +1932,7 @@ begin
 end $$;
 revoke all on function public.toggle_reaction(uuid, text) from public, anon;
 grant execute on function public.toggle_reaction(uuid, text) to authenticated;
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -1996,6 +2153,7 @@ revoke all on function public.next_nudge_target() from public, anon;
 grant execute on function public.next_nudge_target() to authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0018_handle_uniqueness.sql
 -- └────────────────────────────────────────────────────────
@@ -2014,6 +2172,7 @@ begin
   insert into public.point_wallets (user_id) values (new.id);
   return new;
 end $$;
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -2120,6 +2279,7 @@ end $$;
 revoke all on function public.confirm_offer(text, text, uuid, text, integer) from public, anon, authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0020_push_tokens.sql
 -- └────────────────────────────────────────────────────────
@@ -2166,6 +2326,7 @@ begin
 end $$;
 revoke all on function public.remove_push_token(text) from public, anon;
 grant execute on function public.remove_push_token(text) to authenticated;
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -2455,6 +2616,7 @@ end $$;
 revoke all on function public.resolve_fraud_flag(uuid, text, text) from public, anon, authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0022_economy_analytics.sql
 -- └────────────────────────────────────────────────────────
@@ -2572,6 +2734,7 @@ select
   round(public.payout_ratio() * 100, 1)                                  as payout_ratio_pct
 from w30, w7, public.economy_liability l;
 revoke all on public.admin_economy_summary from public, anon, authenticated;
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -2882,6 +3045,7 @@ left join public.user_moderation_state me on me.user_id = r.referee_id;
 revoke all on public.admin_referral_rows from public, anon, authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0024_legal_and_expiry.sql
 -- └────────────────────────────────────────────────────────
@@ -3152,6 +3316,7 @@ E'最終更新日: 2026年7月1日', false)
 on conflict (slug, version) do nothing;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0025_game_hub.sql
 -- └────────────────────────────────────────────────────────
@@ -3315,6 +3480,7 @@ update public.games set
     else platforms end,
   is_featured = slug in ('eldia', 'monster')
 where slug in ('eldia','monster','starfall','puzzle-kingdom','sengoku');
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -3738,6 +3904,7 @@ left join public.point_wallets w on w.user_id = d.user_id;
 revoke all on public.admin_deletion_rows from public, anon, authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0027_support.sql
 -- └────────────────────────────────────────────────────────
@@ -3966,6 +4133,7 @@ end $$;
 revoke all on function public.support_user_context(uuid) from public, anon, authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0028_analytics_events.sql
 -- └────────────────────────────────────────────────────────
@@ -4138,6 +4306,7 @@ begin
   return jsonb_build_object('dry_run', p_dry_run, 'deleted', v_count, 'retention_days', v_days);
 end $$;
 revoke all on function public.purge_app_events(boolean) from public, anon, authenticated;
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -4328,6 +4497,7 @@ from public.user_streaks;
 revoke all on public.admin_streak_summary from public, anon, authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0030_grant_hardening.sql
 -- └────────────────────────────────────────────────────────
@@ -4413,6 +4583,7 @@ comment on table public.fraud_settings is
   '不正検知の閾値。露出すると回避されるため service_role 専用。';
 comment on table public.app_events is
   '行動ログの生データ。書き込みは record_events RPC 経由のみ。読み取りは集計ビュー経由。';
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -4803,6 +4974,7 @@ revoke all on function public.record_events(jsonb) from public, anon;
 grant execute on function public.record_events(jsonb) to authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0032_release_offer_safety.sql
 -- └────────────────────────────────────────────────────────
@@ -4824,6 +4996,7 @@ where status = 'active'
 
 comment on column public.offers.status is
   'active は実際に遷移可能な offer_url を設定・確認したオファーだけに使用する。';
+
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -4924,6 +5097,7 @@ end
 $migration$;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0034_nudge_stock_aware.sql
 -- └────────────────────────────────────────────────────────
@@ -4967,6 +5141,7 @@ revoke all on function public.next_nudge_target() from public, anon;
 grant execute on function public.next_nudge_target() to authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0035_exchange_code_guard.sql
 -- └────────────────────────────────────────────────────────
@@ -5005,6 +5180,7 @@ end $$;
 revoke all on function public.fulfill_exchange(uuid, text) from public, anon, authenticated;
 
 
+
 -- ┌────────────────────────────────────────────────────────
 -- │ supabase/seed.sql
 -- └────────────────────────────────────────────────────────
@@ -5023,7 +5199,15 @@ insert into public.vip_tiers (name, min_xp, staking_rate_bps, point_boost_bps, s
 -- ad networks
 insert into public.ad_networks (code, name, priority) values
   ('applovin','AppLovin',10),('tapjoy','Tapjoy',20),
-  ('ironsource','ironSource',30),('pollfish','PollFish',40);
+  ('ironsource','ironSource',30),('pollfish','PollFish',40),
+  ('mastergame-test','MasterGame Test',1);
+
+-- Local/closed-test postback partner. The actual secret is never stored in SQL;
+-- configure POSTBACK_SECRET_TEST_PARTNER in the Edge Function environment.
+insert into public.ad_partners
+  (name, slug, signing_secret_ref, attribution_window, postback_mode)
+values
+  ('MasterGame Test Partner','test-partner','env:POSTBACK_SECRET_TEST_PARTNER',interval '24 hours','sandbox');
 
 -- games (genre-based)
 -- games（タイトル別掲示板は insert 時に自動生成される＝0025 の trg_game_forum）
@@ -5044,6 +5228,28 @@ insert into public.missions (type, title, reward_points, xp_reward, icon, max_pr
   ('achievement','累計1,000,000P獲得',50000,500,'crown',1000000,false),
   ('event','『エルディア戦記』事前登録',50000,500,'sword',1,true),    -- 要postback検証
   ('offer','『パズルキングダム』をインストール',80000,300,'game',1,true);
+
+-- Verification missions need a partner before track_click can create attribution.
+update public.missions
+set partner_id = (select id from public.ad_partners where slug = 'test-partner')
+where requires_verification = true and partner_id is null;
+
+-- One offer is enough for the first end-to-end MVP loop. target_url remains null
+-- locally, so the mobile app opens its built-in test offer page.
+insert into public.offers
+  (network_id, external_id, mission_id, title, description, reward_points, event_type, status)
+select
+  n.id,
+  'mvp-install-001',
+  m.id,
+  '検証用ゲームをインストール',
+  'テストページ完了後、署名付きpostbackでポイントを確定します',
+  m.reward_points,
+  'install',
+  'active'
+from public.ad_networks n
+join public.missions m on m.title = '『パズルキングダム』をインストール'
+where n.code = 'mastergame-test';
 
 -- exchange items
 insert into public.exchange_items (name, game_id, cost_points, delivery_method, stock, sort)
