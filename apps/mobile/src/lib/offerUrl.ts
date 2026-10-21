@@ -14,3 +14,18 @@ export function safeOfferUrl(value: unknown): string | null {
     return null;
   }
 }
+
+/** Register attribution before opening either supported offer URL column. */
+export async function attributedOfferUrl(
+  offer: { id: string; mission_id: string | null; offer_url: string | null; target_url: string | null },
+  trackClick: (missionId: string) => Promise<string>,
+): Promise<string | null> {
+  const destination = safeOfferUrl(offer.offer_url) ?? safeOfferUrl(offer.target_url);
+  if (!destination || !offer.mission_id) return null;
+  const clickId = await trackClick(offer.mission_id);
+  if (!/^[a-f0-9]{32}$/i.test(clickId)) throw new Error('click_id を確認できませんでした');
+  const url = new URL(destination);
+  url.searchParams.set('click_id', clickId);
+  url.searchParams.set('offer_id', offer.id);
+  return safeOfferUrl(url.toString());
+}
