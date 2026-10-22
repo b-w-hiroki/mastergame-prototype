@@ -46,6 +46,8 @@ jest.mock('expo-router', () => ({
 import Missions from '../app/(tabs)/missions';
 import { missionPeriodKey } from '@/lib/missionPeriod';
 
+const CLICK_ID = '0123456789abcdef0123456789abcdef';
+
 const daily = (over: Record<string, unknown> = {}) => ({
   id: 'm1', type: 'daily', title: 'ログインボーナス', description: '毎日ログインで獲得',
   reward_points: 100, icon: '📅', is_active: true, requires_verification: false,
@@ -295,7 +297,7 @@ describe('Missions screen', () => {
 
   it('アカウント切替後は古いオファーの記録RPCを送らない', async () => {
     mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100,
-      offer_url: 'https://offers.partner.test/offer', network_id: 'network1', status: 'active' }];
+      offer_url: 'https://offers.partner.test/offer', mission_id: 'm-offer', network_id: 'network1', status: 'active' }];
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
     render(<Missions />);
     await screen.findByText('挑戦');
@@ -308,7 +310,7 @@ describe('Missions screen', () => {
 
   it('オファー記録後にアカウントが変われば外部リンクを開かない', async () => {
     mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100,
-      offer_url: 'https://offers.partner.test/offer', network_id: 'network1', status: 'active' }];
+      offer_url: 'https://offers.partner.test/offer', mission_id: 'm-offer', network_id: 'network1', status: 'active' }];
     let finish!: (value: unknown) => void;
     mockRpc.mockImplementation((name: string) => name === 'record_ad_impression'
       ? new Promise((resolve) => { finish = resolve; })
@@ -326,9 +328,9 @@ describe('Missions screen', () => {
 
   it('外部リンクを開く待機中にアカウントが変われば旧オファーの成功案内を出さない', async () => {
     mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100,
-      offer_url: 'https://offers.partner.test/offer', network_id: 'n1', status: 'active' }];
+      offer_url: 'https://offers.partner.test/offer', mission_id: 'm-offer', network_id: 'n1', status: 'active' }];
     mockRpc.mockImplementation(async (name: string) => ({
-      data: name === 'service_today' ? '2026-10-18' : { ok: true, remaining: 2 }, error: null,
+      data: name === 'service_today' ? '2026-10-18' : name === 'track_click' ? CLICK_ID : { ok: true, remaining: 2 }, error: null,
     }));
     jest.spyOn(Linking, 'canOpenURL').mockResolvedValue(true);
     let finish!: () => void;
@@ -343,7 +345,7 @@ describe('Missions screen', () => {
   });
 
   it('オファー記録RPCが空応答なら外部ページを開かない', async () => {
-    mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100, offer_url: 'https://offers.partner.test/offer', network_id: 'n1', status: 'active' }];
+    mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100, offer_url: 'https://offers.partner.test/offer', mission_id: 'm-offer', network_id: 'n1', status: 'active' }];
     mockRpc.mockImplementation(async (name: string) => ({
       data: name === 'service_today' ? '2026-10-18' : null, error: null,
     }));
@@ -356,7 +358,7 @@ describe('Missions screen', () => {
   });
 
   it('オファー記録RPCがok=falseなら外部ページを開かない', async () => {
-    mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100, offer_url: 'https://offers.partner.test/offer', network_id: 'n1', status: 'active' }];
+    mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100, offer_url: 'https://offers.partner.test/offer', mission_id: 'm-offer', network_id: 'n1', status: 'active' }];
     mockRpc.mockImplementation(async (name: string) => ({
       data: name === 'service_today' ? '2026-10-18' : { ok: false, remaining: 3 }, error: null,
     }));
@@ -369,20 +371,22 @@ describe('Missions screen', () => {
   });
 
   it('オファー記録が成功し残枠があれば外部ページを開く', async () => {
-    mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100, offer_url: 'https://offers.partner.test/offer', network_id: 'n1', status: 'active' }];
+    mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100, offer_url: 'https://offers.partner.test/offer', mission_id: 'm-offer', network_id: 'n1', status: 'active' }];
     mockRpc.mockImplementation(async (name: string) => ({
-      data: name === 'service_today' ? '2026-10-18' : { ok: true, remaining: 2 }, error: null,
+      data: name === 'service_today' ? '2026-10-18' : name === 'track_click' ? CLICK_ID : { ok: true, remaining: 2 }, error: null,
     }));
     jest.spyOn(Linking, 'canOpenURL').mockResolvedValue(true);
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
     render(<Missions />);
     await waitFor(() => expect(screen.getByText('挑戦')).toBeTruthy());
     fireEvent.press(screen.getByText('挑戦'));
-    await waitFor(() => expect(open).toHaveBeenCalledWith('https://offers.partner.test/offer'));
+    await waitFor(() => expect(open).toHaveBeenCalledWith(expect.stringContaining('click_id=' + CLICK_ID)));
+    expect(mockRpc).toHaveBeenCalledWith('track_click', { p_mission_id: 'm-offer' });
+    expect(open).toHaveBeenCalledWith(expect.stringContaining('offer_id=o1'));
   });
 
   it('オファーの日次残枠が0なら外部ページを開かない', async () => {
-    mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100, offer_url: 'https://offers.partner.test/offer', network_id: 'n1', status: 'active' }];
+    mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100, offer_url: 'https://offers.partner.test/offer', mission_id: 'm-offer', network_id: 'n1', status: 'active' }];
     mockRpc.mockImplementation(async (name: string) => ({
       data: name === 'service_today' ? '2026-10-18' : { ok: true, remaining: 0 }, error: null,
     }));
@@ -423,7 +427,7 @@ describe('Missions screen', () => {
     '%sが空応答なら未達成・未挑戦として表示せず再読み込みを促す', async (table) => {
       mockTables.missions = [daily()];
       mockTables.offers = [{ id: 'o1', title: '提携オファー', reward_points: 100,
-        offer_url: 'https://offers.partner.test/offer', network_id: 'n1', status: 'active' }];
+        offer_url: 'https://offers.partner.test/offer', mission_id: 'm-offer', network_id: 'n1', status: 'active' }];
       mockTables[table] = null;
       render(<Missions />);
       await screen.findByText('データの取得に失敗しました。通信環境を確認してください。');

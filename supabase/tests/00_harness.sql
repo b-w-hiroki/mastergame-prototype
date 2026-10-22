@@ -6,7 +6,8 @@
 -- 本ファイルはマイグレーション適用「後」に流す（本番マイグレーションには含めない）。
 -- ============================================================
 
-create extension if not exists pgcrypto;
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
 
 -- ロール（Supabase では既に存在）
 do $$ begin

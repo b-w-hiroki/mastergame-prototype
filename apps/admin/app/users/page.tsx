@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { getAdminClient } from '@/lib/supabase/admin';
-=======
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
->>>>>>> codex/mvp-stabilization-20260919
 import { requireAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -26,12 +22,7 @@ const fmt = (iso: string) => {
 
 export default async function Users() {
   await requireAdmin();
-<<<<<<< HEAD
   const { data, error } = await getAdminClient()
-=======
-  const supabaseAdmin = getSupabaseAdmin();
-  const { data, error } = await supabaseAdmin
->>>>>>> codex/mvp-stabilization-20260919
     .from('admin_user_rows').select('*')
     .order('balance', { ascending: false }).limit(100);
 

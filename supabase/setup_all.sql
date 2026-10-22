@@ -1154,6 +1154,27 @@ grant execute on function public.set_best_answer(uuid, uuid)                    
 
 
 -- ┌────────────────────────────────────────────────────────
+-- │ supabase/migrations/0013_offer_launch.sql
+-- └────────────────────────────────────────────────────────
+-- ============================================================
+-- MasterGame — 0013 offer launch wiring
+-- Offer cards need a verified mission for attribution and an optional
+-- destination URL for the external offer page.
+-- ============================================================
+
+alter table public.offers
+  add column mission_id uuid references public.missions(id) on delete set null,
+  add column target_url text;
+
+create index idx_offers_mission on public.offers(mission_id);
+
+comment on column public.offers.mission_id is
+  'Verified mission used by track_click and postback attribution.';
+comment on column public.offers.target_url is
+  'External offer URL. The mobile client appends click_id and offer_id.';
+
+
+-- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0013_security_hardening.sql
 -- └────────────────────────────────────────────────────────
 -- ============================================================
@@ -1393,6 +1414,33 @@ revoke all on function public.confirm_postback(text, text, text, integer, jsonb)
 
 
 -- ┌────────────────────────────────────────────────────────
+-- │ supabase/migrations/0014_fix_track_click_random_bytes.sql
+-- └────────────────────────────────────────────────────────
+-- Supabase installs pgcrypto in the extensions schema. The function uses a
+-- restricted search_path, so qualify gen_random_bytes explicitly.
+create or replace function public.track_click(
+  p_mission_id uuid, p_device_fp text default null, p_ip inet default null, p_ua text default null
+) returns text language plpgsql security definer set search_path = public as $$
+declare v_uid uuid := auth.uid(); v_m missions; v_click text; v_win interval;
+begin
+  if v_uid is null then raise exception 'not authenticated'; end if;
+  select * into v_m from missions where id = p_mission_id and is_active;
+  if not found then raise exception 'mission not found'; end if;
+
+  v_click := encode(extensions.gen_random_bytes(16), 'hex');
+  select coalesce(attribution_window, interval '24 hours') into v_win
+    from ad_partners where id = v_m.partner_id;
+
+  insert into mission_clicks(click_id, user_id, mission_id, partner_id, expires_at, ip, device_fp, user_agent)
+    values (v_click, v_uid, p_mission_id, v_m.partner_id, now() + coalesce(v_win, interval '24 hours'),
+            p_ip, p_device_fp, p_ua);
+  return v_click;
+end $$;
+
+grant execute on function public.track_click(uuid, text, inet, text) to authenticated;
+
+
+-- ┌────────────────────────────────────────────────────────
 -- │ supabase/migrations/0014_fk_indexes.sql
 -- └────────────────────────────────────────────────────────
 -- ============================================================
@@ -1412,6 +1460,96 @@ create index if not exists idx_postback_partner      on public.postback_events(p
 create index if not exists idx_clicks_partner        on public.mission_clicks(partner_id);
 create index if not exists idx_topics_author         on public.topics(author_id);
 create index if not exists idx_posts_author          on public.posts(author_id);
+
+
+-- ┌────────────────────────────────────────────────────────
+-- │ supabase/migrations/0015_admin_auth_exchange_ops.sql
+-- └────────────────────────────────────────────────────────
+-- Admin authorization and atomic exchange-request processing.
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.user_roles
+    where user_id = auth.uid()
+      and role in ('admin', 'superuser')
+  );
+$$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated;
+
+create or replace function public.process_exchange_request(
+  p_request_id uuid,
+  p_action text,
+  p_code text default null
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_request exchange_requests;
+  v_item exchange_items;
+  v_refund_ledger uuid;
+begin
+  if auth.role() <> 'service_role' and not public.is_admin() then
+    raise exception 'admin required';
+  end if;
+  if p_action not in ('fulfilled', 'cancelled') then
+    raise exception 'invalid action';
+  end if;
+
+  select * into v_request
+  from exchange_requests
+  where id = p_request_id
+  for update;
+
+  if not found then raise exception 'exchange request not found'; end if;
+  if v_request.status <> 'processing' then
+    return jsonb_build_object('ok', true, 'status', v_request.status, 'idempotent', true);
+  end if;
+
+  if p_action = 'fulfilled' then
+    update exchange_requests
+    set status = 'fulfilled', code = nullif(trim(p_code), ''), fulfilled_at = now()
+    where id = p_request_id;
+  else
+    v_refund_ledger := apply_points(
+      v_request.user_id,
+      v_request.cost_points,
+      'exchange_refund',
+      'exchange_item',
+      v_request.item_id
+    );
+
+    select * into v_item from exchange_items where id = v_request.item_id for update;
+    if v_item.stock is not null then
+      update exchange_items set stock = stock + 1 where id = v_request.item_id;
+    end if;
+
+    update exchange_requests
+    set status = 'cancelled', fulfilled_at = now()
+    where id = p_request_id;
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'request_id', p_request_id,
+    'status', p_action,
+    'refund_ledger_id', v_refund_ledger
+  );
+end;
+$$;
+
+revoke all on function public.process_exchange_request(uuid, text, text) from public;
+grant execute on function public.process_exchange_request(uuid, text, text) to authenticated, service_role;
 
 
 -- ┌────────────────────────────────────────────────────────
@@ -5023,7 +5161,15 @@ insert into public.vip_tiers (name, min_xp, staking_rate_bps, point_boost_bps, s
 -- ad networks
 insert into public.ad_networks (code, name, priority) values
   ('applovin','AppLovin',10),('tapjoy','Tapjoy',20),
-  ('ironsource','ironSource',30),('pollfish','PollFish',40);
+  ('ironsource','ironSource',30),('pollfish','PollFish',40),
+  ('mastergame-test','MasterGame Test',1);
+
+-- Local/closed-test postback partner. The actual secret is never stored in SQL;
+-- configure POSTBACK_SECRET_TEST_PARTNER in the Edge Function environment.
+insert into public.ad_partners
+  (name, slug, signing_secret_ref, attribution_window, postback_mode)
+values
+  ('MasterGame Test Partner','test-partner','env:POSTBACK_SECRET_TEST_PARTNER',interval '24 hours','sandbox');
 
 -- games (genre-based)
 -- games（タイトル別掲示板は insert 時に自動生成される＝0025 の trg_game_forum）
@@ -5044,6 +5190,28 @@ insert into public.missions (type, title, reward_points, xp_reward, icon, max_pr
   ('achievement','累計1,000,000P獲得',50000,500,'crown',1000000,false),
   ('event','『エルディア戦記』事前登録',50000,500,'sword',1,true),    -- 要postback検証
   ('offer','『パズルキングダム』をインストール',80000,300,'game',1,true);
+
+-- Verification missions need a partner before track_click can create attribution.
+update public.missions
+set partner_id = (select id from public.ad_partners where slug = 'test-partner')
+where requires_verification = true and partner_id is null;
+
+-- This local test offer has no verified destination URL. Keep it paused until
+-- an isolated test explicitly activates it with a safe test destination.
+insert into public.offers
+  (network_id, external_id, mission_id, title, description, reward_points, event_type, status)
+select
+  n.id,
+  'mvp-install-001',
+  m.id,
+  '検証用ゲームをインストール',
+  'テストページ完了後、署名付きpostbackでポイントを確定します',
+  m.reward_points,
+  'install',
+  'paused'
+from public.ad_networks n
+join public.missions m on m.title = '『パズルキングダム』をインストール'
+where n.code = 'mastergame-test';
 
 -- exchange items
 insert into public.exchange_items (name, game_id, cost_points, delivery_method, stock, sort)

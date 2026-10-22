@@ -20,11 +20,13 @@
 
 利用者アプリは Supabase セッションを保持し、ログイン状態とジャンル設定で画面遷移を決める。ログイン後のプロフィール・規約確認は `AccountSetupGate` が担う。セッション切替時は前ユーザーの画面状態や保留中操作を引き継がない設計とする。
 
-運営画面は `apps/admin/proxy.ts` で一次ゲートを行い、サーバー操作時に `requireAdmin()` 相当の権限確認を重ねる。`SUPABASE_SERVICE_ROLE_KEY` はサーバー専用で、ブラウザや Expo の公開環境変数へ渡さない。一般ユーザーの直接参照は RLS、金銭相当・競合を伴う変更は DB の関数と権限設定を境界とする。画面上の非表示・入力チェックだけを認可と見なさない。
+運営画面は `apps/admin/proxy.ts` で一次ゲートを行い、サーバー操作時に `requireAdmin()` で取得した認証ユーザーを `isAdminUser()` に通して再確認する。判定はサーバー管理の `app_metadata.role` または `ADMIN_EMAILS` に限り、未設定・未認証は拒否する。`SUPABASE_SERVICE_ROLE_KEY` はサーバー専用で、ブラウザや Expo の公開環境変数へ渡さない。一般ユーザーの直接参照は RLS、金銭相当・競合を伴う変更は DB の関数と権限設定を境界とする。画面上の非表示・入力チェックだけを認可と見なさない。
 
 ## データと整合性
 
 DB の正本は番号順の `supabase/migrations/` と `supabase/seed.sql`。`supabase/setup_all.sql` はそれらから生成した一括適用物で、`npm run check:setup-sql` で一致を検査する。既存 migration の書き換えではなく新しい migration を追加する方針は [開発ガイド](DEVELOPMENT.md#マイグレーション方針) に従う。
+
+seed の検証用オファーは遷移先 URL が確定するまで paused に保ち、URL 未設定やプレースホルダー URL の active 行を隔離 DB のテストで拒否する。
 
 主要データは、`profiles`/`user_genres`、`missions`/`mission_completions`、`point_wallets`/`point_ledger`、`exchange_items`/`exchange_requests`、`forums`/`topics`/`posts`/`reports`、`notifications`、招待・問い合わせ・退会関連テーブルで構成される。ポイント付与・交換・取消、postback 確定などは専用 RPC で原子的に扱い、冪等性や二重処理防止は SQL の制約と関数に置く。詳細な変更履歴は migration と `supabase/tests` を参照する。
 

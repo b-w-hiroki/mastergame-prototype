@@ -1,27 +1,16 @@
 {
   "scripts": {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "check:supabase": "node scripts/check-supabase.mjs"
-=======
     "check:docs": "node scripts/check-docs.mjs",
     "test:docs": "node --test scripts/check-docs.test.mjs",
     "check:supabase": "node scripts/check-supabase.mjs",
     "check:local": "node scripts/check-local.mjs",
-    "check:setup-sql": "node scripts/check-setup-sql.mjs"
->>>>>>> codex/points-exchange-ux
-  },
-  "devDependencies": {
-=======
+    "check:setup-sql": "node scripts/check-setup-sql.mjs",
     "test:postback": "node scripts/send-test-postback.mjs",
     "admin:dev:cloud": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-admin-cloud.ps1",
     "verify:mvp:cloud": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-mvp-cloud.ps1"
   },
-  "dependencies": {
->>>>>>> codex/mvp-stabilization-20260919
-    "pptxgenjs": "^4.0.1"
-  },
   "devDependencies": {
+    "pptxgenjs": "^4.0.1",
     "supabase": "^2.117.0"
   }
 }

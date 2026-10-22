@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 import { getAdminClient } from '@/lib/supabase/admin';
 import { requireAdmin, assertUuid, assertEnum } from '@/lib/auth';
-=======
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
-import { requireAdmin } from '@/lib/auth';
->>>>>>> codex/mvp-stabilization-20260919
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -39,18 +34,10 @@ const fmt = (iso: string) => {
 async function moderate(formData: FormData) {
   'use server';
   await requireAdmin();
-<<<<<<< HEAD
   const id = assertUuid(formData.get('id'));
   const action = assertEnum(formData.get('action'), ['delete', 'warn', 'dismiss'] as const, 'action');
   const target_type = assertEnum(formData.get('target_type'), ['post', 'topic', 'user'] as const, 'target_type');
   const target_id = assertUuid(formData.get('target_id'), 'target_id');
-=======
-  const supabaseAdmin = getSupabaseAdmin();
-  const id = String(formData.get('id'));
-  const action = String(formData.get('action')) as 'delete' | 'warn' | 'dismiss';
-  const target_type = String(formData.get('target_type'));
-  const target_id = String(formData.get('target_id'));
->>>>>>> codex/mvp-stabilization-20260919
 
   // 監査記録の insert が失敗したら report を閉じない（記録なしで対応済みにしない）
   const { error: insErr } = await getAdminClient()
@@ -69,12 +56,7 @@ async function moderate(formData: FormData) {
 
 export default async function Moderation() {
   await requireAdmin();
-<<<<<<< HEAD
   const { data, error } = await getAdminClient()
-=======
-  const supabaseAdmin = getSupabaseAdmin();
-  const { data, error } = await supabaseAdmin
->>>>>>> codex/mvp-stabilization-20260919
     .from('reports')
     .select('id,reporter_id,target_type,target_id,reason,detail,status,created_at,resolved_at')
     .order('status', { ascending: true }) // open を先頭に

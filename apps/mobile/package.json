@@ -9,20 +9,14 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "export:web": "expo export -p web && node scripts/inject-pwa.mjs",
-<<<<<<< HEAD
+    "serve:web": "node scripts/serve-spa.mjs",
     "typecheck": "tsc --noEmit",
     "test": "jest"
   },
   "jest": {
     "preset": "jest-expo",
-    "testMatch": [
-      "**/__tests__/**/*.test.ts?(x)"
-    ],
+    "testMatch": ["**/__tests__/**/*.test.ts?(x)"],
     "testTimeout": 20000
-=======
-    "serve:web": "node scripts/serve-spa.mjs",
-    "typecheck": "tsc --noEmit"
->>>>>>> codex/mvp-stabilization-20260919
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.16",
