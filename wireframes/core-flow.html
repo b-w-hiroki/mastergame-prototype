@@ -469,6 +469,7 @@
   .ranklane .rl.done{background:var(--accent-soft);color:var(--accent);border-color:transparent}
 
   @media(max-width:760px){.legend{display:none}}
+  @media(max-width:430px){body{padding:0;display:block}.phone{width:100%;height:100dvh;min-height:560px;border-radius:0;padding:0}.phone:before{display:none}.screenwrap{border-radius:0}}
 </style>
 </head>
 <body>
@@ -498,6 +499,7 @@
       <div class="logo">MG</div>
       <h2>MASTER GAME</h2>
       <div class="ja">ゲームを、もっと得する遊びに。</div>
+      <p style="padding:0 24px;text-align:center;font-size:13px;line-height:1.6">操作デモ・架空のポイントです。<br>実際の報酬の配送・換金は行いません。</p>
       <div class="start">SERVICE START ▸</div>
     </section>
 
@@ -1042,7 +1044,10 @@ function renderItems(){
     <button onclick="go('mission')">ミッションでポイントをためる ›</button>
   </div>`:'';
 }
+let pendingExchangeItem = null;
 function openItem(i){
+  if (!Number.isInteger(i) || !ITEMS[i]) return;
+  pendingExchangeItem = i;
   const it=ITEMS[i];
   const enough=balance>=it.cost;
   const after=balance-it.cost;
@@ -1052,25 +1057,29 @@ function openItem(i){
     <h3>${it.nm}</h3>
     <p class="gm">${it.gm}</p>
     <div class="costline"><span>必要ポイント</span><span class="c">${it.cost.toLocaleString()} P</span></div>
+    <p class="gm">デモ体験です。実際の報酬の配送・換金は行いません。</p>
     <div class="after">交換後の残高：${enough?after.toLocaleString():'—'} P</div>
     <button class="btn ${enough?'btn-primary':''}" ${enough?`onclick="exchange(${i})"`:'disabled'}>
       ${enough?'このアイテムと交換する':'ポイントが不足しています'}</button>`;
   document.getElementById('overlay').classList.add('show');
 }
 function exchange(i){
+  if (pendingExchangeItem !== i || !Number.isInteger(i) || !ITEMS[i]) return;
   const it=ITEMS[i];
+  if (balance < it.cost) return;
+  pendingExchangeItem = null;
   balance-=it.cost;
   exchangeRequests.unshift({name:it.nm,cost:it.cost,date:'今日 たった今',status:'processing'});
   history.unshift({ic:'🎁',t:it.nm+'と交換',d:'今日 たった今',p:'-'+it.cost.toLocaleString(),cls:'minus',wait:true});
   closeSheet();syncBalance();renderItems();
-  document.getElementById('cong-pt').textContent='交換申請 完了';
-  document.getElementById('cong-title').textContent='交換を受け付けました';
+  document.getElementById('cong-pt').textContent='デモ交換 完了';
+  document.getElementById('cong-title').textContent='実際の報酬は届きません';
   document.getElementById('congrats').classList.add('show');
   document.querySelector('#congrats .burst').textContent='✅';
   pendingPt=0;pendingHist=null;
-  setTimeout(()=>{pseg('history');},100);
+  pseg('history');
 }
-function closeSheet(){document.getElementById('overlay').classList.remove('show');}
+function closeSheet(){pendingExchangeItem = null;document.getElementById('overlay').classList.remove('show');}
 function renderHist(){
   document.getElementById('histlist').innerHTML=history.slice(0,40).map(h=>`
     <div class="histrow"><div class="hi">${h.ic}</div>

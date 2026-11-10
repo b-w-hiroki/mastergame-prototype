@@ -28,7 +28,7 @@ jobs:
           else
             node scripts/check-docs.mjs
           fi
-          node --test scripts/check-docs.test.mjs
+          node --test scripts/check-docs.test.mjs scripts/prototype-exchange.test.mjs
 
       # プロトタイプHTMLの健全性チェック（存在・非空・<title>・プレースホルダ残り）
       - name: Validate prototype HTML
@@ -102,6 +102,12 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prototype-browser-evidence
+          path: apps/admin/test-results
+          retention-days: 7
 
   mobile-app:
     runs-on: ubuntu-latest
