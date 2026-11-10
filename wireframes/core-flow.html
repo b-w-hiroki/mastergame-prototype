@@ -1077,7 +1077,7 @@ function exchange(i){
   document.getElementById('congrats').classList.add('show');
   document.querySelector('#congrats .burst').textContent='✅';
   pendingPt=0;pendingHist=null;
-  setTimeout(()=>{pseg('history');},100);
+  pseg('history');
 }
 function closeSheet(){pendingExchangeItem = null;document.getElementById('overlay').classList.remove('show');}
 function renderHist(){
