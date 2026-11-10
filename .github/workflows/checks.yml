@@ -28,7 +28,7 @@ jobs:
           else
             node scripts/check-docs.mjs
           fi
-          node --test scripts/check-docs.test.mjs
+          node --test scripts/check-docs.test.mjs scripts/prototype-exchange.test.mjs
 
       # プロトタイプHTMLの健全性チェック（存在・非空・<title>・プレースホルダ残り）
       - name: Validate prototype HTML
